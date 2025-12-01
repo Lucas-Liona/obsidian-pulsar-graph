@@ -1,4 +1,4 @@
-# Obsidian Sample Plugin
+# Pulsar Graph View
 
 This is a sample plugin for Obsidian (https://obsidian.md).
 
