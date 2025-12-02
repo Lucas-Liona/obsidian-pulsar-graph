@@ -56,10 +56,14 @@ export default class PulsarGraphPlugin extends Plugin {
 				if (!(node as any).color) {
 					continue; // or skip these nodes
 				}
-				
-				const currentColor = (node as any).color;
-				if (currentColor.rgb !== undefined) {
-					currentColor.a = Math.sin(currentColor.rgb + randomInt(5));
+
+
+				const currentColorrgb = (node as any).color.rgb; // should maybe be a copy?
+				if (currentColorrgb !== undefined) {
+					(node as any).color = {
+						a: Math.sin(currentColorrgb + randomInt(5)),
+						rgb: currentColorrgb
+					};
 				}
             }
             
