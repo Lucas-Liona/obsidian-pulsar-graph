@@ -1,5 +1,5 @@
 import { randomInt } from 'crypto';
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, moment } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
@@ -44,10 +44,10 @@ export default class PulsarGraphPlugin extends Plugin {
             for (const [path, node] of Object.entries(nodeLookup)) {
 				const colorBefore = JSON.stringify((node as any).color);
 				
-				console.log(`Node: ${path}`);
-				console.log(`Color before:`, colorBefore);
-				console.log(`Has rgb?`, (node as any).color?.rgb !== undefined);
-				console.log(`Full node:`, node);
+				// console.log(`Node: ${path}`);
+				// console.log(`Color before:`, colorBefore);
+				// console.log(`Has rgb?`, (node as any).color?.rgb !== undefined);
+				// console.log(`Full node:`, node);
 
                 // (node as any).color = {
                 //     a: (randomInt(10)+1)/5,  // random opacity
@@ -57,14 +57,29 @@ export default class PulsarGraphPlugin extends Plugin {
 					continue; // or skip these nodes
 				}
 
+				// console.log(moment.now())
+				const file = this.app.vault.getFileByPath(path);
+
+				const days = 1000 * 60 * 60 * 24 // ms * seconds * minutes * hours
+				// if (file) {
+				// 	console.log(moment(file.stat.mtime))
+				// }
+				
+
 
 				const currentColorrgb = (node as any).color.rgb; // should maybe be a copy?
-				if (currentColorrgb !== undefined) {
+				if (file && currentColorrgb !== undefined) {
+					const opacity = moment.now() - file.stat.mtime;
+					console.log(opacity/days);
+
 					(node as any).color = {
-						a: Math.sin(currentColorrgb + randomInt(5)),
+						a: Math.max(0.1, 1 - (opacity/days)/200),
 						rgb: currentColorrgb
 					};
 				}
+
+				
+
             }
             
             // Trigger re-render
