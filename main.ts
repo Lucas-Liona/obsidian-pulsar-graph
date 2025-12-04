@@ -1,7 +1,7 @@
 import { randomInt } from 'crypto';
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, moment } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
+const MS_PER_DAY = 86400000;
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -28,6 +28,8 @@ export default class PulsarGraphPlugin extends Plugin {
 	updateGraph() {
         // Get all graph views
         const leaves = this.app.workspace.getLeavesOfType('graph');
+
+		const now = Date.now();
         
         leaves.forEach(leaf => {
             const view = (leaf.view as any);
@@ -60,20 +62,18 @@ export default class PulsarGraphPlugin extends Plugin {
 				// console.log(moment.now())
 				const file = this.app.vault.getFileByPath(path);
 
-				const days = 1000 * 60 * 60 * 24 // ms * seconds * minutes * hours
 				// if (file) {
 				// 	console.log(moment(file.stat.mtime))
 				// }
 				
 
-
 				const currentColorrgb = (node as any).color.rgb; // should maybe be a copy?
 				if (file && currentColorrgb !== undefined) {
-					const opacity = moment.now() - file.stat.mtime;
-					console.log(opacity/days);
+					const opacity = now - file.stat.mtime;
+					//console.log(opacity/days);
 
 					(node as any).color = {
-						a: Math.max(0.1, 1 - (opacity/days)/200),
+						a: Math.max(0.1, 1 - 2*(opacity/MS_PER_DAY)/200),
 						rgb: currentColorrgb
 					};
 				}
