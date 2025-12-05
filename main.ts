@@ -1,14 +1,16 @@
-import { randomInt } from 'crypto';
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, moment } from 'obsidian';
+import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 
 const MS_PER_DAY = 86400000;
 
 interface MyPluginSettings {
-	mySetting: string;
+	mySetting: string,
+	// fadeType: 'Linear' | 'Exponential' | 'Step';
+	fadeType: string
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	mySetting: 'Secret',
+	fadeType: 'Linear'
 }
 
 export default class PulsarGraphPlugin extends Plugin {
@@ -17,8 +19,16 @@ export default class PulsarGraphPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		this.addSettingTab(new SampleSettingTab(this.app, this));
+
 		console.log('Pulsar Graph: Plugin loaded');
         
+		// Here I will add cacheing, I think I will do hotnote (last edited) as a setting as well
+		// I think docs say you should wait until the app/vault is ready to do stufF?
+		// A good way to check the runtime of my plugin is to type a common letter like 'a' into the search filter, cacheing would help here I want to record the difference
+		// I also want link opacity probably, and text opacity
+		// Plugin ruins animation too!
+
         // Wait a bit for graph to exist, then update
         this.registerInterval(
 			window.setInterval(() => this.updateGraph(), 1000)
@@ -39,38 +49,22 @@ export default class PulsarGraphPlugin extends Plugin {
                 return;
             }
             
-            console.log('Pulsar Graph: Found graph, setting opacity to 0.2');
+            console.log('Pulsar Graph: Found graph, altering opacity');
             
-            // Set every node to 0.2 opacity
             const nodeLookup = view.renderer.nodeLookup;
             for (const [path, node] of Object.entries(nodeLookup)) {
 				const colorBefore = JSON.stringify((node as any).color);
 				
-				// console.log(`Node: ${path}`);
-				// console.log(`Color before:`, colorBefore);
-				// console.log(`Has rgb?`, (node as any).color?.rgb !== undefined);
-				// console.log(`Full node:`, node);
-
-                // (node as any).color = {
-                //     a: (randomInt(10)+1)/5,  // random opacity
-				// 	rgb: (node as any).color.rgb || 0x6bd385  // preserve color or default green
-                // };
 				if (!(node as any).color) {
 					continue; // or skip these nodes
 				}
 
-				// console.log(moment.now())
 				const file = this.app.vault.getFileByPath(path);
+		
 
-				// if (file) {
-				// 	console.log(moment(file.stat.mtime))
-				// }
-				
-
-				const currentColorrgb = (node as any).color.rgb; // should maybe be a copy?
+				const currentColorrgb = (node as any).color.rgb;
 				if (file && currentColorrgb !== undefined) {
 					const opacity = now - file.stat.mtime;
-					//console.log(opacity/days);
 
 					(node as any).color = {
 						a: Math.max(0.1, 1 - 2*(opacity/MS_PER_DAY)/200),
@@ -142,5 +136,27 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.mySetting = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Fade Type')
+			.setDesc('Choose the function that determines how Opacity is calculated')
+			.addDropdown(drop => drop
+			.addOption('Linear', 'Linear')
+			.addOption('Exponential', 'Exponential')
+			.addOption('Step', 'Step')
+			.setValue(this.plugin.settings.fadeType)
+			.onChange(async (value) => {
+					this.plugin.settings.fadeType = value;
+					await this.plugin.saveSettings();
+				})
+			)
+
+			// .addText(text => text
+			// 	.setPlaceholder('Choose Fade Type')
+			// 	.setValue(this.plugin.settings.fadeType)
+			// 	.onChange(async (value) => {
+			// 		this.plugin.settings.mySetting = value;
+			// 		await this.plugin.saveSettings();
+			// 	}));
 	}
 }
