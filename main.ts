@@ -18,12 +18,17 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 export default class PulsarGraphPlugin extends Plugin {
 	settings: MyPluginSettings;
 
+	// Cache (path -> mtime)
+	private mtimeCache: Map<string, number> = new Map();
+	private oldestMtime: number = Date.now()
+	private newestMtime: number = 0;
+
+	// This deserves a blog post or something, even Claude Pro with Sonnet 4.5 thinking was going to give me a terrible caching algorithm that ran worse than what I already had!!! Always check AI
+	// It was gonna have me do a vault scan every update, and then on top of that every 60 seconds scan the vault and cache the first and last notes created.
+
 	async onload() {
 		await this.loadSettings();
-
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		console.log('Pulsar Graph: Plugin loaded');
 
 		// Here I will add cacheing, I think I will do hotnote (last edited) as a setting as well
 		// I think docs say you should wait until the app/vault is ready to do stufF?
@@ -32,6 +37,40 @@ export default class PulsarGraphPlugin extends Plugin {
 		// Plugin ruins animation too!
 
 		// It will be a setting option to normalize to newest, or normalize to now.    The first would be determinant, always the same, and the second your whole vault would be darker if you came back to it after a while
+		await this.buildCache();
+
+        this.registerEvent(
+            this.app.vault.on('create', (file) => {
+                if (file instanceof TFile) {
+                    this.onFileChange(file);
+                }
+            })
+        );
+        
+        this.registerEvent(
+            this.app.vault.on('modify', (file) => {
+                if (file instanceof TFile) {
+                    this.onFileChange(file);
+                }
+            })
+        );
+        
+        this.registerEvent(
+            this.app.vault.on('delete', (file) => {
+                if (file instanceof TFile) {
+                    this.onFileDelete(file);
+                }
+            })
+        );
+        
+        this.registerEvent(
+            this.app.vault.on('rename', (file, oldPath) => {
+                if (file instanceof TFile) {
+                    this.mtimeCache.delete(oldPath);
+                    this.onFileChange(file);
+                }
+            })
+        );
 
 		// Wait a bit for graph to exist, then update
 		this.registerInterval(
@@ -39,11 +78,97 @@ export default class PulsarGraphPlugin extends Plugin {
 		);
 	}
 
-	updateGraph() {
-		// Get all graph views
-		const leaves = this.app.workspace.getLeavesOfType('graph');
+	private async buildCache(): Promise<void> {
+		console.log('Building Cache...');
+		const files = this.app.vault.getMarkdownFiles();
 
-		const now = Date.now();
+		let oldest = Date.now();
+		let newest = 0;
+
+		for (const file of files) {
+			const mtime = file.stat.mtime;
+			this.mtimeCache.set(file.path, mtime);
+
+			if (mtime < oldest) oldest = mtime;
+			if (mtime > newest) newest = mtime;
+		}
+
+		this.oldestMtime = oldest;
+		this.newestMtime = newest;
+
+		console.log(`Pulsar: Cached ${files.length} files`);
+	}
+
+	private onFileChange(file: TFile): void {
+		const mtime = file.stat.mtime;
+		this.mtimeCache.set(file.path, mtime);
+
+		if (mtime < this.oldestMtime) {
+			this.oldestMtime = mtime;
+		if (mtime > this.newestMtime) {
+			this.newestMtime = mtime;
+			}
+		}
+	}
+
+	private onFileDelete(file: TFile): void {
+        const deletedMtime = this.mtimeCache.get(file.path);
+        this.mtimeCache.delete(file.path);
+        
+        // Only recalculate if we deleted the oldest or newest
+        if (deletedMtime === this.oldestMtime || deletedMtime === this.newestMtime) {
+            this.recalculateMinMax();
+        }
+    }
+
+	private recalculateMinMax(): void {
+        if (this.mtimeCache.size === 0) {
+            this.oldestMtime = Date.now();
+            this.newestMtime = 0;
+            return;
+        }
+        
+        let oldest = Date.now();
+        let newest = 0;
+        
+        for (const mtime of this.mtimeCache.values()) {
+            if (mtime < oldest) oldest = mtime;
+            if (mtime > newest) newest = mtime;
+        }
+        
+        this.oldestMtime = oldest;
+        this.newestMtime = newest;
+    }
+
+    private calculateOpacity(mtime: number): number {
+        const { fadeType, minOpacity, maxOpacity } = this.settings;
+        
+        const timeRange = this.newestMtime - this.oldestMtime;
+        if (timeRange === 0) return maxOpacity;
+        
+        const normalized = (mtime - this.oldestMtime) / timeRange;
+        
+        let fadeFactor: number;
+        switch (fadeType) {
+            case 'linear':
+                fadeFactor = normalized;
+                break;
+            case 'exponential':
+                fadeFactor = Math.pow(normalized, 2);
+                break;
+            case 'step':
+                fadeFactor = Math.round(normalized * 4) / 4;
+                break;
+            default:
+                fadeFactor = normalized;
+        }
+        
+        return minOpacity + (fadeFactor * (maxOpacity - minOpacity));
+    }
+
+	private updateGraph(): void {
+		const leaves = this.app.workspace.getLeavesOfType('graph');
+		if (leaves.length === 0) return;
 
 		leaves.forEach(leaf => {
 			const view = (leaf.view as any);
@@ -56,27 +181,23 @@ export default class PulsarGraphPlugin extends Plugin {
 			console.log('Pulsar Graph: Found graph, altering opacity');
 
 			const nodeLookup = view.renderer.nodeLookup;
-			for (const [path, node] of Object.entries(nodeLookup)) {
-				const colorBefore = JSON.stringify((node as any).color);
 
-				if (!(node as any).color) {
-					continue; // or skip these nodes
-				}
-
-				const file = this.app.vault.getFileByPath(path);
-
-
-				const currentColorrgb = (node as any).color.rgb;
-				if (file && currentColorrgb !== undefined) {
-					const opacity = now - file.stat.mtime;
-
-					(node as any).color = {
-						a: Math.max(this.settings.minOpacity, 1 - 2 * (opacity / MS_PER_DAY) / 200), 
-						rgb: currentColorrgb
-					};
-				}
+            for (const [path, node] of Object.entries(nodeLookup)) {
+                if (!(node as any).color) continue;
+                
+                const mtime = this.mtimeCache.get(path);
+                if (mtime === undefined) continue;
+                
+                const currentColorRgb = (node as any).color.rgb;
+                if (currentColorRgb === undefined) continue;
+                
+                const opacity = this.calculateOpacity(mtime);
+                
+                (node as any).color = {
+                    a: opacity,
+                    rgb: currentColorRgb
+                };
 			}
-
 			// Trigger re-render
 			if (view.renderer.renderCallback) {
 				view.renderer.renderCallback();
@@ -184,17 +305,17 @@ class SampleSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
             .setName('Maximum Opacity')
-            .setDesc('Opacity for newest notes (0.0 to 1.0)')
+            .setDesc('Opacity for newest notes (0.0 to 12.0)')
             .addText(text => text
                 .setPlaceholder('1.0')
                 .setValue(String(this.plugin.settings.maxOpacity))
                 .setValue(String(this.plugin.settings.maxOpacity))
                 .onChange(async (value) => {
                     const num = parseFloat(value);
-                    if (!isNaN(num) && num >= 0 && num <= 1) {
+                    if (!isNaN(num) && num >= 0 && num <= 12) {
                         this.plugin.settings.maxOpacity = num;
                         await this.plugin.saveSettings();
-                    }
+						}
                 })
             );
 	}
