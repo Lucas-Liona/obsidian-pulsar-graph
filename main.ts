@@ -147,6 +147,7 @@ export default class PulsarGraphPlugin extends Plugin {
         if (timeRange === 0) return maxOpacity;
         
         const normalized = (mtime - this.oldestMtime) / timeRange;
+		const steepness = 11;
         
         let fadeFactor: number;
         switch (fadeType) {
@@ -154,7 +155,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 fadeFactor = normalized;
                 break;
             case 'exponential':
-                fadeFactor = Math.pow(normalized, 2);
+                fadeFactor = (this.settings.maxOpacity - this.settings.minOpacity) * Math.pow(normalized, steepness) + minOpacity;
                 break;
             case 'step':
                 fadeFactor = Math.round(normalized * 4) / 4;
