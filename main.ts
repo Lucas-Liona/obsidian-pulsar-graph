@@ -25,6 +25,9 @@ export default class PulsarGraphPlugin extends Plugin {
 	private oldestMtime: number = Date.now()
 	private newestMtime: number = 0;
 
+	// Track patched renderers to restore on unload
+	private patchedRenderers: Set<any> = new Set();
+
 	// This deserves a blog post or something, even Claude Pro with Sonnet 4.5 thinking was going to give me a terrible caching algorithm that ran worse than what I already had!!! Always check AI
 	// It was gonna have me do a vault scan every update, and then on top of that every 60 seconds scan the vault and cache the first and last notes created.
 
@@ -74,10 +77,24 @@ export default class PulsarGraphPlugin extends Plugin {
             })
         );
 
-		// Wait a bit for graph to exist, then update
-		this.registerInterval(
-			window.setInterval(() => this.updateGraph(), 1000)
+		// Listen for layout changes to detect when graph views are opened/closed
+		this.registerEvent(
+			this.app.workspace.on('layout-change', () => {
+				this.patchGraphRenderers();
+			})
 		);
+
+		// Also check on active leaf change
+		this.registerEvent(
+			this.app.workspace.on('active-leaf-change', () => {
+				this.patchGraphRenderers();
+			})
+		);
+
+		// Initial patch for any existing graph views
+		this.app.workspace.onLayoutReady(() => {
+			this.patchGraphRenderers();
+		});
 	}
 
 	private async buildCache(): Promise<void> {
@@ -168,45 +185,81 @@ export default class PulsarGraphPlugin extends Plugin {
         return minOpacity + (fadeFactor * (maxOpacity - minOpacity));
     }
 
-	private updateGraph(): void {
+	private patchGraphRenderers(): void {
 		const leaves = this.app.workspace.getLeavesOfType('graph');
-		if (leaves.length === 0) return;
+
+		console.log(`Pulsar: Found ${leaves.length} graph view(s)`);
 
 		leaves.forEach(leaf => {
 			const view = (leaf.view as any);
+			const renderer = view?.renderer;
 
-			// Check if renderer exists
-			if (!view?.renderer?.nodeLookup) {
+			// Check if renderer exists and isn't already patched
+			if (!renderer) {
+				console.log('Pulsar: No renderer found');
 				return;
 			}
 
-			console.log('Pulsar Graph: Found graph, altering opacity');
-
-			const nodeLookup = view.renderer.nodeLookup;
-
-            for (const [path, node] of Object.entries(nodeLookup)) {
-                const mtime = this.mtimeCache.get(path);
-                if (mtime === undefined) continue;
-
-                // Get existing color RGB, or use default for ungrouped nodes
-                const currentColorRgb = (node as any).color?.rgb ?? 16777215; // Default to white (0xFFFFFF)
-
-                const opacity = this.calculateOpacity(mtime);
-
-                (node as any).color = {
-                    a: opacity,
-                    rgb: currentColorRgb
-                };
+			if (this.patchedRenderers.has(renderer)) {
+				console.log('Pulsar: Renderer already patched');
+				return;
 			}
-			// Trigger re-render
-			if (view.renderer.renderCallback) {
-				view.renderer.renderCallback();
+
+			// Save the original renderCallback method
+			const originalRenderCallback = renderer.renderCallback?.bind(renderer);
+			if (!originalRenderCallback) {
+				console.log('Pulsar: No renderCallback method found on renderer');
+				return;
 			}
+
+			// Mark as patched
+			this.patchedRenderers.add(renderer);
+			console.log('Pulsar: Patching renderer.renderCallback');
+
+			// Monkey-patch: wrap the original renderCallback with our opacity application
+			renderer.renderCallback = (...args: any[]) => {
+				// Let Obsidian render first
+				const result = originalRenderCallback(...args);
+
+				// Then apply our opacity modifications
+				this.applyOpacityToNodes(renderer.nodeLookup);
+
+				return result;
+			};
+
+			// Store reference to original for cleanup
+			(renderer as any).__originalRenderCallback = originalRenderCallback;
 		});
 	}
 
-	onunload() {
+	private applyOpacityToNodes(nodeLookup: any): void {
+		if (!nodeLookup) return;
 
+		for (const [path, node] of Object.entries(nodeLookup)) {
+			const mtime = this.mtimeCache.get(path);
+			if (mtime === undefined) continue;
+
+			// Get existing color RGB, or use default for ungrouped nodes
+			const currentColorRgb = (node as any).color?.rgb ?? 16777215; // Default to white (0xFFFFFF)
+
+			const opacity = this.calculateOpacity(mtime);
+
+			(node as any).color = {
+				a: opacity,
+				rgb: currentColorRgb
+			};
+		}
+	}
+
+	onunload() {
+		// Restore original renderCallback methods for all patched renderers
+		this.patchedRenderers.forEach(renderer => {
+			if ((renderer as any).__originalRenderCallback) {
+				renderer.renderCallback = (renderer as any).__originalRenderCallback;
+				delete (renderer as any).__originalRenderCallback;
+			}
+		});
+		this.patchedRenderers.clear();
 	}
 
 	async loadSettings() {
