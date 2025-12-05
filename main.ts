@@ -6,13 +6,15 @@ const MS_PER_DAY = 86400000;
 interface MyPluginSettings {
 	fadeType: string,
 	minOpacity: number,
-	maxOpacity: number
+	maxOpacity: number,
+	steepness: number
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
 	fadeType: 'Linear',
 	minOpacity: 0.1,
-	maxOpacity: 3.0
+	maxOpacity: 3.0,
+	steepness: 2.0
 }
 
 export default class PulsarGraphPlugin extends Plugin {
@@ -147,17 +149,16 @@ export default class PulsarGraphPlugin extends Plugin {
         if (timeRange === 0) return maxOpacity;
         
         const normalized = (mtime - this.oldestMtime) / timeRange;
-		const steepness = 11;
         
         let fadeFactor: number;
         switch (fadeType) {
-            case 'linear':
+            case 'Linear':
                 fadeFactor = normalized;
                 break;
-            case 'exponential':
-                fadeFactor = (this.settings.maxOpacity - this.settings.minOpacity) * Math.pow(normalized, steepness) + minOpacity;
+            case 'Exponential':
+    			fadeFactor = Math.pow(normalized, this.settings.steepness);
                 break;
-            case 'step':
+            case 'Step':
                 fadeFactor = Math.round(normalized * 4) / 4;
                 break;
             default:
@@ -273,6 +274,7 @@ class SampleSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.fadeType = value;
 					await this.plugin.saveSettings();
+					this.display();
 				})
 			)
 
@@ -319,5 +321,22 @@ class SampleSettingTab extends PluginSettingTab {
 						}
                 })
             );
+
+		switch (this.plugin.settings.fadeType) {
+            case 'Exponential':
+                new Setting(containerEl)
+                    .setName('Steepness')
+                    .setDesc('Controls curve steepness (1.0 = linear, >1 = convex, <1 = concave)')
+                    .addSlider(slider => slider
+                        .setLimits(0.1, 5.0, 0.1)
+                        .setValue(this.plugin.settings.steepness)
+                        .setDynamicTooltip()
+                        .onChange(async (value) => {
+                            this.plugin.settings.steepness = value;
+                            await this.plugin.saveSettings();
+                        })
+                    );
+                break;
+		}
 	}
 }
