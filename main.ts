@@ -185,16 +185,14 @@ export default class PulsarGraphPlugin extends Plugin {
 			const nodeLookup = view.renderer.nodeLookup;
 
             for (const [path, node] of Object.entries(nodeLookup)) {
-                if (!(node as any).color) continue;
-                
                 const mtime = this.mtimeCache.get(path);
                 if (mtime === undefined) continue;
-                
-                const currentColorRgb = (node as any).color.rgb;
-                if (currentColorRgb === undefined) continue;
-                
+
+                // Get existing color RGB, or use default for ungrouped nodes
+                const currentColorRgb = (node as any).color?.rgb ?? 16777215; // Default to white (0xFFFFFF)
+
                 const opacity = this.calculateOpacity(mtime);
-                
+
                 (node as any).color = {
                     a: opacity,
                     rgb: currentColorRgb
@@ -328,7 +326,7 @@ class SampleSettingTab extends PluginSettingTab {
                     .setName('Steepness')
                     .setDesc('Controls curve steepness (1.0 = linear, >1 = convex, <1 = concave)')
                     .addSlider(slider => slider
-                        .setLimits(0.1, 5.0, 0.1)
+                        .setLimits(0.1, 10.0, 0.1)
                         .setValue(this.plugin.settings.steepness)
                         .setDynamicTooltip()
                         .onChange(async (value) => {
