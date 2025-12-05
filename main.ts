@@ -71,7 +71,7 @@ export default class PulsarGraphPlugin extends Plugin {
 					const opacity = now - file.stat.mtime;
 
 					(node as any).color = {
-						a: Math.max(0.1, 1 - 2 * (opacity / MS_PER_DAY) / 200),
+						a: Math.max(this.settings.minOpacity, 1 - 2 * (opacity / MS_PER_DAY) / 200), 
 						rgb: currentColorrgb
 					};
 				}
