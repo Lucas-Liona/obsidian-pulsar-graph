@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, NumberValue, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, NumberValue, Plugin, PluginSettingTab, Setting, TFile, debounce } from 'obsidian';
 import { text } from 'stream/consumers';
 
 const MS_PER_DAY = 86400000;
@@ -188,41 +188,50 @@ export default class PulsarGraphPlugin extends Plugin {
 	private patchGraphRenderers(): void {
 		const leaves = this.app.workspace.getLeavesOfType('graph');
 
-		console.log(`Pulsar: Found ${leaves.length} graph view(s)`);
-
 		leaves.forEach(leaf => {
 			const view = (leaf.view as any);
 			const renderer = view?.renderer;
 
 			// Check if renderer exists and isn't already patched
-			if (!renderer) {
-				console.log('Pulsar: No renderer found');
-				return;
-			}
-
-			if (this.patchedRenderers.has(renderer)) {
-				console.log('Pulsar: Renderer already patched');
+			if (!renderer || this.patchedRenderers.has(renderer)) {
 				return;
 			}
 
 			// Save the original renderCallback method
 			const originalRenderCallback = renderer.renderCallback?.bind(renderer);
 			if (!originalRenderCallback) {
-				console.log('Pulsar: No renderCallback method found on renderer');
 				return;
 			}
 
 			// Mark as patched
 			this.patchedRenderers.add(renderer);
-			console.log('Pulsar: Patching renderer.renderCallback');
+
+			// Apply opacity immediately on first patch
+			this.applyOpacityToNodes(renderer.nodeLookup);
+
+			// Create a debounced version of opacity application for this renderer
+			// Debounce: executes 50ms after renders stop (responsive feel)
+			const debouncedApplyOpacity = debounce(() => {
+				this.applyOpacityToNodes(renderer.nodeLookup);
+			}, 50);
+
+			// Throttle: prevent execution more than once per 200ms (prevents animation flicker)
+			let lastExecutionTime = 0;
+			const throttledDebouncedApplyOpacity = () => {
+				const now = Date.now();
+				if (now - lastExecutionTime >= 200) {
+					lastExecutionTime = now;
+					debouncedApplyOpacity();
+				}
+			};
 
 			// Monkey-patch: wrap the original renderCallback with our opacity application
 			renderer.renderCallback = (...args: any[]) => {
 				// Let Obsidian render first
 				const result = originalRenderCallback(...args);
 
-				// Then apply our opacity modifications
-				this.applyOpacityToNodes(renderer.nodeLookup);
+				// Apply opacity with throttle + debounce (prevents flicker, stays responsive)
+				throttledDebouncedApplyOpacity();
 
 				return result;
 			};
