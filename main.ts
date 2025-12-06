@@ -209,17 +209,26 @@ export default class PulsarGraphPlugin extends Plugin {
 			// Apply opacity immediately on first patch
 			this.applyOpacityToNodes(renderer.nodeLookup);
 
+			// Track when we applied immediately to prevent double-processing
+			let lastImmediateApplication = Date.now();
+
 			// Create a debounced version of opacity application for this renderer
 			// Debounce: executes 50ms after renders stop (responsive feel)
 			const debouncedApplyOpacity = debounce(() => {
 				this.applyOpacityToNodes(renderer.nodeLookup);
 			}, 50);
 
-			// Throttle: prevent execution more than once per 200ms (prevents animation flicker)
+			// Throttle: prevent execution more than once per 300ms (prevents animation flicker)
 			let lastExecutionTime = 0;
 			const throttledDebouncedApplyOpacity = () => {
 				const now = Date.now();
-				if (now - lastExecutionTime >= 200) {
+
+				// Skip if we just applied immediately (prevents double-processing on load)
+				if (now - lastImmediateApplication < 500) {
+					return;
+				}
+
+				if (now - lastExecutionTime >= 300) {
 					lastExecutionTime = now;
 					debouncedApplyOpacity();
 				}
