@@ -1,7 +1,8 @@
-import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, NumberValue, Plugin, PluginSettingTab, Setting, TFile, debounce } from 'obsidian';
+import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, NumberValue, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { text } from 'stream/consumers';
 
 const MS_PER_DAY = 86400000;
+const MS_PER_UPDATE = 1 * 1000; // 1 second
 
 interface MyPluginSettings {
 	fadeType: string,
@@ -21,19 +22,22 @@ export default class PulsarGraphPlugin extends Plugin {
 	settings: MyPluginSettings;
 
 	// Cache (path -> mtime)
-	private mtimeCache: Map<string, number> = new Map();
+	private mtimeCache: Map<string, number> = new Map(); // I will keep this for node age with hover or just ot cache other recalculations? like if I change from exponential to linear I can apply a base transform to this map instead of rereading vault
+	// maybe I really want a Map<string, vector<number, number>> (or tuple) for path: (mtime, opacity) or just regular 2 Maps for mtime and opacity : 2 x Map<string, number>
+
 	private oldestMtime: number = Date.now()
 	private newestMtime: number = 0;
 
-	// Track patched renderers to restore on unload
-	private patchedRenderers: Set<any> = new Set();
+	// Track if graph views exist to control polling
+	private hasGraphViews: boolean = false;
+	private updateInterval: number | null = null;
 
 	// This deserves a blog post or something, even Claude Pro with Sonnet 4.5 thinking was going to give me a terrible caching algorithm that ran worse than what I already had!!! Always check AI
 	// It was gonna have me do a vault scan every update, and then on top of that every 60 seconds scan the vault and cache the first and last notes created.
 
 	async onload() {
 		await this.loadSettings();
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new PulsarSettingTab(this.app, this));
 
 		// Here I will add cacheing, I think I will do hotnote (last edited) as a setting as well
 		// I think docs say you should wait until the app/vault is ready to do stufF?
@@ -77,23 +81,23 @@ export default class PulsarGraphPlugin extends Plugin {
             })
         );
 
-		// Listen for layout changes to detect when graph views are opened/closed
+		// Listen for layout changes to start/stop polling based on graph view presence
 		this.registerEvent(
 			this.app.workspace.on('layout-change', () => {
-				this.patchGraphRenderers();
+				this.checkGraphViews();
 			})
 		);
 
 		// Also check on active leaf change
 		this.registerEvent(
 			this.app.workspace.on('active-leaf-change', () => {
-				this.patchGraphRenderers();
+				this.checkGraphViews();
 			})
 		);
 
-		// Initial patch for any existing graph views
+		// Initial check for any existing graph views
 		this.app.workspace.onLayoutReady(() => {
-			this.patchGraphRenderers();
+			this.checkGraphViews();
 		});
 	}
 
@@ -185,68 +189,57 @@ export default class PulsarGraphPlugin extends Plugin {
         return minOpacity + (fadeFactor * (maxOpacity - minOpacity));
     }
 
-	private patchGraphRenderers(): void {
+	private checkGraphViews(): void {
 		const leaves = this.app.workspace.getLeavesOfType('graph');
+		const hasGraphs = leaves.length > 0;
+
+		// Start polling if graphs exist and we're not already polling
+		if (hasGraphs && !this.hasGraphViews) {
+			this.hasGraphViews = true;
+			this.startPolling();
+			// Apply immediately on first graph open // doesnt make a difference for some reason.
+			// this.updateGraphs();
+		}
+		// Stop polling if no graphs exist
+		else if (!hasGraphs && this.hasGraphViews) {
+			this.hasGraphViews = false;
+			this.stopPolling();
+		}
+	}
+
+	private startPolling(): void {
+		if (this.updateInterval !== null) return;
+
+		// Poll every 1 second - stays out of render loop entirely
+		this.updateInterval = window.setInterval(() => {
+			this.updateGraphs();
+		}, MS_PER_UPDATE);
+	}
+
+	private stopPolling(): void {
+		if (this.updateInterval !== null) {
+			window.clearInterval(this.updateInterval);
+			this.updateInterval = null;
+		}
+	}
+
+	private updateGraphs(): void {
+		const leaves = this.app.workspace.getLeavesOfType('graph');
+		if (leaves.length === 0) return;
 
 		leaves.forEach(leaf => {
 			const view = (leaf.view as any);
 			const renderer = view?.renderer;
+			
+			if (!renderer?.nodeLookup) return;
+			
+			// Apply opacity to all nodes 
+			this.applyOpacityToNodes(renderer.nodeLookup); 
 
-			// Check if renderer exists and isn't already patched
-			if (!renderer || this.patchedRenderers.has(renderer)) {
-				return;
+			// Trigger re-render
+			if (renderer.renderCallback) {
+				renderer.renderCallback();
 			}
-
-			// Save the original renderCallback method
-			const originalRenderCallback = renderer.renderCallback?.bind(renderer);
-			if (!originalRenderCallback) {
-				return;
-			}
-
-			// Mark as patched
-			this.patchedRenderers.add(renderer);
-
-			// Apply opacity immediately on first patch
-			this.applyOpacityToNodes(renderer.nodeLookup);
-
-			// Track when we applied immediately to prevent double-processing
-			let lastImmediateApplication = Date.now();
-
-			// Create a debounced version of opacity application for this renderer
-			// Debounce: executes 50ms after renders stop (responsive feel)
-			const debouncedApplyOpacity = debounce(() => {
-				this.applyOpacityToNodes(renderer.nodeLookup);
-			}, 50);
-
-			// Throttle: prevent execution more than once per 300ms (prevents animation flicker)
-			let lastExecutionTime = 0;
-			const throttledDebouncedApplyOpacity = () => {
-				const now = Date.now();
-
-				// Skip if we just applied immediately (prevents double-processing on load)
-				if (now - lastImmediateApplication < 500) {
-					return;
-				}
-
-				if (now - lastExecutionTime >= 300) {
-					lastExecutionTime = now;
-					debouncedApplyOpacity();
-				}
-			};
-
-			// Monkey-patch: wrap the original renderCallback with our opacity application
-			renderer.renderCallback = (...args: any[]) => {
-				// Let Obsidian render first
-				const result = originalRenderCallback(...args);
-
-				// Apply opacity with throttle + debounce (prevents flicker, stays responsive)
-				throttledDebouncedApplyOpacity();
-
-				return result;
-			};
-
-			// Store reference to original for cleanup
-			(renderer as any).__originalRenderCallback = originalRenderCallback;
 		});
 	}
 
@@ -270,14 +263,8 @@ export default class PulsarGraphPlugin extends Plugin {
 	}
 
 	onunload() {
-		// Restore original renderCallback methods for all patched renderers
-		this.patchedRenderers.forEach(renderer => {
-			if ((renderer as any).__originalRenderCallback) {
-				renderer.renderCallback = (renderer as any).__originalRenderCallback;
-				delete (renderer as any).__originalRenderCallback;
-			}
-		});
-		this.patchedRenderers.clear();
+		// Stop polling when plugin unloads
+		this.stopPolling();
 	}
 
 	async loadSettings() {
@@ -290,50 +277,25 @@ export default class PulsarGraphPlugin extends Plugin {
 }
 
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
 
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
-	}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
+class PulsarSettingTab extends PluginSettingTab {
 	plugin: PulsarGraphPlugin;
-
+	
 	constructor(app: App, plugin: PulsarGraphPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
-
+	
 	display(): void {
 		const { containerEl } = this;
-
+		
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Pulsar Graph Settings' });
-
-		// new Setting(containerEl)
-		// 	.setName('Setting #1')
-		// 	.setDesc('It\'s a secret')
-		// 	.addText(text => text
-		// 		.setPlaceholder('Enter your secret')
-		// 		.setValue(this.plugin.settings.mySetting)
-		// 		.onChange(async (value) => {
-		// 			this.plugin.settings.mySetting = value;
-		// 			await this.plugin.saveSettings();
-		// 		}));
-
+		
 		new Setting(containerEl)
-			.setName('Fade Type')
+		.setName('Fade Type')
 			.setDesc('Choose the function that determines how Opacity is calculated')
 			.addDropdown(drop => drop
 				.addOption('Linear', 'Linear')
@@ -347,20 +309,7 @@ class SampleSettingTab extends PluginSettingTab {
 				})
 			)
 
-	
-		// new Setting(containerEl)
-		// 	.setName('Minimum Opacity')
-		// 	.setDesc('Set the minimum opacity (0 may remove nodes)')
-		// 	.addText(text => {text
-		// 		.inputEl.type = NumberValue}
-		// 		.setPlaceholder(0.1)
-		// 		.setValue(this.plugin.settings.minOpacity)
-		// 		.onChange(async (value) => {
-		// 			this.plugin.settings.minOpacity = value;
-		// 			await this.plugin.saveSettings();
-		// 		}));
-
-        new Setting(containerEl)
+			new Setting(containerEl)
             .setName('Minimum Opacity')
             .setDesc('Opacity for oldest notes (0.0 to 1.0)')
             .addText(text => text
@@ -374,10 +323,10 @@ class SampleSettingTab extends PluginSettingTab {
                     }
                 })
             );
-
+			
 		new Setting(containerEl)
-            .setName('Maximum Opacity')
-            .setDesc('Opacity for newest notes (0.0 to 12.0)')
+		.setName('Maximum Opacity')
+		.setDesc('Opacity for newest notes (0.0 to 12.0)')
             .addText(text => text
                 .setPlaceholder('1.0')
                 .setValue(String(this.plugin.settings.maxOpacity))
@@ -388,11 +337,11 @@ class SampleSettingTab extends PluginSettingTab {
                         this.plugin.settings.maxOpacity = num;
                         await this.plugin.saveSettings();
 						}
-                })
+					})
             );
 
 		switch (this.plugin.settings.fadeType) {
-            case 'Exponential':
+			case 'Exponential':
                 new Setting(containerEl)
                     .setName('Steepness')
                     .setDesc('Controls curve steepness (1.0 = linear, >1 = convex, <1 = concave)')
@@ -401,7 +350,7 @@ class SampleSettingTab extends PluginSettingTab {
                         .setValue(this.plugin.settings.steepness)
                         .setDynamicTooltip()
                         .onChange(async (value) => {
-                            this.plugin.settings.steepness = value;
+							this.plugin.settings.steepness = value;
                             await this.plugin.saveSettings();
                         })
                     );
@@ -409,3 +358,19 @@ class SampleSettingTab extends PluginSettingTab {
 		}
 	}
 }
+
+// class SampleModal extends Modal {
+// 	constructor(app: App) {
+// 		super(app);
+// 	}
+
+// 	onOpen() {
+// 		const { contentEl } = this;
+// 		contentEl.setText('Woah!');
+// 	}
+
+// 	onClose() {
+// 		const { contentEl } = this;
+// 		contentEl.empty();
+// 	}
+// }
