@@ -24,6 +24,8 @@ export default class PulsarGraphPlugin extends Plugin {
 	// Cache (path -> mtime)
 	private mtimeCache: Map<string, number> = new Map(); // I will keep this for node age with hover or just ot cache other recalculations? like if I change from exponential to linear I can apply a base transform to this map instead of rereading vault
 	// maybe I really want a Map<string, vector<number, number>> (or tuple) for path: (mtime, opacity) or just regular 2 Maps for mtime and opacity : 2 x Map<string, number>
+	private opacityCache: Map<string, number> = new Map();
+	private opacityCacheDirty: boolean = true;
 
 	private oldestMtime: number = Date.now()
 	private newestMtime: number = 0;
@@ -125,12 +127,25 @@ export default class PulsarGraphPlugin extends Plugin {
 	private onFileChange(file: TFile): void {
 		const mtime = file.stat.mtime;
 		this.mtimeCache.set(file.path, mtime);
+		
+		const oldOldest = this.oldestMtime;
+		const oldNewest = this.newestMtime;
 
 		if (mtime < this.oldestMtime) {
 			this.oldestMtime = mtime;
 		if (mtime > this.newestMtime) {
 			this.newestMtime = mtime;
 			}
+		}
+		
+		// Only rebuild cache if oldest or newest was changed (changes opacity calcuation for all nodes)
+		if (this.oldestMtime !== oldOldest || this.newestMtime !== oldNewest) {
+          this.opacityCacheDirty = true;
+      	}
+
+		// If dirty flag NOT set, we can do incremental update
+		if (!this.opacityCacheDirty) {
+			this.opacityCache.set(file.path, this.calculateOpacity(mtime));
 		}
 	}
 
@@ -141,6 +156,7 @@ export default class PulsarGraphPlugin extends Plugin {
         // Only recalculate if we deleted the oldest or newest
         if (deletedMtime === this.oldestMtime || deletedMtime === this.newestMtime) {
             this.recalculateMinMax();
+			this.opacityCacheDirty = true;
         }
     }
 
@@ -246,6 +262,12 @@ export default class PulsarGraphPlugin extends Plugin {
 	private applyOpacityToNodes(nodeLookup: any): void {
 		if (!nodeLookup) return;
 
+		// Rebuild entire cache if dirty
+		if (this.opacityCacheDirty) {
+			this.rebuildOpacityCache();
+			this.opacityCacheDirty = false;
+		}
+
 		for (const [path, node] of Object.entries(nodeLookup)) {
 			const mtime = this.mtimeCache.get(path);
 			if (mtime === undefined) continue;
@@ -253,7 +275,17 @@ export default class PulsarGraphPlugin extends Plugin {
 			// Get existing color RGB, or use default for ungrouped nodes
 			const currentColorRgb = (node as any).color?.rgb ?? 16777215; // Default to white (0xFFFFFF)
 
-			const opacity = this.calculateOpacity(mtime);
+			let opacity = this.opacityCache.get(path);
+			
+			if (opacity === undefined) {
+              // New file we haven't seen yet
+              const mtime = this.mtimeCache.get(path);
+              if (mtime !== undefined) {
+                  opacity = this.calculateOpacity(mtime);
+                  this.opacityCache.set(path, opacity);
+              }
+              continue;
+          }
 
 			(node as any).color = {
 				a: opacity,
@@ -261,6 +293,13 @@ export default class PulsarGraphPlugin extends Plugin {
 			};
 		}
 	}
+
+	private rebuildOpacityCache(): void {
+		this.opacityCache.clear();
+		for (const [path, mtime] of this.mtimeCache) {
+			this.opacityCache.set(path, this.calculateOpacity(mtime));
+		}
+ 	}
 
 	onunload() {
 		// Stop polling when plugin unloads
@@ -273,11 +312,9 @@ export default class PulsarGraphPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.opacityCacheDirty = true;
 	}
 }
-
-
-
 
 class PulsarSettingTab extends PluginSettingTab {
 	plugin: PulsarGraphPlugin;
