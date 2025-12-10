@@ -206,15 +206,14 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
 	private checkGraphViews(): void {
-		const leaves = this.app.workspace.getLeavesOfType('graph');
-		const hasGraphs = leaves.length > 0;
+		const globalGraphs = this.app.workspace.getLeavesOfType('graph');
+		const localGraphs = this.app.workspace.getLeavesOfType('localgraph');
+		const hasGraphs = globalGraphs.length + localGraphs.length > 0;
 
-		// Start polling if graphs exist and we're not already polling
+		// Start polling if any graph exists and we're not already polling
 		if (hasGraphs && !this.hasGraphViews) {
 			this.hasGraphViews = true;
 			this.startPolling();
-			// Apply immediately on first graph open // doesnt make a difference for some reason.
-			// this.updateGraphs();
 		}
 		// Stop polling if no graphs exist
 		else if (!hasGraphs && this.hasGraphViews) {
@@ -240,17 +239,20 @@ export default class PulsarGraphPlugin extends Plugin {
 	}
 
 	private updateGraphs(): void {
-		const leaves = this.app.workspace.getLeavesOfType('graph');
-		if (leaves.length === 0) return;
+		const globalLeaves = this.app.workspace.getLeavesOfType('graph');
+		const localLeaves = this.app.workspace.getLeavesOfType('localgraph');
+		const allLeaves = [...globalLeaves, ...localLeaves];
 
-		leaves.forEach(leaf => {
+		if (allLeaves.length === 0) return;
+
+		allLeaves.forEach(leaf => {
 			const view = (leaf.view as any);
 			const renderer = view?.renderer;
-			
+
 			if (!renderer?.nodeLookup) return;
-			
-			// Apply opacity to all nodes 
-			this.applyOpacityToNodes(renderer.nodeLookup); 
+
+			// Apply opacity to all nodes
+			this.applyOpacityToNodes(renderer.nodeLookup);
 
 			// Trigger re-render
 			if (renderer.renderCallback) {
