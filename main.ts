@@ -198,7 +198,7 @@ export default class PulsarGraphPlugin extends Plugin {
     			fadeFactor = Math.pow(normalized, this.settings.steepness);
                 break;
             case 'Step':
-                fadeFactor = Math.round(normalized * this.settings.numSteps) / this.settings.numSteps;
+                fadeFactor = Math.round(normalized * (this.settings.numSteps-1)) / this.settings.numSteps; // suspicious if this works
                 break;
             default:
                 fadeFactor = normalized;
