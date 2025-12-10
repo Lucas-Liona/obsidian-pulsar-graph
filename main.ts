@@ -1,5 +1,4 @@
-import { App, DropdownComponent, Editor, MarkdownView, Modal, Notice, NumberValue, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { text } from 'stream/consumers';
+import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 
 const MS_PER_DAY = 86400000;
 const MS_PER_UPDATE = 1 * 1000; // 1 second
@@ -413,19 +412,3 @@ class PulsarSettingTab extends PluginSettingTab {
 		}
 	}
 }
-
-// class SampleModal extends Modal {
-// 	constructor(app: App) {
-// 		super(app);
-// 	}
-
-// 	onOpen() {
-// 		const { contentEl } = this;
-// 		contentEl.setText('Woah!');
-// 	}
-
-// 	onClose() {
-// 		const { contentEl } = this;
-// 		contentEl.empty();
-// 	}
-// }
