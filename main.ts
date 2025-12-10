@@ -8,14 +8,16 @@ interface MyPluginSettings {
 	fadeType: string,
 	minOpacity: number,
 	maxOpacity: number,
-	steepness: number
+	steepness: number,
+	numSteps: number
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
 	fadeType: 'Linear',
 	minOpacity: 0.1,
 	maxOpacity: 3.0,
-	steepness: 2.0
+	steepness: 2.0,
+	numSteps: 5.0
 }
 
 export default class PulsarGraphPlugin extends Plugin {
@@ -196,7 +198,7 @@ export default class PulsarGraphPlugin extends Plugin {
     			fadeFactor = Math.pow(normalized, this.settings.steepness);
                 break;
             case 'Step':
-                fadeFactor = Math.round(normalized * 4) / 4;
+                fadeFactor = Math.round(normalized * this.settings.numSteps) / this.settings.numSteps;
                 break;
             default:
                 fadeFactor = normalized;
@@ -394,6 +396,20 @@ class PulsarSettingTab extends PluginSettingTab {
                         })
                     );
                 break;
+			case 'Step':
+				new Setting(containerEl)
+				.setName('Number of Steps')
+				.setDesc('Controls the number of different possible opacities')
+				.addSlider(slider => slider
+					.setLimits(1, 20, 1)
+					.setValue(this.plugin.settings.numSteps)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.numSteps = value;
+						await this.plugin.saveSettings();
+					})
+				);
+
 		}
 	}
 }
