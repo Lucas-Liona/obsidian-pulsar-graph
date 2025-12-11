@@ -11,6 +11,10 @@
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
     "lib": [
       "DOM",
       "ES5",

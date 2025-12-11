@@ -181,6 +181,17 @@ Maybe out of scope
 
 Note*: This is currently a pet-project MVP that I wanted for myself, and decided to create. I focused on being fast, critically safe, and doing 1 thing well (making the graph more accessible and easy to read). I want to see what people want because I personally think this is cool and can go a bunch of different ways.
 
+I really should implement these Coding Hygiene tips from AGENTS.md
+
+- ✅ TypeScript with `"strict": true` preferred. 
+
+everything else ❌
+- **Keep `main.ts` minimal**: Focus only on plugin lifecycle (onload, onunload, addCommand calls). Delegate all feature logic to separate modules.
+- **Split large files**: If any file exceeds ~200-300 lines, consider breaking it into smaller, focused modules.
+- **Use clear module boundaries**: Each file should have a single, well-defined responsibility.
+- Bundle everything into `main.js` (no unbundled runtime deps).
+- Avoid Node/Electron APIs if you want mobile compatibility; set `isDesktopOnly` accordingly.
+- Prefer `async/await` over promise chains; handle errors gracefully.
 ---
 
 ## Support

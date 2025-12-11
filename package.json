@@ -1,12 +1,15 @@
 {
-	"name": "obsidian-puslar-graph",
+	"name": "obsidian-pulsar-graph",
 	"version": "1.0.0",
 	"description": "Temporal visualization for Obsidian's graph view - fade nodes by modification time",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json"
+		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"lint": "eslint main.ts --max-warnings=0",
+		"lint:fix": "eslint main.ts --fix",
+		"type-check": "tsc --noEmit"
 	},
 	"keywords": [
 		"obsidian",

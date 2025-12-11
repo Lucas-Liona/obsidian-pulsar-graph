@@ -40,7 +40,7 @@ const DEFAULT_SETTINGS: PulsarGraphSettings = {
 }
 
 export default class PulsarGraphPlugin extends Plugin {
-    settings: PulsarGraphSettings;
+    settings!: PulsarGraphSettings; // ! means we will assign before use (in onload function)
 
     // Cache (path -> mtime)
     private mtimeCache: Map<string, number> = new Map(); // I will keep this for node age with hover or just ot cache other recalculations? like if I change from exponential to linear I can apply a base transform to this map instead of rereading vault
