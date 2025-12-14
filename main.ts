@@ -1,6 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 
-const MS_PER_UPDATE = 1 * 1000; // 1 second
+const MS_PER_UPDATE = 1000; // 1 second
+const DEFAULT_COLOR_RGB = 0xFFFFFF; // White color for ungrouped nodes
 
 // Obsidian's internal graph types (undocumented)
 interface GraphNode {
@@ -154,14 +155,14 @@ export default class PulsarGraphPlugin extends Plugin {
 
         if (mtime < this.oldestMtime) {
             this.oldestMtime = mtime;
+        }
         if (mtime > this.newestMtime) {
             this.newestMtime = mtime;
-            }
         }
         
-        // Only rebuild cache if oldest or newest was changed (changes opacity calcuation for all nodes)
+        // Only rebuild cache if oldest or newest was changed (changes opacity calculation for all nodes)
         if (this.oldestMtime !== oldOldest || this.newestMtime !== oldNewest) {
-          this.opacityCacheDirty = true;
+            this.opacityCacheDirty = true;
         }
 
         // If dirty flag NOT set, we can do incremental update
@@ -217,7 +218,11 @@ export default class PulsarGraphPlugin extends Plugin {
                 fadeFactor = Math.pow(normalized, this.settings.steepness);
                 break;
             case 'Step':
-                fadeFactor = Math.round(normalized * (this.settings.numSteps-1)) / this.settings.numSteps; // suspicious if this works
+                if (this.settings.numSteps <= 1) {
+                    fadeFactor = 1; // Single step means all nodes have max opacity
+                } else {
+                    fadeFactor = Math.round(normalized * (this.settings.numSteps - 1)) / (this.settings.numSteps - 1);
+                }
                 break;
             default:
                 fadeFactor = normalized;
@@ -233,6 +238,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // Start polling if any graph exists and we're not already polling
         if (hasGraphs && !this.hasGraphViews) {
+            this.updateGraphs();
             this.hasGraphViews = true;
             this.startPolling();
         }
@@ -298,19 +304,18 @@ export default class PulsarGraphPlugin extends Plugin {
             const graphNode = node as GraphNode;
 
             // Get existing color RGB, or use default for ungrouped nodes
-            const currentColorRgb = graphNode.color?.rgb ?? 16777215; // Default to white (0xFFFFFF)
+            const currentColorRgb = graphNode.color?.rgb ?? DEFAULT_COLOR_RGB;
 
             let opacity = this.opacityCache.get(path);
 
             if (opacity === undefined) {
-              // New file we haven't seen yet
-              const mtime = this.mtimeCache.get(path);
-              if (mtime !== undefined) {
-                  opacity = this.calculateOpacity(mtime);
-                  this.opacityCache.set(path, opacity);
-              }
-              continue;
-          }
+                // New file we haven't seen yet
+                if (mtime !== undefined) {
+                    opacity = this.calculateOpacity(mtime);
+                    this.opacityCache.set(path, opacity);
+                }
+                continue;
+            }
 
             graphNode.color = {
                 a: opacity,
@@ -357,7 +362,7 @@ class PulsarSettingTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: 'Pulsar Graph Settings' });
         
         new Setting(containerEl)
-        .setName('Fade Type')
+            .setName('Fade Type')
             .setDesc('Choose the function that determines how Opacity is calculated')
             .addDropdown(drop => drop
                 .addOption('Linear', 'Linear')
@@ -369,9 +374,9 @@ class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.display();
                 })
-            )
+            );
 
-            new Setting(containerEl)
+        new Setting(containerEl)
             .setName('Minimum Opacity')
             .setDesc('Opacity for oldest notes (0.0 to 1.0)')
             .addText(text => text
@@ -387,19 +392,18 @@ class PulsarSettingTab extends PluginSettingTab {
             );
             
         new Setting(containerEl)
-        .setName('Maximum Opacity')
-        .setDesc('Opacity for newest notes (0.0 to 12.0)')
+            .setName('Maximum Opacity')
+            .setDesc('Opacity for newest notes (0.0 to 12.0)')
             .addText(text => text
                 .setPlaceholder('1.0')
-                .setValue(String(this.plugin.settings.maxOpacity))
                 .setValue(String(this.plugin.settings.maxOpacity))
                 .onChange(async (value) => {
                     const num = parseFloat(value);
                     if (!isNaN(num) && num >= 0 && num <= 12) {
                         this.plugin.settings.maxOpacity = num;
                         await this.plugin.saveSettings();
-                        }
-                    })
+                    }
+                })
             );
 
         switch (this.plugin.settings.fadeType) {
@@ -419,18 +423,18 @@ class PulsarSettingTab extends PluginSettingTab {
                 break;
             case 'Step':
                 new Setting(containerEl)
-                .setName('Number of Steps')
-                .setDesc('Controls the number of different possible opacities')
-                .addSlider(slider => slider
-                    .setLimits(1, 20, 1)
-                    .setValue(this.plugin.settings.numSteps)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        this.plugin.settings.numSteps = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
-
+                    .setName('Number of Steps')
+                    .setDesc('Controls the number of different possible opacities')
+                    .addSlider(slider => slider
+                        .setLimits(1, 20, 1)
+                        .setValue(this.plugin.settings.numSteps)
+                        .setDynamicTooltip()
+                        .onChange(async (value) => {
+                            this.plugin.settings.numSteps = value;
+                            await this.plugin.saveSettings();
+                        })
+                    );
+                break;
         }
     }
 }
