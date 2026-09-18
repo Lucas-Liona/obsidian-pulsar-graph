@@ -66,7 +66,7 @@ Watch your graph come alive as node opacity reflects how recently they were modi
 
 ### Manual Installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Lucas-Liona/pulsar-graph/releases)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases)
 2. Create folder `VaultFolder/.obsidian/plugins/pulsar-graph/`
 3. Copy the files into this folder
 4. Reload Obsidian and enable the plugin in Settings → Community Plugins
@@ -181,25 +181,12 @@ Maybe out of scope
 
 Note*: This is currently a pet-project MVP that I wanted for myself, and decided to create. I focused on being fast, critically safe, and doing 1 thing well (making the graph more accessible and easy to read). I want to see what people want because I personally think this is cool and can go a bunch of different ways.
 
-I really should implement these Coding Hygiene tips from AGENTS.md
-
-- ✅ TypeScript with `"strict": true` preferred. 
-
-everything else ❌
-- **Keep `main.ts` minimal**: Focus only on plugin lifecycle (onload, onunload, addCommand calls). Delegate all feature logic to separate modules.
-- **Split large files**: If any file exceeds ~200-300 lines, consider breaking it into smaller, focused modules.
-- **Use clear module boundaries**: Each file should have a single, well-defined responsibility.
-- Bundle everything into `main.js` (no unbundled runtime deps).
-- Avoid Node/Electron APIs if you want mobile compatibility; set `isDesktopOnly` accordingly.
-- Prefer `async/await` over promise chains; handle errors gracefully.
----
-
 ## Support
 
 Found a bug or have a feature request?
 
-- **Issues**: [GitHub Issues](https://github.com/Lucas-Liona/pulsar-graph/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Lucas-Liona/pulsar-graph/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions)
 
 ---
 
@@ -210,7 +197,7 @@ Want to contribute? Check out the development guide:
 ```bash
 # Clone the repo into your vault's plugins folder
 cd VaultFolder/.obsidian/plugins/
-git clone https://github.com/Lucas-Liona/pulsar-graph.git
+git clone https://github.com/Lucas-Liona/obsidian-pulsar-graph.git
 cd pulsar-graph
 
 # Install dependencies
