@@ -1,227 +1,130 @@
-# Pulsar Graph 💫
+# Pulsar Graph
 
-**Temporal visualization for your Obsidian knowledge graph.** Pulsar Graph adds time-based opacity to graph nodes, helping you visualize when notes were last modified at a glance.
+Fade graph nodes by how recently each note was modified, so the part of your
+vault you are actually working in stands out and the rest recedes.
 
-![Pulsar Graph Demo](https://via.placeholder.com/800x400?text=ADD+DEMO+GIF+HERE)
-<!-- TODO: Add animated GIF showing opacity changes with different fade types -->
+<!-- Demo GIF goes here: docs/demo.gif (see issue #2) -->
 
----
+## How it works
 
-## Features
+Every note gets a recency value between 0 and 1: the oldest note in the vault is
+0, the newest is 1. A fade curve shapes that value, and the result is mapped onto
+the opacity range you configure. That opacity becomes the node's alpha in the
+graph view.
 
-### 🌟 Dynamic Node Opacity
+Opacity is relative to your vault, not to the calendar. The newest note always
+sits at maximum opacity, so a vault you have not touched in a month looks the
+same as one you edited this morning. Absolute time windows are planned
+([#3](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/3)).
 
-Watch your graph come alive as node opacity reflects how recently they were modified:
+## Fade curves
 
-- **Recent notes** appear bright and prominent
-- **Older notes** fade into the background
-- **Visual patterns** emerge showing your active knowledge areas
+| Curve | Shape | Good for |
+| --- | --- | --- |
+| Linear | Opacity tracks recency evenly | An even spread across the vault's history |
+| Exponential | `recency ^ steepness` | Emphasising very recent work; steepness above 1 is steeper, below 1 gentler |
+| Step | Recency rounded onto evenly spaced levels | Reading the graph as distinct bands of age |
 
-### 📊 Three Fade Functions
+<!-- Fade curve comparison image goes here: docs/curves.png (see issue #2) -->
 
-#### Linear Fade
-- Smooth, even transition from old to new
-- Best for: General use, even distribution across time
+## Settings
 
-#### Exponential Fade
-- Curved fade with adjustable steepness
-- Best for: Emphasizing very recent work while keeping older notes visible
-- Steepness slider: Control the curve intensity (0.1 - 10.0)
+| Setting | Range | Default | Applies to |
+| --- | --- | --- | --- |
+| Fade type | Linear, Exponential, Step | Linear | all |
+| Minimum opacity | 0.0 - 1.0 | 0.1 | all |
+| Maximum opacity | 0.0 - 12.0 | 3.0 | all |
+| Steepness | 0.1 - 10.0 | 2.0 | Exponential |
+| Number of steps | 1 - 20 | 5 | Step |
 
-#### Step Fade
-- Discrete opacity levels for clear categorization
-- Best for: Distinct time periods (this week, this month, this quarter, etc.)
-- Configurable steps: Choose 2-10 discrete opacity levels
+Maximum opacity is allowed above 1.0 on purpose. Obsidian multiplies a node's
+opacity by its own fade factor, so a value above 1.0 keeps recent notes at full
+strength while everything older still fades. Minimum opacity is capped at 1.0,
+and the two values cannot cross.
 
-![Fade Type Comparison](https://via.placeholder.com/800x300?text=ADD+COMPARISON+IMAGE+HERE)
-<!-- TODO: Add side-by-side comparison of the three fade types -->
+<!-- Settings screenshot goes here: docs/settings.png (see issue #2) -->
 
-### ⚙️ Customization
+## Behaviour worth knowing
 
-- **Min/Max Opacity**: Set opacity range (0.0 - 12.0) to control visibility
-- **Exponential Steepness**: Fine-tune the exponential curve (0.1 - 10.0)
-- **Step Count**: Choose how many discrete levels for step mode (2-10)
-- **Global & Local Graphs**: Works on both graph views
-
-### ⚡ Performance Optimized
-
-- **Intelligent Caching**: Opacity calculations cached and only recalculated when needed
-- **Workspace-Aware**: Only runs when graph views are open (zero CPU when idle)
-- **Efficient Updates**: Polls every 1 second without impacting graph performance
-
-### 📝 Additional 
-
-- Works with Local Graph and Global Graph View
-- Works with Group Labels
-
----
+- Only markdown notes are graded. Attachments and unresolved links keep the
+  colour the graph gives them, since their timestamps say nothing about when a
+  note was worked on.
+- Group colours survive. The plugin changes a node's alpha and leaves the colour
+  Obsidian assigned it, whether that came from a graph group or the theme.
+- A faded node is still a node. Obsidian draws labels, links and physics
+  independently of node opacity, so a note at minimum opacity remains visible as
+  a label and stays clickable. This is a fade, not a filter; filtering is
+  tracked in
+  [#23](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/23).
+- Updates are event-driven, not timed. Opacity is reapplied when a note changes,
+  when a graph rebuilds its data, and when a setting changes. Nothing runs while
+  the vault is idle.
 
 ## Installation
 
-### From Obsidian Community Plugins (Recommended)
+### Community plugins
 
-1. Open **Settings** → **Community Plugins**
-2. Click **Browse** and search for "Pulsar Graph"
-3. Click **Install**, then **Enable**
+1. **Settings** -> **Community plugins** -> **Browse**
+2. Search for *Pulsar Graph*, then **Install** and **Enable**
 
-### Manual Installation
+### Manual
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases)
-2. Create folder `VaultFolder/.obsidian/plugins/pulsar-graph/`
-3. Copy the files into this folder
-4. Reload Obsidian and enable the plugin in Settings → Community Plugins
-
----
-
-## Usage
-
-1. **Open your graph view** (global or local)
-2. **Open Pulsar Graph settings** (Settings → Pulsar Graph)
-3. **Choose your fade type** (Linear, Exponential, or Step)
-4. **Adjust opacity settings** to your preference
-5. **Watch your graph transform** - opacity updates automatically every second!
-
-### Settings Guide
-
-![Settings Panel](https://via.placeholder.com/600x400?text=ADD+SETTINGS+SCREENSHOT+HERE)
-<!-- TODO: Add screenshot of settings panel with annotations -->
-
-#### Fade Type
-- Choose between Linear, Exponential, or Step fade functions
-
-#### Minimum Opacity (0.0 - 1.0)
-- Opacity for your oldest notes
-- Lower values make old notes more transparent
-
-#### Maximum Opacity (0.0 - 12.0)
-- Opacity for your newest notes
-- Values > 1.0 make recent notes brighter than normal
-
-#### Steepness (Exponential mode only, 0.1 - 10.0)
-- < 1.0: Gentle curve (keeps older notes more visible)
-- = 1.0: Linear (same as Linear mode)
-- \> 1.0: Steep curve (emphasizes very recent notes)
-
-#### Number of Steps (Step mode only, 2-10)
-- How many discrete opacity levels
-- Example: 4 steps = 4 distinct time periods
-
----
-
-## Use Cases
-
-### 📚 Active Research Areas
-Quickly identify which topics you're actively working on vs. archived knowledge
-
-### 🔄 Project Activity
-See which project notes are "hot" and which have gone dormant
-
-### 🧹 Vault Maintenance
-Spot neglected areas of your knowledge base that might need review
-
-### 🎨 Visual Navigation
-Use temporal depth as an additional dimension for navigating large graphs
-
----
-
-## Tips & Tricks
-
-- **Try different fade types** for different vaults - exponential works great for research vaults, step mode for project management
-- **Adjust during review sessions** to highlight notes from specific time periods
-- **Combine with filters** in the graph view for powerful visualization
-
----
-
-## Performance
-
-Pulsar Graph is designed to be lightweight:
-
-- Caches all opacity calculations
-- Only runs when graph views are open
-- Updates asynchronously without blocking UI
-- Tested on vaults with 500+ notes with no perceptible performance impact
-
----
+1. Download `main.js` and `manifest.json` from the
+   [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
+2. Put both in `YourVault/.obsidian/plugins/pulsar-graph/`.
+3. Reload Obsidian and enable the plugin under **Community plugins**.
 
 ## Compatibility
 
-- **Minimum Obsidian Version**: 0.15.0
-- **Platforms**: Desktop and Mobile
-- **Graph Types**: Global Graph and Local Graph
+- Obsidian 1.8.0 or newer
+- Desktop and mobile
+- Global graph and local graph views
 
----
+The plugin reaches into Obsidian's graph renderer, which is not part of the
+public API. It degrades to doing nothing rather than erroring if those internals
+change, but a graph release can still require a fix here.
 
 ## Roadmap
 
-Planned features for future releases:
+Work is tracked in
+[issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues) and grouped
+into [milestones](https://github.com/Lucas-Liona/obsidian-pulsar-graph/milestones).
+The near-term themes:
 
-- [ ] Function visualization graph in settings (exponential, step, linear, or custom bezier curve)
-- [ ] Time window settings (show last X days/months)
-- [ ] Hot-node highlighting (spotlight most recently edited note)
-- [ ] Custom color schemes for temporal visualization (style.css)
-- [ ] Export graph as image with opacity applied
-- [ ] Opacity can afffect Links/Titles, Tag Nodes?
-- [ ] Show path of last visited files
-- [ ] Put a 'native' settings tab directly on the graph view (with react)
-- [ ] Ensure it works with other Graph plugins like 3D Graph and Extended Graph Plugins
-- [ ] Hover note to see age
-- [ ] Normalize to now V.S. Normalize to oldest-note (notes decay if you dont use vault V.S. note opacity is relative and always the same until you modify notes)
+- **Legibility** - a note's age on hover, a live preview of the fade curve in
+  settings, a spotlight on the most recently edited note.
+- **Time model** - absolute time windows, normalisation that survives a vault
+  where most notes are old and a few are new.
+- **Reach** - compatibility with other graph plugins, opacity pooled across
+  neighbours, a per-note edit history view.
 
-Maybe out of scope
-- [ ] Scale node by length of content?
-- [ ] Revisit X times streak mechanic (if you modify a note everyday for X days (or a set number of times like 5 in a day), it becomes golden) (this is more of a learning/goal-setting idea to see what notes you continually revisit)
-- [ ] Group nodes by age?
-- [ ] Smooth opacity across connected nodes by distance (i.e. notes of the same subject (maybe connected by an index), all get similiar opacities. This may be better for large vaults)
-- [ ] Basic Statistics about usage. (
-  i.e.
-  Last note edited: 1 Day - DifferentialEquations.md
-  Oldest Note: 416 Days - HomePage.md
-  Average Note: 30 Days Old
-)
-
-Note*: This is currently a pet-project MVP that I wanted for myself, and decided to create. I focused on being fast, critically safe, and doing 1 thing well (making the graph more accessible and easy to read). I want to see what people want because I personally think this is cool and can go a bunch of different ways.
-
-## Support
-
-Found a bug or have a feature request?
-
-- **Issues**: [GitHub Issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions)
-
----
+Ideas and bug reports are welcome in the issue tracker.
 
 ## Development
 
-Want to contribute? Check out the development guide:
-
 ```bash
-# Clone the repo into your vault's plugins folder
-cd VaultFolder/.obsidian/plugins/
 git clone https://github.com/Lucas-Liona/obsidian-pulsar-graph.git
-cd pulsar-graph
-
-# Install dependencies
+cd obsidian-pulsar-graph
 npm install
-
-# Build the plugin
-npm run build
-
-# Or run in watch mode for development
-npm run dev
+npm run dev     # watch build
+npm run build   # production build, type-check included
+npm run lint
 ```
 
----
+`main.js` is a build artifact and is not committed. To test a build in Obsidian,
+copy it next to `manifest.json` in a vault's plugin folder and reload the plugin.
+[AGENTS.md](AGENTS.md) has the repo's conventions and release process.
+
+## About
+
+This started as a pet project: I wanted to see which corner of my own vault was
+alive, and the graph view would not tell me. It tries to do one thing well and
+stay out of the way. I wrote the original plugin myself and built v1.0 with
+Claude as a pair; the git history shows which commits are which.
+
+The plugin is local and offline. It reads note modification times and nothing
+else — no network calls, no telemetry, no vault content.
 
 ## License
 
-[MIT License](LICENSE)
-
----
-
-## Acknowledgments
-
-Built with the [Obsidian Plugin API](https://github.com/obsidianmd/obsidian-api)
-
----
-
-**Enjoying Pulsar Graph?** Consider [buying me a coffee](https://buymeacoffee.com) or starring the repo!
+[MIT](LICENSE)
