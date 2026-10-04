@@ -1,17 +1,18 @@
-import { Plugin, TFile } from 'obsidian';
-import { applyOpacity, countGraphLeaves, getGraphRenderers } from './graph';
+import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
+import { applyOpacity, getGraphRenderers, GraphRenderer, hookRendererData, repaint, Unhook } from './graph';
 import { OpacityStore } from './opacity-store';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
-const UPDATE_INTERVAL_MS = 1000;
+/** Coalesces the burst of modify events Obsidian fires while a note is typed. */
+const UPDATE_DELAY_MS = 150;
 
 export default class PulsarGraphPlugin extends Plugin {
     settings: PulsarGraphSettings = DEFAULT_SETTINGS;
 
     private readonly store = new OpacityStore(() => this.settings);
+    private readonly unhooks = new Map<GraphRenderer, Unhook>();
 
-    private graphsOpen = false;
-    private updateInterval: number | null = null;
+    private readonly updateSoon = debounce(() => this.updateGraphs(), UPDATE_DELAY_MS, true);
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -19,39 +20,32 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.store.build(this.app.vault.getMarkdownFiles());
 
-        this.registerEvent(this.app.vault.on('create', (file) => {
-            if (file instanceof TFile) {
-                this.store.recordChange(file);
-            }
-        }));
-
-        this.registerEvent(this.app.vault.on('modify', (file) => {
-            if (file instanceof TFile) {
-                this.store.recordChange(file);
-            }
-        }));
+        this.registerEvent(this.app.vault.on('create', (file) => this.onFileChanged(file)));
+        this.registerEvent(this.app.vault.on('modify', (file) => this.onFileChanged(file)));
 
         this.registerEvent(this.app.vault.on('delete', (file) => {
-            if (file instanceof TFile) {
+            if (isNote(file)) {
                 this.store.recordDelete(file);
+                this.updateSoon();
             }
         }));
 
         this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-            if (file instanceof TFile) {
-                this.store.forget(oldPath);
-                this.store.recordChange(file);
-            }
+            this.store.forget(oldPath);
+            this.onFileChanged(file);
         }));
 
-        // Polling only runs while a graph is on screen, so track when that changes.
-        this.registerEvent(this.app.workspace.on('layout-change', () => this.syncPolling()));
-        this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.syncPolling()));
-        this.app.workspace.onLayoutReady(() => this.syncPolling());
+        // Graph views come and go, and each brings its own renderer to hook.
+        this.registerEvent(this.app.workspace.on('layout-change', () => this.syncRenderers()));
+        this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.syncRenderers()));
+        this.app.workspace.onLayoutReady(() => this.syncRenderers());
     }
 
     onunload(): void {
-        this.stopPolling();
+        for (const unhook of this.unhooks.values()) {
+            unhook();
+        }
+        this.unhooks.clear();
     }
 
     async loadSettings(): Promise<void> {
@@ -61,53 +55,64 @@ export default class PulsarGraphPlugin extends Plugin {
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
         this.store.markStale();
+        this.updateGraphs();
     }
 
-    private syncPolling(): void {
-        const graphsOpen = countGraphLeaves(this.app) > 0;
-        if (graphsOpen === this.graphsOpen) {
+    private onFileChanged(file: TAbstractFile): void {
+        if (!isNote(file)) {
             return;
         }
 
-        this.graphsOpen = graphsOpen;
-
-        if (graphsOpen) {
-            this.updateGraphs();
-            this.startPolling();
-        } else {
-            this.stopPolling();
-        }
+        this.store.recordChange(file);
+        this.updateSoon();
     }
 
-    private startPolling(): void {
-        if (this.updateInterval !== null) {
-            return;
+    /**
+     * Hooks renderers that have appeared and releases ones whose view is gone,
+     * so no graph keeps a patched setData after its leaf closes.
+     */
+    private syncRenderers(): void {
+        const open = new Set(getGraphRenderers(this.app));
+
+        for (const [renderer, unhook] of this.unhooks) {
+            if (!open.has(renderer)) {
+                unhook();
+                this.unhooks.delete(renderer);
+            }
         }
 
-        // Obsidian resets node colours as it refreshes graph data, so opacity
-        // has to be reapplied. Polling keeps that out of the render loop.
-        this.updateInterval = window.setInterval(() => this.updateGraphs(), UPDATE_INTERVAL_MS);
-        this.registerInterval(this.updateInterval);
-    }
+        for (const renderer of open) {
+            if (this.unhooks.has(renderer)) {
+                continue;
+            }
 
-    private stopPolling(): void {
-        if (this.updateInterval !== null) {
-            window.clearInterval(this.updateInterval);
-            this.updateInterval = null;
+            const unhook = hookRendererData(renderer, () => this.applyTo(renderer));
+            if (unhook) {
+                this.unhooks.set(renderer, unhook);
+            }
+
+            this.applyTo(renderer);
         }
     }
 
     private updateGraphs(): void {
-        const renderers = getGraphRenderers(this.app);
-        if (renderers.length === 0) {
-            return;
-        }
-
-        this.store.refresh();
-
-        for (const renderer of renderers) {
-            applyOpacity(renderer.nodeLookup, this.store);
-            renderer.renderCallback?.();
+        for (const renderer of getGraphRenderers(this.app)) {
+            this.applyTo(renderer);
         }
     }
+
+    private applyTo(renderer: GraphRenderer): void {
+        this.store.refresh();
+        applyOpacity(renderer, this.store);
+        repaint(renderer);
+    }
+}
+
+/**
+ * Only notes are graded. Attachments can appear as graph nodes, but their
+ * timestamps say nothing about when a note was worked on, and they would
+ * stretch the range every opacity is normalized against.
+ */
+function isNote(file: TAbstractFile): file is TFile {
+    return file instanceof TFile && file.extension === 'md';
 }
