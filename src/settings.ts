@@ -18,7 +18,11 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     numSteps: 5
 };
 
+/** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
+
+/** The oldest note should never be boosted, only dimmed. */
+const MIN_OPACITY_LIMIT = 1;
 
 /**
  * Reads saved settings, falling back to defaults for anything missing or
@@ -50,6 +54,15 @@ function parseNumber(value: unknown, fallback: number): number {
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+interface OpacityField {
+    name: string;
+    description: string;
+    placeholder: number;
+    read: () => number;
+    write: (opacity: number) => void;
+    bounds: () => { lowest: number; highest: number };
+}
+
 export class PulsarSettingTab extends PluginSettingTab {
     constructor(app: App, private readonly plugin: PulsarGraphPlugin) {
         super(app, plugin);
@@ -77,35 +90,23 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
             });
 
-        new Setting(containerEl)
-            .setName('Minimum opacity')
-            .setDesc('Opacity for oldest notes (0.0 to 1.0)')
-            .addText((text) => text
-                .setPlaceholder(String(DEFAULT_SETTINGS.minOpacity))
-                .setValue(String(settings.minOpacity))
-                .onChange(async (value) => {
-                    const opacity = Number.parseFloat(value);
-                    if (Number.isFinite(opacity) && opacity >= 0 && opacity <= 1) {
-                        settings.minOpacity = opacity;
-                        await this.plugin.saveSettings();
-                    }
-                })
-            );
+        this.addOpacityField({
+            name: 'Minimum opacity',
+            description: `Opacity for the oldest note (0.0 to ${MIN_OPACITY_LIMIT.toFixed(1)}), and never above the maximum`,
+            placeholder: DEFAULT_SETTINGS.minOpacity,
+            read: () => settings.minOpacity,
+            write: (opacity) => { settings.minOpacity = opacity; },
+            bounds: () => ({ lowest: 0, highest: Math.min(MIN_OPACITY_LIMIT, settings.maxOpacity) })
+        });
 
-        new Setting(containerEl)
-            .setName('Maximum opacity')
-            .setDesc(`Opacity for newest notes (0.0 to ${MAX_OPACITY_LIMIT.toFixed(1)})`)
-            .addText((text) => text
-                .setPlaceholder(String(DEFAULT_SETTINGS.maxOpacity))
-                .setValue(String(settings.maxOpacity))
-                .onChange(async (value) => {
-                    const opacity = Number.parseFloat(value);
-                    if (Number.isFinite(opacity) && opacity >= 0 && opacity <= MAX_OPACITY_LIMIT) {
-                        settings.maxOpacity = opacity;
-                        await this.plugin.saveSettings();
-                    }
-                })
-            );
+        this.addOpacityField({
+            name: 'Maximum opacity',
+            description: `Opacity for the newest note (0.0 to ${MAX_OPACITY_LIMIT.toFixed(1)}), and never below the minimum`,
+            placeholder: DEFAULT_SETTINGS.maxOpacity,
+            read: () => settings.maxOpacity,
+            write: (opacity) => { settings.maxOpacity = opacity; },
+            bounds: () => ({ lowest: settings.minOpacity, highest: MAX_OPACITY_LIMIT })
+        });
 
         if (settings.fadeType === 'exponential') {
             new Setting(containerEl)
@@ -136,5 +137,38 @@ export class PulsarSettingTab extends PluginSettingTab {
                     })
                 );
         }
+    }
+
+    /**
+     * An opacity field, clamped into its allowed range so the two values cannot
+     * cross. Entries are text rather than a slider because the useful range
+     * depends on the theme and on how far the vault's note ages spread.
+     */
+    private addOpacityField(field: OpacityField): void {
+        new Setting(this.containerEl)
+            .setName(field.name)
+            .setDesc(field.description)
+            .addText((text) => {
+                text
+                    .setPlaceholder(String(field.placeholder))
+                    .setValue(String(field.read()))
+                    .onChange(async (value) => {
+                        const entered = Number.parseFloat(value);
+                        if (!Number.isFinite(entered)) {
+                            return;
+                        }
+
+                        const { lowest, highest } = field.bounds();
+                        field.write(Math.min(Math.max(entered, lowest), highest));
+                        await this.plugin.saveSettings();
+                    });
+
+                // Entries are clamped and unparseable ones are ignored, so the
+                // field is rewritten once editing stops: what is shown is then
+                // always what is stored.
+                text.inputEl.addEventListener('blur', () => {
+                    text.setValue(String(field.read()));
+                });
+            });
     }
 }
