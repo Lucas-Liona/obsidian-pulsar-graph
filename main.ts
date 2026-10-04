@@ -126,7 +126,6 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private async buildCache(): Promise<void> {
-        console.log('Building Cache...');
         const files = this.app.vault.getMarkdownFiles();
 
         let oldest = Date.now();
@@ -142,8 +141,6 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.oldestMtime = oldest;
         this.newestMtime = newest;
-
-        console.log(`Pulsar: Cached ${files.length} files`);
     }
 
     private onFileChange(file: TFile): void {
@@ -301,10 +298,8 @@ export default class PulsarGraphPlugin extends Plugin {
             const mtime = this.mtimeCache.get(path);
             if (mtime === undefined) continue;
 
-            const graphNode = node as GraphNode;
-
             // Get existing color RGB, or use default for ungrouped nodes
-            const currentColorRgb = graphNode.color?.rgb ?? DEFAULT_COLOR_RGB;
+            const currentColorRgb = node.color?.rgb ?? DEFAULT_COLOR_RGB;
 
             let opacity = this.opacityCache.get(path);
 
@@ -317,7 +312,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 continue;
             }
 
-            graphNode.color = {
+            node.color = {
                 a: opacity,
                 rgb: currentColorRgb
             };
@@ -337,7 +332,8 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const stored = (await this.loadData()) as Partial<PulsarGraphSettings> | null;
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, stored);
     }
 
     async saveSettings() {
@@ -359,11 +355,9 @@ class PulsarSettingTab extends PluginSettingTab {
         
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Pulsar Graph Settings' });
-        
         new Setting(containerEl)
-            .setName('Fade Type')
-            .setDesc('Choose the function that determines how Opacity is calculated')
+            .setName('Fade type')
+            .setDesc('Choose the function that determines how opacity is calculated')
             .addDropdown(drop => drop
                 .addOption('Linear', 'Linear')
                 .addOption('Exponential', 'Exponential')
@@ -377,7 +371,7 @@ class PulsarSettingTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName('Minimum Opacity')
+            .setName('Minimum opacity')
             .setDesc('Opacity for oldest notes (0.0 to 1.0)')
             .addText(text => text
                 .setPlaceholder('0.2')
@@ -392,7 +386,7 @@ class PulsarSettingTab extends PluginSettingTab {
             );
             
         new Setting(containerEl)
-            .setName('Maximum Opacity')
+            .setName('Maximum opacity')
             .setDesc('Opacity for newest notes (0.0 to 12.0)')
             .addText(text => text
                 .setPlaceholder('1.0')
@@ -423,7 +417,7 @@ class PulsarSettingTab extends PluginSettingTab {
                 break;
             case 'Step':
                 new Setting(containerEl)
-                    .setName('Number of Steps')
+                    .setName('Number of steps')
                     .setDesc('Controls the number of different possible opacities')
                     .addSlider(slider => slider
                         .setLimits(1, 20, 1)
