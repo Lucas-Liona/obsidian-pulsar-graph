@@ -5,9 +5,11 @@ Obsidian community plugin that applies time-based opacity to graph nodes, so
 recently-modified notes stand out and stale ones fade.
 
 ## Project shape
-- TypeScript (`main.ts`) bundled to `main.js` by esbuild; loaded by Obsidian.
-- Currently a single file (~440 lines): plugin lifecycle, a settings tab,
-  opacity caching, and three fade functions (linear, exponential, step).
+- TypeScript in `src/`, bundled to `main.js` by esbuild; loaded by Obsidian.
+- `src/main.ts` is plugin lifecycle only. `src/settings.ts` holds the settings
+  type, defaults and tab; `src/fade.ts` the three curves (linear, exponential,
+  step); `src/opacity-store.ts` the mtime and opacity caches;
+  `src/graph.ts` Obsidian's undocumented graph internals and node updates.
 - Works on the global and local graph views. Local-only, no network calls.
 - Release artifacts: `main.js` and `manifest.json`. There is no `styles.css`;
   the plugin adds no styling of its own.
