@@ -47,7 +47,7 @@ export class OpacityStore {
 
     recordDelete(file: TFile): void {
         const mtime = this.mtimes.get(file.path);
-        this.mtimes.delete(file.path);
+        this.forget(file.path);
 
         if (mtime === this.oldestMtime || mtime === this.newestMtime) {
             this.recalculateRange();
@@ -58,6 +58,7 @@ export class OpacityStore {
     /** Drops a path the vault no longer has, such as the old side of a rename. */
     forget(path: string): void {
         this.mtimes.delete(path);
+        this.opacities.delete(path);
     }
 
     /** Marks every cached opacity for recalculation, after a settings change. */
