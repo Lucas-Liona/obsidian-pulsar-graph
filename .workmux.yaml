@@ -1,0 +1,7 @@
+# Worktrees live on the Linux filesystem; the vault copy of the plugin stays on
+# master and only receives built output for testing. npm over /mnt/c is slow
+# enough to matter, so each worktree installs its own dependencies rather than
+# symlinking them from the vault checkout.
+post_create:
+  - "<global>"
+  - npm install --no-audit --no-fund

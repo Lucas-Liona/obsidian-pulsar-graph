@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      # Obsidian downloads the release whose tag equals the manifest version,
+      # so a mismatch ships a release no one can install.
+      - name: Check tag matches manifest version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          manifest=$(node -p "require('./manifest.json').version")
+          if [ "$tag" != "$manifest" ]; then
+            echo "Tag '$tag' does not match manifest version '$manifest'." >&2
+            exit 1
+          fi
+
+      - run: npm run build
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" --title="$tag" --draft main.js manifest.json
