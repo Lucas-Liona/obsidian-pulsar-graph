@@ -2,8 +2,8 @@
 	"id": "pulsar-graph",
 	"name": "Pulsar Graph",
 	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Temporal visualization for your knowledge graph",
+	"minAppVersion": "1.8.0",
+	"description": "Fade graph nodes by how recently each note was modified.",
 	"author": "Lucas-Liona",
 	"authorUrl": "https://github.com/Lucas-Liona",
 	"isDesktopOnly": false
