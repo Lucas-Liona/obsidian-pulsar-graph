@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.11.0] - 2026-10-05
+
+### Added
+
+- **Group temperature** and **Group notes by**, off by default. Every note is
+  pulled toward the middle of its group, so a region of the vault reads as alive
+  or as cold without being picked out note by note. Part of #25.
+
+  Unlike the neighbour carry this moves notes both ways: a stale note in a busy
+  folder comes up and a fresh one in an abandoned corner goes down, which is the
+  whole point of it and why it is a separate setting.
+
+  Grouping by folder is the default because grouping by island of linked notes
+  only means something in a vault that has islands. A real 1060 note vault splits
+  into 686 of them, 633 being single notes with one blob of 421 in the middle,
+  while the same vault's folders differ from a mean brightness of 0.75 down to
+  0.11. Both are offered; the one that usually works is the default.
+
 ## [1.10.0] - 2026-10-05
 
 ### Added

@@ -42,7 +42,18 @@ export interface PulsarGraphSettings {
     spotlightStrength: number;
     neighbourBleed: number;
     neighbourHops: number;
+    clusterWarmth: number;
+    clusterBy: ClusterBy;
 }
+
+export type ClusterBy = 'folder' | 'component';
+
+const CLUSTER_MODES = ['folder', 'component'] as const;
+
+const CLUSTER_LABELS: Record<ClusterBy, string> = {
+    folder: 'The folder a note is in',
+    component: 'The island of notes it links to'
+};
 
 const AGE_MODES = ['off', 'hover', 'titles'] as const;
 
@@ -76,7 +87,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
     neighbourBleed: 0,
-    neighbourHops: 1
+    neighbourHops: 1,
+    clusterWarmth: 0,
+    clusterBy: 'folder'
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
@@ -88,6 +101,8 @@ const WINDOW_RANGE = { lowest: 1, highest: 365, step: 1 };
 const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
 
 const HOPS_RANGE = { lowest: 1, highest: 3, step: 1 };
+
+const WARMTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -205,7 +220,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         spotlightColor: parseColor(data.spotlightColor),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
-        neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest))
+        neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest)),
+        clusterWarmth: clamp(parseNumber(data.clusterWarmth, DEFAULT_SETTINGS.clusterWarmth), WARMTH_RANGE.lowest, WARMTH_RANGE.highest),
+        clusterBy: CLUSTER_MODES.find((mode) => mode === data.clusterBy) ?? DEFAULT_SETTINGS.clusterBy
     };
 }
 
@@ -417,6 +434,40 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Group temperature')
+                .setDesc('Pulls each note toward the middle of its group, so a part of the vault reads as alive or as cold at a glance. Unlike the glow below this moves notes both ways. Set it to zero to turn it off'),
+            WARMTH_RANGE,
+            settings.clusterWarmth,
+            (value) => {
+                const wasOff = settings.clusterWarmth === 0;
+                settings.clusterWarmth = value;
+                this.save();
+
+                if (wasOff !== (value === 0)) {
+                    this.display();
+                }
+            }
+        );
+
+        if (settings.clusterWarmth > 0) {
+            new Setting(containerEl)
+                .setName('Group notes by')
+                .setDesc('Folders suit most vaults. Islands of linked notes suit a vault held together by links rather than by structure, but many vaults are one big island and a sea of unlinked notes')
+                .addDropdown((dropdown) => {
+                    for (const mode of CLUSTER_MODES) {
+                        dropdown.addOption(mode, CLUSTER_LABELS[mode]);
+                    }
+
+                    dropdown.setValue(settings.clusterBy).onChange(async (value) => {
+                        settings.clusterBy = value as ClusterBy;
+                        await this.plugin.saveSettings();
+                        this.renderPreview();
+                    });
+                });
+        }
 
         new NumberControl(
             new Setting(containerEl)

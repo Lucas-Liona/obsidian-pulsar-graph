@@ -143,6 +143,8 @@ A preset only moves the settings that shape the fade. What you've chosen to
 | Number of steps | 1 – 20 | 5 | Step |
 | Show note age | Never, On hover, With titles | On hover | all |
 | Age the links too | Off, Match the newer note, Fade between the two | Off | all |
+| Group temperature | 0.0 - 1.0 | 0 (off) | all |
+| Group notes by | Folder, Linked island | Folder | Temperature above 0 |
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | off | all |
@@ -179,6 +181,31 @@ everything else. Obsidian's own page preview still works alongside it.
 That last one is worth a try if you already use the text fade threshold the way I
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
+
+### Group temperature
+
+**Group temperature** pulls every note toward the middle of the group it belongs
+to, so a part of the vault reads as alive or as cold at a glance instead of
+having to be picked out note by note. Unlike the glow below, it moves notes
+**both ways**: a stale note in a busy folder comes up, a fresh one in an
+abandoned corner goes down.
+
+Group by folder or by island of linked notes. Folders suit most vaults — mine
+splits into regions that genuinely differ:
+
+| Folder | Notes | Mean brightness |
+| --- | ---: | ---: |
+| 2 Areas | 177 | 0.75 |
+| _Journal | 387 | 0.17 |
+| 3 Notes | 78 | 0.17 |
+| 4 Reference | 81 | 0.14 |
+| 5 Archive | 206 | 0.11 |
+
+Islands of linked notes only work if your vault actually has islands. Mine has
+686 of them, and 633 are single notes with one blob of 421 in the middle, so
+folders tell me far more. Check yours before reaching for it.
+
+Off by default.
 
 ### Neighbour glow
 

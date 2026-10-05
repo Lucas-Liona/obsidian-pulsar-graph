@@ -265,7 +265,9 @@ export default class PulsarGraphPlugin extends Plugin {
             spotlightStrength: this.settings.spotlightStrength,
             spotlight: graph.spotlight,
             neighbourBleed: this.settings.neighbourBleed,
-            neighbourHops: this.settings.neighbourHops
+            neighbourHops: this.settings.neighbourHops,
+            clusterWarmth: this.settings.clusterWarmth,
+            clusterBy: this.settings.clusterBy
         });
         repaint(renderer);
     }
