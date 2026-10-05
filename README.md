@@ -145,6 +145,9 @@ A preset only moves the settings that shape the fade. What you've chosen to
 | Age the links too | Off, Match the newer note, Fade between the two | Off | all |
 | Group temperature | 0.0 - 1.0 | 0 (off) | all |
 | Group notes by | Folder, Linked island | Folder | Temperature above 0 |
+| Trace what was written together | on / off | off | all |
+| Counts as one sitting | 1 - 240 minutes | 30 | Tracing on |
+| Trail colour | any | blue | Tracing on |
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | off | all |
@@ -237,6 +240,20 @@ That second one is worth it for the discovery thing: a bright line running out o
 today's work and dimming into something you wrote a year ago is exactly the note
 you'd forgotten you had. Off by default, like everything that changes how the
 graph is drawn beyond the nodes themselves.
+
+### What you wrote together
+
+**Trace what was written together** colours the link between two notes that were
+saved close enough together to have been open in the same sitting. It says
+nothing about *how long ago* — the fade already does that — so the two read as
+separate facts: colour for togetherness, brightness for age.
+
+How much it catches depends on how you work. On my vault a 5 minute window
+already marks 246 of 692 links, and stretching it to 4 hours only reaches 312,
+which says most of my linked notes were written in genuine bursts rather than
+drifting together over an afternoon.
+
+Off by default, with its own colour kept clear of the spotlight's.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in

@@ -44,6 +44,9 @@ export interface PulsarGraphSettings {
     neighbourHops: number;
     clusterWarmth: number;
     clusterBy: ClusterBy;
+    sessionTrails: boolean;
+    sessionGapMinutes: number;
+    trailColor: string;
 }
 
 export type ClusterBy = 'folder' | 'component';
@@ -89,7 +92,10 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
-    clusterBy: 'folder'
+    clusterBy: 'folder',
+    sessionTrails: false,
+    sessionGapMinutes: 30,
+    trailColor: '#5ac8fa'
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
@@ -103,6 +109,9 @@ const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
 const HOPS_RANGE = { lowest: 1, highest: 3, step: 1 };
 
 const WARMTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
+
+/** Five minutes is one distracted pass; four hours is a long sitting. */
+const SESSION_RANGE = { lowest: 1, highest: 240, step: 1 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -217,12 +226,15 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         linkRecency: LINK_MODES.find((mode) => mode === data.linkRecency) ?? DEFAULT_SETTINGS.linkRecency,
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
-        spotlightColor: parseColor(data.spotlightColor),
+        spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
         neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest)),
         clusterWarmth: clamp(parseNumber(data.clusterWarmth, DEFAULT_SETTINGS.clusterWarmth), WARMTH_RANGE.lowest, WARMTH_RANGE.highest),
-        clusterBy: CLUSTER_MODES.find((mode) => mode === data.clusterBy) ?? DEFAULT_SETTINGS.clusterBy
+        clusterBy: CLUSTER_MODES.find((mode) => mode === data.clusterBy) ?? DEFAULT_SETTINGS.clusterBy,
+        sessionTrails: parseBoolean(data.sessionTrails, DEFAULT_SETTINGS.sessionTrails),
+        sessionGapMinutes: Math.round(clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_RANGE.lowest, SESSION_RANGE.highest)),
+        trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor)
     };
 }
 
@@ -260,8 +272,8 @@ function parseAgeMode(value: unknown, legacy: unknown): AgeMode {
 }
 
 /** Only a six digit hex colour survives; anything else falls back. */
-function parseColor(value: unknown): string {
-    return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : DEFAULT_SETTINGS.spotlightColor;
+function parseColor(value: unknown, fallback: string): string {
+    return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
 }
 
 function parseNumber(value: unknown, fallback: number): number {
@@ -514,6 +526,43 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        new Setting(containerEl)
+            .setName('Trace what was written together')
+            .setDesc('Colour the link between two notes that were saved close enough together to have been open in the same sitting. It says nothing about how long ago, which the fade is already for')
+            .addToggle((toggle) => toggle
+                .setValue(settings.sessionTrails)
+                .onChange(async (value) => {
+                    settings.sessionTrails = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.sessionTrails) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Counts as one sitting')
+                    .setDesc('How many minutes apart two notes can be saved and still be treated as worked on together'),
+                SESSION_RANGE,
+                settings.sessionGapMinutes,
+                (value) => {
+                    settings.sessionGapMinutes = Math.round(value);
+                    this.save();
+                }
+            );
+
+            new Setting(containerEl)
+                .setName('Trail colour')
+                .setDesc('Kept clear of the spotlight colour by default, so the two mean different things on sight')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.trailColor)
+                    .onChange(async (value) => {
+                        settings.trailColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+        }
 
         new Setting(containerEl)
             .setName('Show the open note\'s age in the status bar')

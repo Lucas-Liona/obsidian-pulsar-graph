@@ -174,8 +174,11 @@ export default class PulsarGraphPlugin extends Plugin {
         labels.setMode(this.settings.ageLabels);
 
         const spotlight: SpotlightState = {};
-        const links = new LinkShading(renderer, strengthOf);
+        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
         links.setMode(this.settings.linkRecency);
+        links.setTrails(this.settings.sessionTrails
+            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor) }
+            : null);
 
         const releaseData = hookRendererData(renderer, () => {
             // Obsidian has just rewritten every colour from group data, so the
@@ -257,6 +260,9 @@ export default class PulsarGraphPlugin extends Plugin {
 
         graph.labels.setMode(this.settings.ageLabels);
         graph.links.setMode(this.settings.linkRecency);
+        graph.links.setTrails(this.settings.sessionTrails
+            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor) }
+            : null);
 
         this.store.refresh();
         graph.pooled.byPath = applyOpacity(renderer, this.store, {

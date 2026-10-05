@@ -11,6 +11,13 @@ const RAMP_WIDTH = 64;
 
 export type LinkRecency = 'off' | 'uniform' | 'gradient';
 
+export interface TrailOptions {
+    /** Two notes saved within this long of each other were worked on together. */
+    gapMs: number;
+    /** What such a link is painted, as a packed 0xRRGGBB. */
+    rgb: number;
+}
+
 /**
  * Carries note age into the links between notes.
  *
@@ -24,11 +31,13 @@ export class LinkShading {
     private readonly ramps = new Map<string, GraphTexture>();
     private plainTexture: GraphTexture | undefined;
     private mode: LinkRecency = 'off';
+    private trails: TrailOptions | null = null;
     private gradientsWork = true;
 
     constructor(
         private readonly renderer: GraphRenderer,
-        private readonly opacityOf: (id: string) => number | undefined
+        private readonly opacityOf: (id: string) => number | undefined,
+        private readonly mtimeOf: (id: string) => number | undefined
     ) {}
 
     setMode(mode: LinkRecency): void {
@@ -38,9 +47,19 @@ export class LinkShading {
         }
     }
 
+    /**
+     * Trails are shown by colour and age by brightness, so the two say
+     * different things about the same link instead of competing for the one
+     * channel. Obsidian eases a link's tint back on its own once this stops
+     * writing it, so switching trails off needs nothing undone.
+     */
+    setTrails(trails: TrailOptions | null): void {
+        this.trails = trails;
+    }
+
     /** Runs after a frame, where the renderer has just set every link's alpha. */
     sync(): void {
-        if (this.mode === 'off') {
+        if (this.mode === 'off' && !this.trails) {
             return;
         }
 
@@ -49,6 +68,14 @@ export class LinkShading {
         for (const link of this.renderer.links ?? []) {
             const line = link.line;
             if (!link.rendered || !line) {
+                continue;
+            }
+
+            if (this.trails && this.wasWorkedOnTogether(link)) {
+                line.tint = this.trails.rgb;
+            }
+
+            if (this.mode === 'off') {
                 continue;
             }
 
@@ -68,6 +95,23 @@ export class LinkShading {
                 this.paintRamp(line, low / high, (source ?? 1) < (target ?? 1));
             }
         }
+    }
+
+    /**
+     * Two linked notes saved close enough together that they were almost
+     * certainly open in the same sitting. It says nothing about how long ago
+     * that sitting was, which is what the fade is already for.
+     */
+    private wasWorkedOnTogether(link: GraphLink): boolean {
+        const gap = this.trails?.gapMs;
+        const source = link.source?.id === undefined ? undefined : this.mtimeOf(link.source.id);
+        const target = link.target?.id === undefined ? undefined : this.mtimeOf(link.target.id);
+
+        if (gap === undefined || source === undefined || target === undefined) {
+            return false;
+        }
+
+        return Math.abs(source - target) <= gap;
     }
 
     destroy(): void {
