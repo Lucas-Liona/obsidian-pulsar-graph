@@ -12,6 +12,8 @@ interface AttachedGraph {
     release: Unhook;
     labels: AgeLabels;
     links: LinkShading;
+    /** What each node was last drawn at, once neighbours have had their say. */
+    pooled: { byPath: Map<string, number> | null };
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
     frames: FrameHook | null;
     spotlight: SpotlightState;
@@ -163,11 +165,16 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private attach(renderer: GraphRenderer): AttachedGraph {
-        const labels = new AgeLabels(renderer, (path) => this.describeAge(path));
+        // Labels, links and nodes all read the same number, so a node lifted by
+        // a neighbour carries its date and its links up with it.
+        const pooled: { byPath: Map<string, number> | null } = { byPath: null };
+        const strengthOf = (path: string): number | undefined => pooled.byPath?.get(path) ?? this.store.opacityFor(path);
+
+        const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
         labels.setMode(this.settings.ageLabels);
 
         const spotlight: SpotlightState = {};
-        const links = new LinkShading(renderer, (id) => this.store.opacityFor(id));
+        const links = new LinkShading(renderer, strengthOf);
         links.setMode(this.settings.linkRecency);
 
         const releaseData = hookRendererData(renderer, () => {
@@ -196,6 +203,7 @@ export default class PulsarGraphPlugin extends Plugin {
         return {
             labels,
             links,
+            pooled,
             frames,
             spotlight,
             release: () => {
@@ -217,13 +225,13 @@ export default class PulsarGraphPlugin extends Plugin {
      * The strength returned is the note's own opacity, so an age fades along
      * with the node it belongs to rather than sitting bright over a dim one.
      */
-    private describeAge(path: string): AgeText | undefined {
+    private describeAge(path: string, strengthOf: (path: string) => number | undefined): AgeText | undefined {
         const mtime = this.store.mtimeFor(path);
         if (mtime === undefined) {
             return undefined;
         }
 
-        const opacity = this.store.opacityFor(path) ?? this.store.cacheOpacityFor(path, mtime);
+        const opacity = strengthOf(path) ?? this.store.cacheOpacityFor(path, mtime);
 
         return {
             text: formatAge(mtime, Date.now()),
@@ -251,11 +259,13 @@ export default class PulsarGraphPlugin extends Plugin {
         graph.links.setMode(this.settings.linkRecency);
 
         this.store.refresh();
-        applyOpacity(renderer, this.store, {
+        graph.pooled.byPath = applyOpacity(renderer, this.store, {
             spotlightNewest: this.settings.spotlightNewest,
             spotlightRgb: parseHexColor(this.settings.spotlightColor),
             spotlightStrength: this.settings.spotlightStrength,
-            spotlight: graph.spotlight
+            spotlight: graph.spotlight,
+            neighbourBleed: this.settings.neighbourBleed,
+            neighbourHops: this.settings.neighbourHops
         });
         repaint(renderer);
     }

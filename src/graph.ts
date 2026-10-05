@@ -67,6 +67,9 @@ export interface GraphNode {
     rendered?: boolean;
     /** How far the title is nudged clear of the node while it is hovered. */
     moveText?: number;
+    /** The displayed adjacency, keyed by the id at the other end. */
+    forward?: Record<string, unknown>;
+    reverse?: Record<string, unknown>;
     text?: GraphText | null;
     circle?: { tint: number } | null;
     getSize?: () => number;
@@ -137,6 +140,10 @@ export interface OpacityOptions {
     spotlightRgb: number;
     /** 0 leaves the node's own colour alone, 1 replaces it outright. */
     spotlightStrength: number;
+    /** How much of a neighbour's brightness carries over. 0 switches it off. */
+    neighbourBleed: number;
+    /** How many links the carry travels along. */
+    neighbourHops: number;
     /**
      * The node the spotlight is currently painted over, and the colour it had
      * before. Node colour is the only place a graph group's colour lives, so
@@ -153,20 +160,86 @@ export interface SpotlightState {
     paintedRgb?: number;
 }
 
-/** Writes each node's cached opacity into the colour the renderer draws with. */
-export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): void {
+/**
+ * Lets a bright note lift the notes it links to, so an area being worked in
+ * reads as a region rather than as scattered points.
+ *
+ * Each pass takes the best of a node's own brightness and a fraction of its
+ * brightest neighbour, so a second pass carries the fraction again and the glow
+ * falls away with distance. The adjacency is the renderer's, not the vault's,
+ * which is what keeps a local graph honest about what it is showing.
+ */
+function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
+    let current = own;
+
+    for (let hop = 0; hop < hops; hop++) {
+        const next = new Map(current);
+
+        for (const [path, node] of Object.entries(renderer.nodeLookup)) {
+            const here = current.get(path);
+            if (here === undefined) {
+                continue;
+            }
+
+            let best = here;
+
+            for (const id of neighboursOf(node)) {
+                const there = current.get(id);
+
+                if (there !== undefined) {
+                    best = Math.max(best, there * bleed);
+                }
+            }
+
+            next.set(path, best);
+        }
+
+        current = next;
+    }
+
+    return current;
+}
+
+function* neighboursOf(node: GraphNode): Generator<string> {
+    for (const id in node.forward) {
+        yield id;
+    }
+
+    for (const id in node.reverse) {
+        yield id;
+    }
+}
+
+/**
+ * Writes each node's cached opacity into the colour the renderer draws with,
+ * and reports what each node ended up at so labels and links can agree with it.
+ */
+export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
     const spotlitPath = options.spotlightNewest ? store.newestPath() : undefined;
 
     releaseSpotlight(renderer, options.spotlight, spotlitPath);
 
-    for (const [path, node] of Object.entries(renderer.nodeLookup)) {
+    const own = new Map<string, number>();
+
+    for (const path of Object.keys(renderer.nodeLookup)) {
         const mtime = store.mtimeFor(path);
-        if (mtime === undefined) {
+
+        if (mtime !== undefined) {
+            own.set(path, store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime));
+        }
+    }
+
+    const pooled = options.neighbourBleed > 0
+        ? poolNeighbours(renderer, own, options.neighbourBleed, options.neighbourHops)
+        : null;
+
+    for (const [path, node] of Object.entries(renderer.nodeLookup)) {
+        const opacity = (pooled ?? own).get(path);
+        if (opacity === undefined) {
             continue;
         }
 
-        const opacity = store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime);
         const currentRgb = node.color?.rgb ?? fallbackRgb;
 
         if (path === spotlitPath) {
@@ -184,6 +257,8 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     }
 
     holdSpotlightTint(renderer, options.spotlight);
+
+    return pooled;
 }
 
 /**
