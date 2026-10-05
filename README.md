@@ -15,6 +15,12 @@ part of your vault you're actually working in lights up and the rest sinks back.
 
 <p align="center"><i>My own vault, 1200 notes. Every bright dot is something I touched this week.</i></p>
 
+<p align="center">
+  <img src="docs/fade-sweep.gif" width="420" alt="Animation of the same graph as the fade is swept from strongest to weakest. Nodes light up in waves, newest first, until the whole vault is visible.">
+</p>
+
+<p align="center"><i>The same vault, sweeping the fade from hardest to softest. The newest notes come up first.</i></p>
+
 ## Why I made it
 
 I built this plugin a year ago and I've been using it since, and I wanted to share
