@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
 import { formatAge } from './age';
 import { AgeMode } from './age-label';
+import { LinkRecency } from './links';
 import { PRESETS } from './presets';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
@@ -34,6 +35,7 @@ export interface PulsarGraphSettings {
     steepness: number;
     numSteps: number;
     ageLabels: AgeMode;
+    linkRecency: LinkRecency;
     statusBarAge: boolean;
     spotlightNewest: boolean;
     spotlightColor: string;
@@ -41,6 +43,14 @@ export interface PulsarGraphSettings {
 }
 
 const AGE_MODES = ['off', 'hover', 'titles'] as const;
+
+const LINK_MODES = ['off', 'uniform', 'gradient'] as const;
+
+const LINK_MODE_LABELS: Record<LinkRecency, string> = {
+    off: 'Off',
+    uniform: 'Match the newer note',
+    gradient: 'Fade between the two'
+};
 
 const AGE_MODE_LABELS: Record<AgeMode, string> = {
     off: 'Never',
@@ -58,6 +68,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     steepness: 2.0,
     numSteps: 5,
     ageLabels: 'hover',
+    linkRecency: 'off',
     statusBarAge: false,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
@@ -179,6 +190,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
         numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest)),
         ageLabels: parseAgeMode(data.ageLabels, data.showAgeOnHover),
+        linkRecency: LINK_MODES.find((mode) => mode === data.linkRecency) ?? DEFAULT_SETTINGS.linkRecency,
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor),
@@ -391,6 +403,20 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.ageLabels).onChange(async (value) => {
                     settings.ageLabels = value as AgeMode;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(containerEl)
+            .setName('Age the links too')
+            .setDesc('Links are drawn in one flat colour whatever their ends have been through. Give them the age of their livelier end, or fade each one along its length from the newer note to the older')
+            .addDropdown((dropdown) => {
+                for (const mode of LINK_MODES) {
+                    dropdown.addOption(mode, LINK_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.linkRecency).onChange(async (value) => {
+                    settings.linkRecency = value as LinkRecency;
                     await this.plugin.saveSettings();
                 });
             });

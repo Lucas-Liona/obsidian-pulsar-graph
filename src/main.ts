@@ -1,6 +1,7 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
+import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
@@ -10,6 +11,7 @@ import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings 
 interface AttachedGraph {
     release: Unhook;
     labels: AgeLabels;
+    links: LinkShading;
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
     frames: FrameHook | null;
     spotlight: SpotlightState;
@@ -165,6 +167,8 @@ export default class PulsarGraphPlugin extends Plugin {
         labels.setMode(this.settings.ageLabels);
 
         const spotlight: SpotlightState = {};
+        const links = new LinkShading(renderer, (id) => this.store.opacityFor(id));
+        links.setMode(this.settings.linkRecency);
 
         const releaseData = hookRendererData(renderer, () => {
             // Obsidian has just rewritten every colour from group data, so the
@@ -174,6 +178,7 @@ export default class PulsarGraphPlugin extends Plugin {
         });
         const frames = hookRendererFrame(renderer, () => {
             labels.sync();
+            links.sync();
             holdSpotlightTint(renderer, spotlight);
         });
 
@@ -190,6 +195,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         return {
             labels,
+            links,
             frames,
             spotlight,
             release: () => {
@@ -197,6 +203,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 releaseHover();
                 frames?.release();
                 labels.destroy();
+                links.destroy();
                 clearSpotlight(renderer, spotlight);
                 repaint(renderer);
             }
@@ -235,11 +242,13 @@ export default class PulsarGraphPlugin extends Plugin {
         if (graph.frames && !graph.frames.isInstalled()) {
             graph.frames = hookRendererFrame(renderer, () => {
                 graph.labels.sync();
+                graph.links.sync();
                 holdSpotlightTint(renderer, graph.spotlight);
             });
         }
 
         graph.labels.setMode(this.settings.ageLabels);
+        graph.links.setMode(this.settings.linkRecency);
 
         this.store.refresh();
         applyOpacity(renderer, this.store, {

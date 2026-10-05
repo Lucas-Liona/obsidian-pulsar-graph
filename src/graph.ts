@@ -36,6 +36,27 @@ export interface GraphText {
 /** Builds one of the above. Obtained from an existing title, never a global. */
 export type GraphTextConstructor = new (text: string, style: unknown) => GraphText;
 
+/** The image a link's line is drawn from. Swapped to fade one along its length. */
+export interface GraphTexture {
+    width: number;
+}
+
+/** Builds one from a canvas. Reached through an existing texture, never a global. */
+export interface GraphTextureFactory {
+    from: (source: HTMLCanvasElement) => GraphTexture;
+}
+
+/** One link between two nodes, drawn as a stretched and rotated sprite. */
+export interface GraphLink {
+    source?: GraphNode;
+    target?: GraphNode;
+    rendered?: boolean;
+    line?: {
+        alpha: number;
+        texture?: GraphTexture;
+    } | null;
+}
+
 export interface GraphNode {
     id: string;
     color?: {
@@ -59,6 +80,7 @@ export interface GraphRenderer {
     nodeLookup: GraphNodeLookup;
     /** Every node, drawn or not. nodeLookup holds the same objects by path. */
     nodes?: GraphNode[];
+    links?: GraphLink[];
     /** Zoom, and the sqrt(1/scale) nodes and titles are drawn at. */
     scale?: number;
     nodeScale?: number;
@@ -72,6 +94,9 @@ export interface GraphRenderer {
         fill?: { rgb: number };
         /** What titles are drawn in. */
         text?: { rgb: number };
+        /** What links are drawn in, and what an attached one becomes. */
+        line?: { a: number };
+        lineHighlight?: { a: number };
     };
     /** The per-frame draw, reassigned whenever graphics are rebuilt. */
     renderCallback?: (() => void) | null;

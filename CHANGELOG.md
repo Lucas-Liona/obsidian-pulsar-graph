@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.9.0] - 2026-10-05
+
+### Added
+
+- **Age the links too**, off by default. Links were drawn in one flat colour
+  whatever their ends had been through, which left the busiest half of the
+  picture carrying no time at all. Part of #25.
+
+  *Match the newer note* gives a link the age of its livelier end. *Fade between
+  the two* fades it along its length, bright at the newer note and dim at the
+  older one, which is done by stretching a quantized ramp texture over the line
+  sprite. Sixteen ramps cover every link in a vault, and the whole thing falls
+  back to flat links if a future renderer stops allowing it.
+
+  The alpha the renderer would have used is recomputed rather than read back and
+  scaled: the renderer eases a link's alpha a tenth of the way per frame, so
+  scaling its own value would compound into something far darker than intended.
+
 ## [1.8.0] - 2026-10-05
 
 ### Added
