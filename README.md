@@ -87,9 +87,22 @@ one past the other and it takes the other with it.
 
 ### Hover and spotlight
 
-Hovering a node tells you how long ago that note was modified — "3 days ago",
-"5 months ago" — right next to the pointer. Obsidian's own page preview still
-works alongside it.
+A note's age — "3 days ago", "5 months ago" — is drawn above its node, centred,
+the same distance up as the title sits down, in the same font and a little
+quieter. It's part of the graph, not a tooltip over it, so it pans and zooms with
+everything else. Obsidian's own page preview still works alongside it.
+
+**Show note age** has three settings:
+
+| | |
+|---|---|
+| **Never** | No ages at all. |
+| **On hover** | The age appears above whichever node you're pointing at. The default. |
+| **Whenever titles are shown** | Every node that's showing its name shows its age too, dimmed by that note's own opacity. |
+
+That last one is worth a try if you already use the text fade threshold the way I
+do: the names come in as you lean towards the graph, and now the dates come with
+them, with old notes carrying faint ones.
 
 The spotlight tints the single most recently modified note with your theme's
 accent colour, so the thing you touched last is findable at a glance. It's off
@@ -120,9 +133,9 @@ newest note changes or you turn it off.
 
 Pulsar Graph isn't in the community directory yet. Until it is:
 
-1. Download `main.js`, `manifest.json` and `styles.css` from the
+1. Download `main.js` and `manifest.json` from the
    [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
-2. Put all three in `YourVault/.obsidian/plugins/pulsar-graph/`.
+2. Put both in `YourVault/.obsidian/plugins/pulsar-graph/`.
 3. Reload Obsidian and turn it on under **Community plugins**.
 
 ## Compatibility

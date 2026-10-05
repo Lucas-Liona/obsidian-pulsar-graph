@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0] - 2026-10-05
+
+### Changed
+
+- A note's age is now drawn above its node, centred, the same distance away as
+  the title below it and in the same font, instead of following the cursor as a
+  tooltip. The tooltip sat on top of the title it was meant to accompany.
+
+### Added
+
+- **Show note age** replaces the on-off hover toggle with three choices: never,
+  on hover, or whenever Obsidian is showing titles. The last one ties the ages
+  to the zoom level you already use to bring names in, and fades each age along
+  with its own node, so old notes carry quiet dates.
+
+### Removed
+
+- `styles.css` is no longer part of a release. The plugin draws nothing in the
+  DOM any more, so there is nothing left to style.
+
 ## [1.1.0] - 2026-10-05
 
 ### Added

@@ -11,11 +11,44 @@ const GRAPH_VIEW_TYPES = ['graph', 'localgraph'] as const;
 
 // Obsidian's graph internals are undocumented, so these describe only the
 // parts this plugin touches.
+
+/**
+ * The text object Obsidian draws a node's title with. It is a PIXI display
+ * object, and anything added to its children is drawn in the same space, so a
+ * label parented to it inherits the title's position, zoom and visibility for
+ * free.
+ */
+export interface GraphText {
+    text: string;
+    alpha: number;
+    visible: boolean;
+    resolution: number;
+    y: number;
+    scale: { x: number; y: number };
+    style: { fontFamily?: unknown };
+    anchor: { set: (x: number, y: number) => void };
+    children: GraphText[];
+    addChild: (child: GraphText) => void;
+    removeChild: (child: GraphText) => void;
+    destroy: () => void;
+}
+
+/** Builds one of the above. Obtained from an existing title, never a global. */
+export type GraphTextConstructor = new (text: string, style: unknown) => GraphText;
+
 export interface GraphNode {
+    id: string;
     color?: {
         a: number;
         rgb: number;
     };
+    /** False until the node is close enough to the viewport to be drawn. */
+    rendered?: boolean;
+    /** How far the title is nudged clear of the node while it is hovered. */
+    moveText?: number;
+    text?: GraphText | null;
+    circle?: { tint: number } | null;
+    getSize?: () => number;
 }
 
 export interface GraphNodeLookup {
@@ -24,6 +57,11 @@ export interface GraphNodeLookup {
 
 export interface GraphRenderer {
     nodeLookup: GraphNodeLookup;
+    /** Every node, drawn or not. nodeLookup holds the same objects by path. */
+    nodes?: GraphNode[];
+    /** Zoom, and the sqrt(1/scale) nodes and titles are drawn at. */
+    scale?: number;
+    nodeScale?: number;
     /** The element the graph canvas is drawn into. */
     containerEl?: HTMLElement;
     /** Cursor position within that element, or null when it is outside. */
@@ -34,7 +72,11 @@ export interface GraphRenderer {
         fill?: { rgb: number };
         /** What Obsidian tints a node with while the cursor is on it. */
         fillHighlight?: { rgb: number };
+        /** What titles are drawn in. */
+        text?: { rgb: number };
     };
+    /** The per-frame draw, reassigned whenever graphics are rebuilt. */
+    renderCallback?: (() => void) | null;
     /** Assigned by the graph view; see hookNodeHover. */
     onNodeHover?: ((event: MouseEvent, id: string, type: string) => void) | null;
     onNodeUnhover?: (() => void) | null;
@@ -159,6 +201,44 @@ export function hookRendererData(renderer: GraphRenderer, onData: () => void): U
     return () => {
         if (renderer.setData === patched) {
             renderer.setData = original;
+        }
+    };
+}
+
+/** A frame hook that can report whether it is still the installed callback. */
+export interface FrameHook {
+    release: Unhook;
+    isInstalled: () => boolean;
+}
+
+/**
+ * Calls back after every frame a renderer draws.
+ *
+ * The callback is an instance property Obsidian assigns in initGraphics and
+ * reads back through requestAnimationFrame, so wrapping it reaches one graph
+ * only. It stops being called once the graph settles, which is exactly when
+ * nothing needs repositioning. Obsidian assigns a fresh one whenever it rebuilds
+ * graphics, so callers re-install when isInstalled stops holding.
+ */
+export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void): FrameHook | null {
+    const original = renderer.renderCallback;
+    if (typeof original !== 'function') {
+        return null;
+    }
+
+    const patched = function (this: GraphRenderer): void {
+        original.call(this);
+        onFrame();
+    };
+
+    renderer.renderCallback = patched;
+
+    return {
+        isInstalled: () => renderer.renderCallback === patched,
+        release: () => {
+            if (renderer.renderCallback === patched) {
+                renderer.renderCallback = original;
+            }
         }
     };
 }

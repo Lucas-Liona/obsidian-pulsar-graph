@@ -9,11 +9,13 @@ recently-modified notes stand out and stale ones fade.
 - `src/main.ts` is plugin lifecycle only. `src/settings.ts` holds the settings
   type, defaults and tab; `src/fade.ts` the three curves (linear, exponential,
   step); `src/opacity-store.ts` the mtime and opacity caches;
-  `src/graph.ts` Obsidian's undocumented graph internals and node updates.
+  `src/graph.ts` Obsidian's undocumented graph internals and node updates;
+  `src/age-label.ts` the age drawn above a node; `src/hover.ts` the hover hook;
+  `src/age.ts` turns a timestamp into words.
 - Works on the global and local graph views. Local-only, no network calls.
-- Release artifacts: `main.js`, `manifest.json` and `styles.css`. The stylesheet
-  holds the hover label only; everything else the plugin draws goes through
-  Obsidian's graph renderer, not CSS.
+- Release artifacts: `main.js` and `manifest.json`. The plugin draws nothing of
+  its own in the DOM — node opacity and the age labels both go through
+  Obsidian's graph renderer — so there is no stylesheet.
 
 ## Commands
 - `npm install` — install deps
@@ -49,7 +51,7 @@ recently-modified notes stand out and stale ones fade.
   only needs a new entry when `minAppVersion` changes; it exists so older
   Obsidian installs can find the last version that still supported them.
 - Push a tag equal to the version exactly (`1.0.0`, not `v1.0.0`). The release
-  workflow builds, attaches `main.js`, `manifest.json` and `styles.css`, and
+  workflow builds, attaches `main.js` and `manifest.json`, and
   attaches build provenance. The release is created as a draft; publish it once checked.
 - Submission and updates go through the dashboard at community.obsidian.md, not
   a pull request to `obsidianmd/obsidian-releases` (that route is closed). The

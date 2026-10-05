@@ -1,14 +1,17 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { formatAge } from './age';
-import { applyOpacity, getGraphRenderers, GraphRenderer, hookRendererData, repaint, SpotlightState, Unhook } from './graph';
-import { AgeLabel, hookNodeHover } from './hover';
+import { AgeLabels, AgeText } from './age-label';
+import { applyOpacity, FrameHook, getGraphRenderers, GraphRenderer, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
+import { hookNodeHover } from './hover';
 import { OpacityStore } from './opacity-store';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
     release: Unhook;
-    label: AgeLabel;
+    labels: AgeLabels;
+    /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
+    frames: FrameHook | null;
     spotlight: SpotlightState;
 }
 
@@ -101,38 +104,55 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private attach(renderer: GraphRenderer): AttachedGraph {
-        const label = new AgeLabel(renderer);
+        const labels = new AgeLabels(renderer, (path) => this.describeAge(path));
+        labels.setMode(this.settings.ageLabels);
 
         const releaseData = hookRendererData(renderer, () => this.applyTo(renderer));
+        const frames = hookRendererFrame(renderer, () => labels.sync());
+
         const releaseHover = hookNodeHover(renderer, {
-            onHover: (path) => this.showAge(label, path),
-            onUnhover: () => label.hide()
+            onHover: (path) => {
+                labels.setHovered(renderer.nodeLookup[path] ?? null);
+                repaint(renderer);
+            },
+            onUnhover: () => {
+                labels.setHovered(null);
+                repaint(renderer);
+            }
         });
 
         return {
-            label,
+            labels,
+            frames,
             spotlight: {},
             release: () => {
                 releaseData?.();
                 releaseHover();
-                label.destroy();
+                frames?.release();
+                labels.destroy();
             }
         };
     }
 
     /**
      * Nodes exist for attachments and unresolved links too, and those carry no
-     * modification time worth showing, so the label stays hidden for them.
+     * modification time worth showing, so they get no label at all.
+     *
+     * The strength returned is the note's own opacity, so an age fades along
+     * with the node it belongs to rather than sitting bright over a dim one.
      */
-    private showAge(label: AgeLabel, path: string): void {
-        const mtime = this.settings.showAgeOnHover ? this.store.mtimeFor(path) : undefined;
-
+    private describeAge(path: string): AgeText | undefined {
+        const mtime = this.store.mtimeFor(path);
         if (mtime === undefined) {
-            label.hide();
-            return;
+            return undefined;
         }
 
-        label.show(formatAge(mtime, Date.now()));
+        const opacity = this.store.opacityFor(path) ?? this.store.cacheOpacityFor(path, mtime);
+
+        return {
+            text: formatAge(mtime, Date.now()),
+            strength: Math.min(1, Math.max(0, opacity))
+        };
     }
 
     private applyTo(renderer: GraphRenderer): void {
@@ -140,6 +160,14 @@ export default class PulsarGraphPlugin extends Plugin {
         if (!graph) {
             return;
         }
+
+        // Obsidian assigns a new render callback whenever it rebuilds a
+        // graph's graphics, which drops the wrapper the labels are driven by.
+        if (graph.frames && !graph.frames.isInstalled()) {
+            graph.frames = hookRendererFrame(renderer, () => graph.labels.sync());
+        }
+
+        graph.labels.setMode(this.settings.ageLabels);
 
         this.store.refresh();
         applyOpacity(renderer, this.store, {
