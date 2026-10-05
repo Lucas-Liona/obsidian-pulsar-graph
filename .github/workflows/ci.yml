@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # GitHub occasionally does not create a run for a push or a force-push to a
+  # pull request branch. This makes the checks runnable on demand for any ref.
+  workflow_dispatch:
 
 jobs:
   build:
