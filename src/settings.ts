@@ -8,6 +8,8 @@ export interface PulsarGraphSettings {
     maxOpacity: number;
     steepness: number;
     numSteps: number;
+    showAgeOnHover: boolean;
+    spotlightNewest: boolean;
 }
 
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
@@ -15,7 +17,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     minOpacity: 0.1,
     maxOpacity: 3.0,
     steepness: 2.0,
-    numSteps: 5
+    numSteps: 5,
+    showAgeOnHover: true,
+    spotlightNewest: false
 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
@@ -51,7 +55,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         minOpacity: Math.min(minOpacity, maxOpacity),
         maxOpacity: Math.max(minOpacity, maxOpacity),
         steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
-        numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest))
+        numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest)),
+        showAgeOnHover: parseBoolean(data.showAgeOnHover, DEFAULT_SETTINGS.showAgeOnHover),
+        spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest)
     };
 }
 
@@ -66,6 +72,10 @@ function parseFadeType(value: unknown): FadeType {
 
 function parseNumber(value: unknown, fallback: number): number {
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function parseBoolean(value: unknown, fallback: boolean): boolean {
+    return typeof value === 'boolean' ? value : fallback;
 }
 
 function clamp(value: number, lowest: number, highest: number): number {
@@ -173,6 +183,28 @@ export class PulsarSettingTab extends PluginSettingTab {
                     })
                 );
         }
+
+        new Setting(containerEl)
+            .setName('Show age on hover')
+            .setDesc('How long ago the note was modified, shown while you hover a node')
+            .addToggle((toggle) => toggle
+                .setValue(settings.showAgeOnHover)
+                .onChange(async (value) => {
+                    settings.showAgeOnHover = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Spotlight the newest note')
+            .setDesc("Tint the single most recently modified note with the theme's accent colour")
+            .addToggle((toggle) => toggle
+                .setValue(settings.spotlightNewest)
+                .onChange(async (value) => {
+                    settings.spotlightNewest = value;
+                    await this.plugin.saveSettings();
+                })
+            );
 
         new Setting(containerEl)
             .setName('Reset to defaults')
