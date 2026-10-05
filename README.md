@@ -51,14 +51,30 @@ that's a different kind of context than a list of links.
 
 ## What it does
 
-Every note gets a recency value between 0 and 1 — the oldest note in your vault is
-0, the newest is 1. A fade curve shapes that number, and the result becomes the
+Every note gets a recency value between 0 and 1 — 0 at the old end of the range,
+1 at the new one. A fade curve shapes that number, and the result becomes the
 node's opacity.
 
-Opacity is relative to your vault, not to the calendar. Your newest note always
-sits at maximum opacity, so a vault you haven't opened in a month looks the same
-as one you edited this morning. Anchoring to real time instead is
-[planned](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/3).
+### What counts as old
+
+**Measure age against** decides where those two ends sit, and it matters more than
+the curve does.
+
+**The vault's whole history** runs from your oldest note to your newest. It's the
+default and it's honest, but one note from years ago sets the far end for
+everything else, and then a year of recent work can land inside a few percent of
+the range and come out looking identical. On my own vault — 1060 notes, default
+curve — that puts **1001 of them in the top fifth of the range**.
+
+**A recent window** throws the old end away and spends the whole range on the last
+so many days. Anything older sits at minimum opacity. Same vault, same curve, a
+30 day window: 850 notes drop to the bottom and the remaining 210 spread out
+properly across the rest.
+
+Which you want depends on what you're looking at. The whole history is a picture
+of the vault; a window is a picture of what you're working on. The window is also
+the one that keeps meaning something when you come back after a month away,
+because it's anchored to the clock rather than to your newest note.
 
 ### Fade curves
 
@@ -70,20 +86,30 @@ as one you edited this morning. Anchoring to real time instead is
 
 ### Settings
 
+Every slider has a number box beside it, and a preview at the top of the settings
+shows dots at real ages from your own vault at the opacity each would get, so you
+can see what a change does before you close the dialog.
+
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
+| Measure age against | Whole history, Recent window | Whole history | all |
+| Window | 1 – 365 days | 30 | Recent window |
 | Fade type | Linear, Exponential, Step | Linear | all |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all |
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all |
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential |
 | Number of steps | 1 – 20 | 5 | Step |
-| Show age on hover | on / off | on | all |
+| Show note age | Never, On hover, With titles | On hover | all |
 | Spotlight the newest note | on / off | off | all |
+| Spotlight colour | any | white | Spotlight on |
+| Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
-while everything older still falls away. The two opacity sliders can't cross — move
-one past the other and it takes the other with it.
+while everything older still falls away. Be aware that it is clamped at 1.0 when
+drawn, so a very high maximum flattens the top of the curve — the preview shows
+you when that is happening. The two opacity sliders can't cross — move one past
+the other and it takes the other with it.
 
 ### Hover and spotlight
 

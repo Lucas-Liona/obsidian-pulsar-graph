@@ -8,6 +8,16 @@ export interface Sample {
     opacity: number;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * How far the clock may drift before window-anchored opacities are recomputed,
+ * as a fraction of the window. A hundredth of a thirty day window is about
+ * seven hours, which is far below anything the eye would catch, and it is
+ * checked when a graph is already being updated rather than on a timer.
+ */
+const ANCHOR_DRIFT_FRACTION = 0.01;
+
 /**
  * Last-modified time and resulting opacity for every note, so applying opacity
  * to a graph is a pair of map lookups rather than a vault scan.
@@ -24,6 +34,9 @@ export class OpacityStore {
     private oldestMtime = Date.now();
     private newestMtime = 0;
     private newestNotePath: string | undefined;
+
+    /** The 'now' every cached opacity was measured against, in window mode. */
+    private anchor = Date.now();
 
     constructor(private readonly getSettings: () => PulsarGraphSettings) {}
 
@@ -79,10 +92,15 @@ export class OpacityStore {
     }
 
     refresh(): void {
+        if (this.anchorHasDrifted()) {
+            this.opacitiesStale = true;
+        }
+
         if (!this.opacitiesStale) {
             return;
         }
 
+        this.anchor = Date.now();
         this.opacities.clear();
         for (const [path, mtime] of this.mtimes) {
             this.opacities.set(path, this.calculateOpacity(mtime));
@@ -97,23 +115,27 @@ export class OpacityStore {
     }
 
     /**
-     * Walks the curve across the vault's own span of ages, so the settings
-     * preview shows what these numbers do to the notes that actually exist
-     * rather than to an invented range.
+     * Walks the curve across whatever range opacity is currently measured
+     * against, so the settings preview shows what these numbers do to real
+     * ages rather than to an invented range.
      */
     sample(count: number): Sample[] {
-        const samples: Sample[] = [];
-        const span = this.newestMtime - this.oldestMtime;
-
-        // A vault with no notes, or one note, has no range to walk.
-        if (span <= 0) {
-            return this.mtimes.size === 0 ? [] : [{ mtime: this.newestMtime, opacity: this.calculateOpacity(this.newestMtime) }];
+        if (this.mtimes.size === 0) {
+            return [];
         }
 
-        for (let step = 0; step < count; step++) {
-            const recency = count === 1 ? 1 : step / (count - 1);
-            const mtime = this.oldestMtime + span * recency;
+        const { oldest, newest } = this.normalizingRange();
+        const span = newest - oldest;
 
+        // A single note, or a vault edited entirely within one instant.
+        if (span <= 0) {
+            return [{ mtime: newest, opacity: this.calculateOpacity(newest) }];
+        }
+
+        const samples: Sample[] = [];
+
+        for (let step = 0; step < count; step++) {
+            const mtime = oldest + span * (count === 1 ? 1 : step / (count - 1));
             samples.push({ mtime, opacity: this.calculateOpacity(mtime) });
         }
 
@@ -137,15 +159,56 @@ export class OpacityStore {
     private calculateOpacity(mtime: number): number {
         const { fadeType, minOpacity, maxOpacity, steepness, numSteps } = this.getSettings();
 
-        const timeRange = this.newestMtime - this.oldestMtime;
-        if (timeRange === 0) {
-            return maxOpacity;
-        }
-
-        const recency = (mtime - this.oldestMtime) / timeRange;
-        const fade = shapeRecency(fadeType, recency, { steepness, numSteps });
+        const fade = shapeRecency(fadeType, this.recencyOf(mtime), { steepness, numSteps });
 
         return minOpacity + fade * (maxOpacity - minOpacity);
+    }
+
+    /**
+     * Where a note falls between the two ends of the range being measured, 0
+     * for the old end and 1 for the new one.
+     *
+     * Against the whole vault, one note from years ago sets the old end for
+     * everything else, so a year of recent work can land inside a few percent
+     * of the range and come out looking identical. A window throws that away
+     * and spends the entire range on the last so many days instead, which is
+     * usually the only part anyone is reading.
+     */
+    private recencyOf(mtime: number): number {
+        const { normalizeBy, windowDays } = this.getSettings();
+
+        if (normalizeBy === 'window') {
+            const span = windowDays * MS_PER_DAY;
+            return clamp((mtime - (this.anchor - span)) / span, 0, 1);
+        }
+
+        const span = this.newestMtime - this.oldestMtime;
+        return span <= 0 ? 1 : (mtime - this.oldestMtime) / span;
+    }
+
+    /** The two ends of the range opacity is currently measured against. */
+    private normalizingRange(): { oldest: number; newest: number } {
+        const { normalizeBy, windowDays } = this.getSettings();
+
+        if (normalizeBy === 'window') {
+            return { oldest: this.anchor - windowDays * MS_PER_DAY, newest: this.anchor };
+        }
+
+        return { oldest: this.oldestMtime, newest: this.newestMtime };
+    }
+
+    /**
+     * True when a window-anchored cache has aged enough to be worth redoing.
+     * The vault range does not move with the clock, so it never drifts.
+     */
+    private anchorHasDrifted(): boolean {
+        const { normalizeBy, windowDays } = this.getSettings();
+
+        if (normalizeBy !== 'window') {
+            return false;
+        }
+
+        return Date.now() - this.anchor > windowDays * MS_PER_DAY * ANCHOR_DRIFT_FRACTION;
     }
 
     private recalculateRange(): void {
@@ -172,4 +235,8 @@ export class OpacityStore {
         this.newestMtime = newest;
         this.newestNotePath = newestPath;
     }
+}
+
+function clamp(value: number, lowest: number, highest: number): number {
+    return Math.min(Math.max(value, lowest), highest);
 }

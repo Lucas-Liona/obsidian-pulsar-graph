@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.0] - 2026-10-05
+
+### Added
+
+- **Measure age against**, choosing between the vault's whole history and a
+  recent window of 1 to 365 days. The whole history is still the default.
+
+  Against the whole history, a single old note sets the far end of the range for
+  everything else, so a long tail flattens everything recent into the same
+  opacity. Measured on a 1060 note vault with the default curve: 1001 notes land
+  in the top fifth of the range. With a 30 day window, 850 drop to the bottom and
+  the remaining 210 spread across the rest. Closes #3.
+
+  A window is anchored to the clock rather than to the newest note, so a vault
+  left alone for a month fades on its own. Cached opacities are recomputed when
+  that anchor has drifted by a hundredth of the window, checked while a graph is
+  already being updated rather than on a timer.
+
 ## [1.4.0] - 2026-10-05
 
 ### Added
