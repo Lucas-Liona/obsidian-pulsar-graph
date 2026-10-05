@@ -1,0 +1,44 @@
+.pulsar-graph-preview {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-4);
+	padding: var(--size-4-3) var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.pulsar-graph-preview-point {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--size-4-2);
+	min-width: 0;
+}
+
+.pulsar-graph-preview-dot {
+	width: var(--size-4-4);
+	height: var(--size-4-4);
+	border-radius: 50%;
+	background-color: var(--text-normal);
+}
+
+.pulsar-graph-preview-age {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+	white-space: nowrap;
+}
+
+.pulsar-graph-preview-empty {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.pulsar-graph-number {
+	width: 5em;
+	text-align: right;
+}

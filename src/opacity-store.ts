@@ -2,6 +2,12 @@ import { TFile } from 'obsidian';
 import { shapeRecency } from './fade';
 import { PulsarGraphSettings } from './settings';
 
+/** One point on the fade curve, at a real age from this vault. */
+export interface Sample {
+    mtime: number;
+    opacity: number;
+}
+
 /**
  * Last-modified time and resulting opacity for every note, so applying opacity
  * to a graph is a pair of map lookups rather than a vault scan.
@@ -88,6 +94,30 @@ export class OpacityStore {
     /** The most recently modified note, which the spotlight setting picks out. */
     newestPath(): string | undefined {
         return this.newestNotePath;
+    }
+
+    /**
+     * Walks the curve across the vault's own span of ages, so the settings
+     * preview shows what these numbers do to the notes that actually exist
+     * rather than to an invented range.
+     */
+    sample(count: number): Sample[] {
+        const samples: Sample[] = [];
+        const span = this.newestMtime - this.oldestMtime;
+
+        // A vault with no notes, or one note, has no range to walk.
+        if (span <= 0) {
+            return this.mtimes.size === 0 ? [] : [{ mtime: this.newestMtime, opacity: this.calculateOpacity(this.newestMtime) }];
+        }
+
+        for (let step = 0; step < count; step++) {
+            const recency = count === 1 ? 1 : step / (count - 1);
+            const mtime = this.oldestMtime + span * recency;
+
+            samples.push({ mtime, opacity: this.calculateOpacity(mtime) });
+        }
+
+        return samples;
     }
 
     mtimeFor(path: string): number | undefined {

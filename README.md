@@ -138,9 +138,9 @@ should ever end up in there.
 
 Pulsar Graph isn't in the community directory yet. Until it is:
 
-1. Download `main.js` and `manifest.json` from the
+1. Download `main.js`, `manifest.json` and `styles.css` from the
    [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
-2. Put both in `YourVault/.obsidian/plugins/pulsar-graph/`.
+2. Put all three in `YourVault/.obsidian/plugins/pulsar-graph/`.
 3. Reload Obsidian and turn it on under **Community plugins**.
 
 ## Compatibility

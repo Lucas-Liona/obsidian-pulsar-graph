@@ -13,9 +13,9 @@ recently-modified notes stand out and stale ones fade.
   `src/age-label.ts` the age drawn above a node; `src/hover.ts` the hover hook;
   `src/age.ts` turns a timestamp into words.
 - Works on the global and local graph views. Local-only, no network calls.
-- Release artifacts: `main.js` and `manifest.json`. The plugin draws nothing of
-  its own in the DOM — node opacity and the age labels both go through
-  Obsidian's graph renderer — so there is no stylesheet.
+- Release artifacts: `main.js`, `manifest.json` and `styles.css`. Everything the
+  plugin draws in the graph goes through Obsidian's renderer, not CSS; the
+  stylesheet covers the settings tab's curve preview only.
 
 ## Commands
 - `npm install` — install deps
@@ -51,7 +51,7 @@ recently-modified notes stand out and stale ones fade.
   only needs a new entry when `minAppVersion` changes; it exists so older
   Obsidian installs can find the last version that still supported them.
 - Push a tag equal to the version exactly (`1.0.0`, not `v1.0.0`). The release
-  workflow builds, attaches `main.js` and `manifest.json`, and
+  workflow builds, attaches `main.js`, `manifest.json` and `styles.css`, and
   attaches build provenance. The release is created as a draft; publish it once checked.
 - Submission and updates go through the dashboard at community.obsidian.md, not
   a pull request to `obsidianmd/obsidian-releases` (that route is closed). The

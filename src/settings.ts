@@ -1,4 +1,5 @@
-import { App, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
+import { formatAge } from './age';
 import { AgeMode } from './age-label';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
@@ -52,6 +53,77 @@ const OPACITY_STEP = 0.01;
 
 const STEEPNESS_RANGE = { lowest: 0.1, highest: 10, step: 0.1 };
 const STEPS_RANGE = { lowest: 1, highest: 20, step: 1 };
+
+/** Enough dots to show the shape of a curve without crowding the labels. */
+const PREVIEW_POINTS = 6;
+
+interface NumberRange {
+    lowest: number;
+    highest: number;
+    step: number;
+}
+
+/**
+ * A slider and a number box over one value.
+ *
+ * The slider is for finding a value by eye and the box is for saying one
+ * exactly, which matters at the bottom of the opacity range where a tenth of a
+ * step is the difference between faint and invisible. The box is left alone
+ * while it is being typed in and tidied up on the way out, so a half finished
+ * number is never corrected underneath the cursor.
+ */
+class NumberControl {
+    private slider: SliderComponent | undefined;
+    private box: TextComponent | undefined;
+
+    constructor(
+        setting: Setting,
+        private readonly range: NumberRange,
+        value: number,
+        private readonly commit: (value: number) => void
+    ) {
+        setting.addSlider((slider) => {
+            this.slider = slider
+                .setLimits(range.lowest, range.highest, range.step)
+                .setValue(value)
+                .setDynamicTooltip()
+                .onChange((next) => {
+                    this.box?.setValue(format(next));
+                    this.commit(next);
+                });
+        });
+
+        setting.addText((text) => {
+            this.box = text.setValue(format(value)).onChange((raw) => {
+                const parsed = Number.parseFloat(raw);
+                if (!Number.isFinite(parsed)) {
+                    return;
+                }
+
+                const next = clamp(parsed, this.range.lowest, this.range.highest);
+                this.slider?.setValue(next);
+                this.commit(next);
+            });
+
+            text.inputEl.addClass('pulsar-graph-number');
+            text.inputEl.inputMode = 'decimal';
+            text.inputEl.addEventListener('blur', () => {
+                this.box?.setValue(format(this.slider?.getValue() ?? value));
+            });
+        });
+    }
+
+    /** Moves the control without reporting a change, for the other end of a pair. */
+    setValue(value: number): void {
+        this.slider?.setValue(value);
+        this.box?.setValue(format(value));
+    }
+}
+
+/** Trims the floating point dust a 0.01 step leaves behind. */
+function format(value: number): string {
+    return String(Math.round(value * 1000) / 1000);
+}
 
 /**
  * Reads saved settings, repairing anything missing, malformed or out of range.
@@ -122,6 +194,8 @@ function clamp(value: number, lowest: number, highest: number): number {
 }
 
 export class PulsarSettingTab extends PluginSettingTab {
+    private previewEl: HTMLElement | null = null;
+
     constructor(app: App, private readonly plugin: PulsarGraphPlugin) {
         super(app, plugin);
     }
@@ -131,6 +205,8 @@ export class PulsarSettingTab extends PluginSettingTab {
         const { settings } = this.plugin;
 
         containerEl.empty();
+        this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
+        this.renderPreview();
 
         new Setting(containerEl)
             .setName('Fade type')
@@ -148,79 +224,73 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
             });
 
-        // Each slider carries the other along rather than refusing to move, so
+        // Each control carries the other along rather than refusing to move, so
         // the range can never invert and the correction is visible as it happens.
-        let minOpacitySlider: SliderComponent | undefined;
-        let maxOpacitySlider: SliderComponent | undefined;
+        let minOpacity: NumberControl | undefined;
+        let maxOpacity: NumberControl | undefined;
 
-        new Setting(containerEl)
-            .setName('Minimum opacity')
-            .setDesc('How faint the oldest note becomes')
-            .addSlider((slider) => {
-                minOpacitySlider = slider
-                    .setLimits(0, MIN_OPACITY_LIMIT, OPACITY_STEP)
-                    .setValue(settings.minOpacity)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        settings.minOpacity = value;
+        minOpacity = new NumberControl(
+            new Setting(containerEl)
+                .setName('Minimum opacity')
+                .setDesc('How faint the oldest note becomes'),
+            { lowest: 0, highest: MIN_OPACITY_LIMIT, step: OPACITY_STEP },
+            settings.minOpacity,
+            (value) => {
+                settings.minOpacity = value;
 
-                        if (settings.maxOpacity < value) {
-                            settings.maxOpacity = value;
-                            maxOpacitySlider?.setValue(value);
-                        }
+                if (settings.maxOpacity < value) {
+                    settings.maxOpacity = value;
+                    maxOpacity?.setValue(value);
+                }
 
-                        await this.plugin.saveSettings();
-                    });
-            });
+                this.save();
+            }
+        );
 
-        new Setting(containerEl)
-            .setName('Maximum opacity')
-            .setDesc('How bright the newest note becomes. Above 1.0 holds it at full strength as the rest of the graph fades')
-            .addSlider((slider) => {
-                maxOpacitySlider = slider
-                    .setLimits(0, MAX_OPACITY_LIMIT, OPACITY_STEP)
-                    .setValue(settings.maxOpacity)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        settings.maxOpacity = value;
+        maxOpacity = new NumberControl(
+            new Setting(containerEl)
+                .setName('Maximum opacity')
+                .setDesc('How bright the newest note becomes. Above 1.0 holds it at full strength as the rest of the graph fades'),
+            { lowest: 0, highest: MAX_OPACITY_LIMIT, step: OPACITY_STEP },
+            settings.maxOpacity,
+            (value) => {
+                settings.maxOpacity = value;
 
-                        if (settings.minOpacity > value) {
-                            settings.minOpacity = value;
-                            minOpacitySlider?.setValue(value);
-                        }
+                if (settings.minOpacity > value) {
+                    settings.minOpacity = value;
+                    minOpacity?.setValue(value);
+                }
 
-                        await this.plugin.saveSettings();
-                    });
-            });
+                this.save();
+            }
+        );
 
         if (settings.fadeType === 'exponential') {
-            new Setting(containerEl)
-                .setName('Steepness')
-                .setDesc('Higher values keep only the newest notes bright')
-                .addSlider((slider) => slider
-                    .setLimits(STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest, STEEPNESS_RANGE.step)
-                    .setValue(settings.steepness)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        settings.steepness = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Steepness')
+                    .setDesc('Higher values keep only the newest notes bright'),
+                STEEPNESS_RANGE,
+                settings.steepness,
+                (value) => {
+                    settings.steepness = value;
+                    this.save();
+                }
+            );
         }
 
         if (settings.fadeType === 'step') {
-            new Setting(containerEl)
-                .setName('Number of steps')
-                .setDesc('How many distinct bands of age the graph is divided into')
-                .addSlider((slider) => slider
-                    .setLimits(STEPS_RANGE.lowest, STEPS_RANGE.highest, STEPS_RANGE.step)
-                    .setValue(settings.numSteps)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        settings.numSteps = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Number of steps')
+                    .setDesc('How many distinct bands of age the graph is divided into'),
+                STEPS_RANGE,
+                settings.numSteps,
+                (value) => {
+                    settings.numSteps = Math.round(value);
+                    this.save();
+                }
+            );
         }
 
         new Setting(containerEl)
@@ -262,18 +332,17 @@ export class PulsarSettingTab extends PluginSettingTab {
                     })
                 );
 
-            new Setting(containerEl)
-                .setName('Spotlight strength')
-                .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it")
-                .addSlider((slider) => slider
-                    .setLimits(STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest, STRENGTH_RANGE.step)
-                    .setValue(settings.spotlightStrength)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        settings.spotlightStrength = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Spotlight strength')
+                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
+                STRENGTH_RANGE,
+                settings.spotlightStrength,
+                (value) => {
+                    settings.spotlightStrength = value;
+                    this.save();
+                }
+            );
         }
 
         new Setting(containerEl)
@@ -287,5 +356,45 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.display();
                 })
             );
+    }
+
+    hide(): void {
+        this.previewEl = null;
+    }
+
+    private save(): void {
+        void this.plugin.saveSettings();
+        this.renderPreview();
+    }
+
+    /**
+     * Dots at real ages from this vault, each drawn at the opacity the current
+     * settings would give a note that old. It answers the question the numbers
+     * on their own cannot: what does this actually look like.
+     */
+    private renderPreview(): void {
+        const preview = this.previewEl;
+        if (!preview) {
+            return;
+        }
+
+        preview.empty();
+
+        const samples = this.plugin.sampleCurve(PREVIEW_POINTS);
+        if (samples.length === 0) {
+            preview.createDiv({ cls: 'pulsar-graph-preview-empty', text: 'No notes to preview yet.' });
+            return;
+        }
+
+        const now = Date.now();
+
+        for (const sample of samples) {
+            const point = preview.createDiv({ cls: 'pulsar-graph-preview-point' });
+
+            // Opacity above 1 is clamped when the graph draws it, so the dot
+            // tops out exactly where a real node would.
+            point.createDiv({ cls: 'pulsar-graph-preview-dot' }).style.opacity = String(Math.min(1, sample.opacity));
+            point.createDiv({ cls: 'pulsar-graph-preview-age', text: formatAge(sample.mtime, now) });
+        }
     }
 }

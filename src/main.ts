@@ -3,7 +3,7 @@ import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { applyOpacity, clearSpotlight, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
-import { OpacityStore } from './opacity-store';
+import { OpacityStore, Sample } from './opacity-store';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
@@ -68,6 +68,11 @@ export default class PulsarGraphPlugin extends Plugin {
         await this.saveData(this.settings);
         this.store.markStale();
         this.syncRenderers();
+    }
+
+    /** Walks the current curve across this vault's ages, for the settings preview. */
+    sampleCurve(count: number): Sample[] {
+        return this.store.sample(count);
     }
 
     private onFileChanged(file: TAbstractFile): void {
