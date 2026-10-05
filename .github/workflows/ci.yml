@@ -8,9 +8,19 @@ on:
   # pull request branch. This makes the checks runnable on demand for any ref.
   workflow_dispatch:
 
+# A superseded pull request run is wasted work, and leaving it queued is what
+# starves the run that replaced it. Pushes to master and tags are never
+# cancelled, so a release always has its own completed check.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The whole job is well under a minute when a runner is free. A longer wait
+    # means the runner never started, and failing fast beats a silent cancel.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
