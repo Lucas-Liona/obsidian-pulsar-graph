@@ -143,6 +143,8 @@ A preset only moves the settings that shape the fade. What you've chosen to
 | Number of steps | 1 – 20 | 5 | Step |
 | Show note age | Never, On hover, With titles | On hover | all |
 | Age the links too | Off, Match the newer note, Fade between the two | Off | all |
+| Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
+| Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | off | all |
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
@@ -177,6 +179,21 @@ everything else. Obsidian's own page preview still works alongside it.
 That last one is worth a try if you already use the text fade threshold the way I
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
+
+### Neighbour glow
+
+A note doesn't live alone. **Neighbour glow** lets a bright note lift the notes
+it links to, so an area you're working in reads as a region rather than as
+scattered points. Each node takes the better of its own brightness and a fraction
+of its brightest neighbour, and **Glow reach** decides how many links that
+travels along — each step carries the fraction again, so it falls away with
+distance.
+
+How much it does for you depends on how linked your vault is. Mine is sparse —
+about 700 links across 1060 notes — so the effect is real but gentle. A densely
+linked vault will see much more.
+
+Off by default.
 
 ### Links carry age too
 

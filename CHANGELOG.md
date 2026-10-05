@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.10.0] - 2026-10-05
+
+### Added
+
+- **Neighbour glow** and **Glow reach**, off by default. A node takes the better
+  of its own brightness and a fraction of its brightest neighbour, repeated once
+  per hop so the carry falls away with distance. An area being worked in reads as
+  a region rather than as scattered points. Part of #25.
+
+  The adjacency is the renderer's rather than the vault's, so a local graph pools
+  only over what it is actually showing.
+
+### Changed
+
+- Node opacity, the age labels and the link shading now read one number, so a
+  node lifted by a neighbour carries its date and its links up with it rather
+  than glowing alone.
+
 ## [1.9.0] - 2026-10-05
 
 ### Added

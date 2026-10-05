@@ -40,6 +40,8 @@ export interface PulsarGraphSettings {
     spotlightNewest: boolean;
     spotlightColor: string;
     spotlightStrength: number;
+    neighbourBleed: number;
+    neighbourHops: number;
 }
 
 const AGE_MODES = ['off', 'hover', 'titles'] as const;
@@ -72,13 +74,20 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     statusBarAge: false,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
-    spotlightStrength: 1
+    spotlightStrength: 1,
+    neighbourBleed: 0,
+    neighbourHops: 1
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** A day at the short end, a year at the long one. */
 const WINDOW_RANGE = { lowest: 1, highest: 365, step: 1 };
+
+/** Stops short of 1, where a single fresh note would light the whole graph. */
+const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
+
+const HOPS_RANGE = { lowest: 1, highest: 3, step: 1 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -194,7 +203,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor),
-        spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
+        spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
+        neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
+        neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest))
     };
 }
 
@@ -406,6 +417,38 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Neighbour glow')
+                .setDesc('How much of a bright note carries to the notes it links to, so an area you are working in reads as a region rather than scattered points. Set it to zero to turn it off'),
+            BLEED_RANGE,
+            settings.neighbourBleed,
+            (value) => {
+                const wasOff = settings.neighbourBleed === 0;
+                settings.neighbourBleed = value;
+                this.save();
+
+                // The reach below only applies once the glow is on.
+                if (wasOff !== (value === 0)) {
+                    this.display();
+                }
+            }
+        );
+
+        if (settings.neighbourBleed > 0) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Glow reach')
+                    .setDesc('How many links the glow travels along. Each step carries the same fraction again, so it falls away with distance'),
+                HOPS_RANGE,
+                settings.neighbourHops,
+                (value) => {
+                    settings.neighbourHops = Math.round(value);
+                    this.save();
+                }
+            );
+        }
 
         new Setting(containerEl)
             .setName('Age the links too')
