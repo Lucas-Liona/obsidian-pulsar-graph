@@ -6,6 +6,7 @@ part of your vault you're actually working in lights up and the rest sinks back.
 <p align="center">
   <a href="https://github.com/Lucas-Liona/obsidian-pulsar-graph/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Lucas-Liona/obsidian-pulsar-graph/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Lucas-Liona/obsidian-pulsar-graph"></a>
+  <img alt="Version" src="https://img.shields.io/github/manifest-json/v/Lucas-Liona/obsidian-pulsar-graph?label=version&color=blue">
   <img alt="Minimum Obsidian version" src="https://img.shields.io/github/manifest-json/minAppVersion/Lucas-Liona/obsidian-pulsar-graph?label=obsidian">
 </p>
 
@@ -144,6 +145,10 @@ A note's age — "3 days ago", "5 months ago" — is drawn above its node, centr
 the same distance up as the title sits down, in the same font and a little
 quieter. It's part of the graph, not a tooltip over it, so it pans and zooms with
 everything else. Obsidian's own page preview still works alongside it.
+
+<p align="center">
+  <img src="docs/hover.png" width="760" alt="A dimmed graph with one node lit. Above it, centred, the text '4 minutes ago'; below it, the note's title.">
+</p>
 
 **Show note age** has three settings:
 
