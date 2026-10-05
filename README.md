@@ -142,6 +142,7 @@ A preset only moves the settings that shape the fade. What you've chosen to
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential |
 | Number of steps | 1 – 20 | 5 | Step |
 | Show note age | Never, On hover, With titles | On hover | all |
+| Age the links too | Off, Match the newer note, Fade between the two | Off | all |
 | Age in the status bar | on / off | off | all |
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
@@ -176,6 +177,22 @@ everything else. Obsidian's own page preview still works alongside it.
 That last one is worth a try if you already use the text fade threshold the way I
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
+
+### Links carry age too
+
+Obsidian draws every link in one flat colour whatever its two ends have been
+through, which leaves the busiest half of the picture saying nothing about time.
+**Age the links too** changes that:
+
+- **Match the newer note** gives a link the age of its livelier end, so the
+  structure around recent work comes forward instead of sitting in uniform grey.
+- **Fade between the two** fades each link along its length, bright at the newer
+  note and dim at the older one.
+
+That second one is worth it for the discovery thing: a bright line running out of
+today's work and dimming into something you wrote a year ago is exactly the note
+you'd forgotten you had. Off by default, like everything that changes how the
+graph is drawn beyond the nodes themselves.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in
