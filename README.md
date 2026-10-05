@@ -128,6 +128,7 @@ can see what a change does before you close the dialog.
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential |
 | Number of steps | 1 – 20 | 5 | Step |
 | Show note age | Never, On hover, With titles | On hover | all |
+| Age in the status bar | on / off | off | all |
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
@@ -161,6 +162,11 @@ everything else. Obsidian's own page preview still works alongside it.
 That last one is worth a try if you already use the text fade threshold the way I
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
+
+There's also a status bar item — **Edited 4 minutes ago** for whatever note you
+have open. It reads the note, not the graph, so it works with no graph view in
+sight. Off by default, since it puts something in a part of Obsidian the plugin
+doesn't otherwise touch.
 
 The spotlight paints the single most recently modified note a colour of your
 own, so the thing you touched last is findable at a glance. It's off by default,

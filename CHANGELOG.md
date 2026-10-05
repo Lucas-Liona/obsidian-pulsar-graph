@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.0] - 2026-10-05
+
+### Added
+
+- The open note's age in the status bar, as "Edited 4 minutes ago". It reads the
+  active file rather than a graph, so it works with no graph view open. Off by
+  default, because it puts something in a part of Obsidian the plugin does not
+  otherwise touch. Closes #22.
+
+  The text is relative to now, so it goes stale on its own while a note sits
+  open. It re-reads the clock once a minute, and only while the setting is on.
+  Anything that is not a note shows nothing rather than reporting an
+  attachment's timestamp as if it meant something.
+
 ## [1.6.0] - 2026-10-05
 
 ### Added

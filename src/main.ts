@@ -18,11 +18,19 @@ interface AttachedGraph {
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
 const UPDATE_DELAY_MS = 150;
 
+/**
+ * How often the status bar re-reads the clock. Its text is relative, so it goes
+ * stale on its own while a note sits open and nothing in the vault changes.
+ * One line of text a minute, and only while the setting is on.
+ */
+const STATUS_REFRESH_MS = 60 * 1000;
+
 export default class PulsarGraphPlugin extends Plugin {
     settings: PulsarGraphSettings = DEFAULT_SETTINGS;
 
     private readonly store = new OpacityStore(() => this.settings);
     private readonly attached = new Map<GraphRenderer, AttachedGraph>();
+    private statusBarEl: HTMLElement | null = null;
 
     private readonly updateSoon = debounce(() => this.syncRenderers(), UPDATE_DELAY_MS, true);
 
@@ -47,10 +55,20 @@ export default class PulsarGraphPlugin extends Plugin {
             this.onFileChanged(file);
         }));
 
+        this.registerEvent(this.app.workspace.on('file-open', () => this.updateStatusBar()));
+        this.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
+
         // Graph views come and go, and each brings its own renderer to hook.
         this.registerEvent(this.app.workspace.on('layout-change', () => this.syncRenderers()));
-        this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.syncRenderers()));
-        this.app.workspace.onLayoutReady(() => this.syncRenderers());
+        this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
+            this.syncRenderers();
+            this.updateStatusBar();
+        }));
+
+        this.app.workspace.onLayoutReady(() => {
+            this.syncRenderers();
+            this.syncStatusBar();
+        });
     }
 
     onunload(): void {
@@ -68,6 +86,39 @@ export default class PulsarGraphPlugin extends Plugin {
         await this.saveData(this.settings);
         this.store.markStale();
         this.syncRenderers();
+        this.syncStatusBar();
+    }
+
+    /**
+     * Adds or removes the status bar item to match the setting. Obsidian has no
+     * way to take one back, so the element is held and removed by hand.
+     */
+    private syncStatusBar(): void {
+        if (this.settings.statusBarAge && !this.statusBarEl) {
+            this.statusBarEl = this.addStatusBarItem();
+        } else if (!this.settings.statusBarAge && this.statusBarEl) {
+            this.statusBarEl.remove();
+            this.statusBarEl = null;
+        }
+
+        this.updateStatusBar();
+    }
+
+    /**
+     * Shows how long ago the open note was modified. Anything that is not a
+     * note has no age worth reporting, so the item goes empty rather than
+     * showing something misleading about an attachment.
+     */
+    private updateStatusBar(): void {
+        const element = this.statusBarEl;
+        if (!element) {
+            return;
+        }
+
+        const file = this.app.workspace.getActiveFile();
+        const mtime = file && isNote(file) ? this.store.mtimeFor(file.path) ?? file.stat.mtime : undefined;
+
+        element.setText(mtime === undefined ? '' : `Edited ${formatAge(mtime, Date.now())}`);
     }
 
     /** Walks the current curve across this vault's ages, for the settings preview. */
@@ -82,6 +133,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.store.recordChange(file);
         this.updateSoon();
+        this.updateStatusBar();
     }
 
     /**
