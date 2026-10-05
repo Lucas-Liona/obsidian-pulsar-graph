@@ -144,6 +144,9 @@ export interface OpacityOptions {
     neighbourBleed: number;
     /** How many links the carry travels along. */
     neighbourHops: number;
+    /** How far each note is pulled toward its group's middle. 0 switches it off. */
+    clusterWarmth: number;
+    clusterBy: 'folder' | 'component';
     /**
      * The node the spotlight is currently painted over, and the colour it had
      * before. Node colour is the only place a graph group's colour lives, so
@@ -200,6 +203,113 @@ function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>, bleed
     return current;
 }
 
+/**
+ * Pulls every note toward the middle of the group it belongs to, so a part of
+ * the vault reads as alive or as cold at a glance rather than having to be
+ * picked out note by note.
+ *
+ * Unlike the neighbour carry this moves notes both ways: a stale note in a busy
+ * folder comes up, a fresh one in an abandoned corner goes down. That is the
+ * point of it, and it is why it is a separate setting rather than more of the
+ * same.
+ */
+function warmByGroup(renderer: GraphRenderer, own: Map<string, number>, warmth: number, by: 'folder' | 'component'): Map<string, number> {
+    const groups = by === 'folder' ? groupByFolder(own) : groupByComponent(renderer, own);
+    const middles = new Map<string, number>();
+
+    for (const [group, paths] of groups) {
+        const values = paths.map((path) => own.get(path) ?? 0).sort((a, b) => a - b);
+        middles.set(group, values[values.length >> 1]);
+    }
+
+    const warmed = new Map<string, number>();
+
+    for (const [path, value] of own) {
+        const middle = middles.get(groupOf(groups, path) ?? '') ?? value;
+        warmed.set(path, value * (1 - warmth) + middle * warmth);
+    }
+
+    return warmed;
+}
+
+/** Which group a path landed in. Built once rather than searched per note. */
+const membership = new WeakMap<Map<string, string[]>, Map<string, string>>();
+
+function groupOf(groups: Map<string, string[]>, path: string): string | undefined {
+    let index = membership.get(groups);
+
+    if (!index) {
+        index = new Map<string, string>();
+
+        for (const [group, paths] of groups) {
+            for (const member of paths) {
+                index.set(member, group);
+            }
+        }
+
+        membership.set(groups, index);
+    }
+
+    return index.get(path);
+}
+
+/** The folder a note sits in directly, which is how people group their own work. */
+function groupByFolder(own: Map<string, number>): Map<string, string[]> {
+    const groups = new Map<string, string[]>();
+
+    for (const path of own.keys()) {
+        const cut = path.lastIndexOf('/');
+        const folder = cut < 0 ? '' : path.slice(0, cut);
+
+        const members = groups.get(folder) ?? [];
+        members.push(path);
+        groups.set(folder, members);
+    }
+
+    return groups;
+}
+
+/** Islands of linked notes, for vaults organized by link rather than by folder. */
+function groupByComponent(renderer: GraphRenderer, own: Map<string, number>): Map<string, string[]> {
+    const groups = new Map<string, string[]>();
+    const seen = new Set<string>();
+
+    for (const start of own.keys()) {
+        if (seen.has(start)) {
+            continue;
+        }
+
+        const members: string[] = [];
+        const pending = [start];
+        seen.add(start);
+
+        while (pending.length > 0) {
+            const path = pending.pop();
+            if (path === undefined) {
+                break;
+            }
+
+            members.push(path);
+
+            const node = renderer.nodeLookup[path];
+            if (!node) {
+                continue;
+            }
+
+            for (const id of neighboursOf(node)) {
+                if (!seen.has(id) && own.has(id)) {
+                    seen.add(id);
+                    pending.push(id);
+                }
+            }
+        }
+
+        groups.set(start, members);
+    }
+
+    return groups;
+}
+
 function* neighboursOf(node: GraphNode): Generator<string> {
     for (const id in node.forward) {
         yield id;
@@ -230,9 +340,13 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         }
     }
 
-    const pooled = options.neighbourBleed > 0
-        ? poolNeighbours(renderer, own, options.neighbourBleed, options.neighbourHops)
+    const warmed = options.clusterWarmth > 0
+        ? warmByGroup(renderer, own, options.clusterWarmth, options.clusterBy)
         : null;
+
+    const pooled = options.neighbourBleed > 0
+        ? poolNeighbours(renderer, warmed ?? own, options.neighbourBleed, options.neighbourHops)
+        : warmed;
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
         const opacity = (pooled ?? own).get(path);
