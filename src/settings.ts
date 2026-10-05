@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -21,23 +21,37 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
 
-/** The oldest note should never be boosted, only dimmed. */
+/** The oldest note should only ever be dimmed, never boosted. */
 const MIN_OPACITY_LIMIT = 1;
 
 /**
- * Reads saved settings, falling back to defaults for anything missing or
- * malformed. Fade types used to be stored capitalized ('Linear'), so saved
- * values are matched case-insensitively.
+ * Fine enough that a near-invisible minimum like 0.01 stays expressible, which
+ * a coarser step would quietly round away. Both opacity sliders share it so
+ * carrying one along with the other lands on an exact step.
+ */
+const OPACITY_STEP = 0.01;
+
+const STEEPNESS_RANGE = { lowest: 0.1, highest: 10, step: 0.1 };
+const STEPS_RANGE = { lowest: 1, highest: 20, step: 1 };
+
+/**
+ * Reads saved settings, repairing anything missing, malformed or out of range.
+ * Fade types used to be stored capitalized ('Linear'), so saved values are
+ * matched case-insensitively, and opacity used to be free text, so a stored
+ * range can be inverted or far outside what the sliders allow.
  */
 export function parseSettings(stored: unknown): PulsarGraphSettings {
     const data = (stored ?? {}) as Record<string, unknown>;
 
+    const minOpacity = clamp(parseNumber(data.minOpacity, DEFAULT_SETTINGS.minOpacity), 0, MIN_OPACITY_LIMIT);
+    const maxOpacity = clamp(parseNumber(data.maxOpacity, DEFAULT_SETTINGS.maxOpacity), 0, MAX_OPACITY_LIMIT);
+
     return {
         fadeType: parseFadeType(data.fadeType),
-        minOpacity: parseNumber(data.minOpacity, DEFAULT_SETTINGS.minOpacity),
-        maxOpacity: parseNumber(data.maxOpacity, DEFAULT_SETTINGS.maxOpacity),
-        steepness: parseNumber(data.steepness, DEFAULT_SETTINGS.steepness),
-        numSteps: parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps)
+        minOpacity: Math.min(minOpacity, maxOpacity),
+        maxOpacity: Math.max(minOpacity, maxOpacity),
+        steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
+        numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest))
     };
 }
 
@@ -54,13 +68,8 @@ function parseNumber(value: unknown, fallback: number): number {
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-interface OpacityField {
-    name: string;
-    description: string;
-    placeholder: number;
-    read: () => number;
-    write: (opacity: number) => void;
-    bounds: () => { lowest: number; highest: number };
+function clamp(value: number, lowest: number, highest: number): number {
+    return Math.min(Math.max(value, lowest), highest);
 }
 
 export class PulsarSettingTab extends PluginSettingTab {
@@ -76,7 +85,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Fade type')
-            .setDesc('Choose the function that determines how opacity is calculated')
+            .setDesc('How opacity falls off between your oldest and newest note')
             .addDropdown((dropdown) => {
                 for (const fadeType of FADE_TYPES) {
                     dropdown.addOption(fadeType, FADE_TYPE_LABELS[fadeType]);
@@ -90,30 +99,57 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
             });
 
-        this.addOpacityField({
-            name: 'Minimum opacity',
-            description: `Opacity for the oldest note (0.0 to ${MIN_OPACITY_LIMIT.toFixed(1)}), and never above the maximum`,
-            placeholder: DEFAULT_SETTINGS.minOpacity,
-            read: () => settings.minOpacity,
-            write: (opacity) => { settings.minOpacity = opacity; },
-            bounds: () => ({ lowest: 0, highest: Math.min(MIN_OPACITY_LIMIT, settings.maxOpacity) })
-        });
+        // Each slider carries the other along rather than refusing to move, so
+        // the range can never invert and the correction is visible as it happens.
+        let minOpacitySlider: SliderComponent | undefined;
+        let maxOpacitySlider: SliderComponent | undefined;
 
-        this.addOpacityField({
-            name: 'Maximum opacity',
-            description: `Opacity for the newest note (0.0 to ${MAX_OPACITY_LIMIT.toFixed(1)}), and never below the minimum`,
-            placeholder: DEFAULT_SETTINGS.maxOpacity,
-            read: () => settings.maxOpacity,
-            write: (opacity) => { settings.maxOpacity = opacity; },
-            bounds: () => ({ lowest: settings.minOpacity, highest: MAX_OPACITY_LIMIT })
-        });
+        new Setting(containerEl)
+            .setName('Minimum opacity')
+            .setDesc('How faint the oldest note becomes')
+            .addSlider((slider) => {
+                minOpacitySlider = slider
+                    .setLimits(0, MIN_OPACITY_LIMIT, OPACITY_STEP)
+                    .setValue(settings.minOpacity)
+                    .setDynamicTooltip()
+                    .onChange(async (value) => {
+                        settings.minOpacity = value;
+
+                        if (settings.maxOpacity < value) {
+                            settings.maxOpacity = value;
+                            maxOpacitySlider?.setValue(value);
+                        }
+
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName('Maximum opacity')
+            .setDesc('How bright the newest note becomes. Above 1.0 holds it at full strength as the rest of the graph fades')
+            .addSlider((slider) => {
+                maxOpacitySlider = slider
+                    .setLimits(0, MAX_OPACITY_LIMIT, OPACITY_STEP)
+                    .setValue(settings.maxOpacity)
+                    .setDynamicTooltip()
+                    .onChange(async (value) => {
+                        settings.maxOpacity = value;
+
+                        if (settings.minOpacity > value) {
+                            settings.minOpacity = value;
+                            minOpacitySlider?.setValue(value);
+                        }
+
+                        await this.plugin.saveSettings();
+                    });
+            });
 
         if (settings.fadeType === 'exponential') {
             new Setting(containerEl)
                 .setName('Steepness')
-                .setDesc('Controls curve steepness (1.0 = linear, >1 = convex, <1 = concave)')
+                .setDesc('Higher values keep only the newest notes bright')
                 .addSlider((slider) => slider
-                    .setLimits(0.1, 10.0, 0.1)
+                    .setLimits(STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest, STEEPNESS_RANGE.step)
                     .setValue(settings.steepness)
                     .setDynamicTooltip()
                     .onChange(async (value) => {
@@ -126,9 +162,9 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.fadeType === 'step') {
             new Setting(containerEl)
                 .setName('Number of steps')
-                .setDesc('Controls the number of different possible opacities')
+                .setDesc('How many distinct bands of age the graph is divided into')
                 .addSlider((slider) => slider
-                    .setLimits(1, 20, 1)
+                    .setLimits(STEPS_RANGE.lowest, STEPS_RANGE.highest, STEPS_RANGE.step)
                     .setValue(settings.numSteps)
                     .setDynamicTooltip()
                     .onChange(async (value) => {
@@ -137,38 +173,17 @@ export class PulsarSettingTab extends PluginSettingTab {
                     })
                 );
         }
-    }
 
-    /**
-     * An opacity field, clamped into its allowed range so the two values cannot
-     * cross. Entries are text rather than a slider because the useful range
-     * depends on the theme and on how far the vault's note ages spread.
-     */
-    private addOpacityField(field: OpacityField): void {
-        new Setting(this.containerEl)
-            .setName(field.name)
-            .setDesc(field.description)
-            .addText((text) => {
-                text
-                    .setPlaceholder(String(field.placeholder))
-                    .setValue(String(field.read()))
-                    .onChange(async (value) => {
-                        const entered = Number.parseFloat(value);
-                        if (!Number.isFinite(entered)) {
-                            return;
-                        }
-
-                        const { lowest, highest } = field.bounds();
-                        field.write(Math.min(Math.max(entered, lowest), highest));
-                        await this.plugin.saveSettings();
-                    });
-
-                // Entries are clamped and unparseable ones are ignored, so the
-                // field is rewritten once editing stops: what is shown is then
-                // always what is stored.
-                text.inputEl.addEventListener('blur', () => {
-                    text.setValue(String(field.read()));
-                });
-            });
+        new Setting(containerEl)
+            .setName('Reset to defaults')
+            .setDesc('Put every setting above back to its original value')
+            .addButton((button) => button
+                .setButtonText('Reset')
+                .onClick(async () => {
+                    Object.assign(settings, DEFAULT_SETTINGS);
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
     }
 }

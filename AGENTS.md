@@ -44,8 +44,9 @@ recently-modified notes stand out and stale ones fade.
   `dev:screenshot` and `dev:errors` are the debugging loop.
 
 ## Releasing
-- Bump `version` in `manifest.json` (SemVer, no leading `v`) and `versions.json`,
-  keeping `versions.json` in step with `minAppVersion`.
+- Bump `version` in `manifest.json` (SemVer, no leading `v`). `versions.json`
+  only needs a new entry when `minAppVersion` changes; it exists so older
+  Obsidian installs can find the last version that still supported them.
 - Push a tag equal to the version exactly (`1.0.0`, not `v1.0.0`). The release
   workflow builds, attaches `main.js` and `manifest.json`, and attaches build
   provenance. The release is created as a draft; publish it once checked.
