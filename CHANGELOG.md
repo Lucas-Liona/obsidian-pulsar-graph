@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0] - 2026-10-05
+
+### Added
+
+- Presets, beside Reset: Gentle, Even spread, Bands of age, This month and This
+  week. There are now enough ways to combine normalization, scale and curve that
+  assembling one by hand is work, and these are five that are worth having.
+
+  Each sets every fade setting rather than layering onto what was there, so
+  applying one lands somewhere predictable. None of them touch the age labels,
+  the status bar or the spotlight: those are what you want shown, not how age is
+  read, and a preset has no business resetting a colour someone picked.
+
 ## [1.7.0] - 2026-10-05
 
 ### Added

@@ -117,6 +117,20 @@ Every slider has a number box beside it, and a preview at the top of the setting
 shows dots at real ages from your own vault at the opacity each would get, so you
 can see what a change does before you close the dialog.
 
+If you'd rather not assemble a combination yourself, there are presets at the
+bottom, next to **Reset**:
+
+| Preset | What you get |
+| --- | --- |
+| Gentle | Everything stays readable. Age is a hint rather than a filter |
+| Even spread | Ranked against each other, so the graph has full contrast whatever your history looks like |
+| Bands of age | Five distinct steps, so the graph reads as layers rather than a gradient |
+| This month | The last 30 days get the whole range; everything older drops away |
+| This week | Seven days on a log scale, so today separates sharply from Tuesday |
+
+A preset only moves the settings that shape the fade. What you've chosen to
+*show* — the age labels, the status bar, your spotlight colour — is left alone.
+
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
 | Measure age against | Whole history, Recent window | Whole history | all |

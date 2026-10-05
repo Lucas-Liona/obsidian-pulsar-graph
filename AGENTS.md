@@ -11,7 +11,7 @@ recently-modified notes stand out and stale ones fade.
   step); `src/opacity-store.ts` the mtime and opacity caches;
   `src/graph.ts` Obsidian's undocumented graph internals and node updates;
   `src/age-label.ts` the age drawn above a node; `src/hover.ts` the hover hook;
-  `src/age.ts` turns a timestamp into words.
+  `src/age.ts` turns a timestamp into words; `src/presets.ts` the preset list.
 - Works on the global and local graph views. Local-only, no network calls.
 - Release artifacts: `main.js`, `manifest.json` and `styles.css`. Everything the
   plugin draws in the graph goes through Obsidian's renderer, not CSS; the
