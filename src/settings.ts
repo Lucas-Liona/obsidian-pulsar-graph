@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
 import { formatAge } from './age';
 import { AgeMode } from './age-label';
+import { PRESETS } from './presets';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -443,17 +444,39 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
-        new Setting(containerEl)
-            .setName('Reset to defaults')
-            .setDesc('Put every setting above back to its original value')
-            .addButton((button) => button
-                .setButtonText('Reset')
-                .onClick(async () => {
-                    Object.assign(settings, DEFAULT_SETTINGS);
+        // Presets move only the settings that shape the fade. What you have
+        // chosen to show — labels, status bar, spotlight colour — is left alone.
+        const presets = new Setting(containerEl)
+            .setName('Presets')
+            .setDesc(PRESETS.map((preset) => `${preset.name}: ${preset.description.toLowerCase()}`).join('. ') + '.')
+            .addDropdown((dropdown) => {
+                dropdown.addOption('', 'Choose a preset\u2026');
+
+                for (const preset of PRESETS) {
+                    dropdown.addOption(preset.id, preset.name);
+                }
+
+                dropdown.setValue('').onChange(async (value) => {
+                    const preset = PRESETS.find((candidate) => candidate.id === value);
+                    if (!preset) {
+                        return;
+                    }
+
+                    Object.assign(settings, preset.settings);
                     await this.plugin.saveSettings();
                     this.display();
-                })
-            );
+                });
+            });
+
+        presets.addButton((button) => button
+            .setButtonText('Reset')
+            .setTooltip('Put every setting back to its original value')
+            .onClick(async () => {
+                Object.assign(settings, DEFAULT_SETTINGS);
+                await this.plugin.saveSettings();
+                this.display();
+            })
+        );
     }
 
     hide(): void {
