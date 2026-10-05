@@ -4,7 +4,18 @@ import { AgeMode } from './age-label';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
+export type NormalizeBy = 'vault' | 'window';
+
+const NORMALIZE_MODES = ['vault', 'window'] as const;
+
+const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
+    vault: "The vault's whole history",
+    window: 'A recent window'
+};
+
 export interface PulsarGraphSettings {
+    normalizeBy: NormalizeBy;
+    windowDays: number;
     fadeType: FadeType;
     minOpacity: number;
     maxOpacity: number;
@@ -25,6 +36,8 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
 };
 
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
+    normalizeBy: 'vault',
+    windowDays: 30,
     fadeType: 'linear',
     minOpacity: 0.1,
     maxOpacity: 3.0,
@@ -37,6 +50,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
+
+/** A day at the short end, a year at the long one. */
+const WINDOW_RANGE = { lowest: 1, highest: 365, step: 1 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -139,6 +155,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
     const maxOpacity = clamp(parseNumber(data.maxOpacity, DEFAULT_SETTINGS.maxOpacity), 0, MAX_OPACITY_LIMIT);
 
     return {
+        normalizeBy: parseNormalizeBy(data.normalizeBy),
+        windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         fadeType: parseFadeType(data.fadeType),
         minOpacity: Math.min(minOpacity, maxOpacity),
         maxOpacity: Math.max(minOpacity, maxOpacity),
@@ -149,6 +167,10 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         spotlightColor: parseColor(data.spotlightColor),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
     };
+}
+
+function parseNormalizeBy(value: unknown): NormalizeBy {
+    return NORMALIZE_MODES.find((mode) => mode === value) ?? DEFAULT_SETTINGS.normalizeBy;
 }
 
 function parseFadeType(value: unknown): FadeType {
@@ -207,6 +229,36 @@ export class PulsarSettingTab extends PluginSettingTab {
         containerEl.empty();
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
+
+        new Setting(containerEl)
+            .setName('Measure age against')
+            .setDesc("What counts as old. The whole history lets one ancient note set the far end for everything else; a window spends the entire range on the last so many days")
+            .addDropdown((dropdown) => {
+                for (const mode of NORMALIZE_MODES) {
+                    dropdown.addOption(mode, NORMALIZE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.normalizeBy).onChange(async (value) => {
+                    settings.normalizeBy = value as NormalizeBy;
+                    await this.plugin.saveSettings();
+                    // The window length below only applies in window mode.
+                    this.display();
+                });
+            });
+
+        if (settings.normalizeBy === 'window') {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Window')
+                    .setDesc('How many days back the range covers. Anything older sits at minimum opacity'),
+                WINDOW_RANGE,
+                settings.windowDays,
+                (value) => {
+                    settings.windowDays = Math.round(value);
+                    this.save();
+                }
+            );
+        }
 
         new Setting(containerEl)
             .setName('Fade type')
