@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0] - 2026-10-05
+
+### Added
+
+- A preview at the top of the settings, showing dots at real ages from your own
+  vault, each at the opacity the current settings would give a note that old. It
+  updates as you drag, and it reads the vault's actual span of ages rather than
+  an invented one, so what you see is what your graph will do.
+- Every slider now has a number box beside it. The box is left alone while you
+  are typing in it and tidied up when you leave, so a half finished number is
+  never corrected under the cursor.
+
+### Changed
+
+- `styles.css` is a release artifact again, now that the preview needs it. It was
+  dropped in 1.2.0 when the hover tooltip left the DOM.
+
 ## [1.3.0] - 2026-10-05
 
 ### Added
