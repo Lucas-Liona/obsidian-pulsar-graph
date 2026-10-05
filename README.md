@@ -76,6 +76,32 @@ of the vault; a window is a picture of what you're working on. The window is als
 the one that keeps meaning something when you come back after a month away,
 because it's anchored to the clock rather than to your newest note.
 
+### How ages turn into gaps
+
+**Age scale** decides what a gap between two notes is worth.
+
+| Scale | What it does | Good for |
+| --- | --- | --- |
+| Even | Opacity follows the calendar | A vault edited at a steady rate |
+| By rank | A note's place in the running order, not its date | Any vault — a lopsided history can't flatten it |
+| Logarithmic | Recent gaps count for more, old ones for less | Picking the last few days out of a long history |
+
+**By rank** is the one that can't be defeated by your editing history. Half your
+notes are above the halfway mark by construction, whatever the dates look like.
+Here's the same 1060 note vault with the default curve, counting notes in each
+fifth of the opacity range:
+
+| | | | | | |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Whole history, even | 17 | 12 | 22 | 8 | **1001** |
+| Whole history, by rank | 118 | 235 | 236 | 235 | 236 |
+| 30 day window, even | 850 | 23 | 88 | 47 | 52 |
+| 30 day window, by rank | 866 | 48 | 49 | 48 | 49 |
+
+The trade is that rank hides *how much* older something is. Two notes a year
+apart look as different as two notes a day apart, if nothing else sits between
+them. Even and logarithmic keep that information; rank spends it on contrast.
+
 ### Fade curves
 
 | Curve | What it does | Good for |
@@ -94,6 +120,7 @@ can see what a change does before you close the dialog.
 | --- | --- | --- | --- |
 | Measure age against | Whole history, Recent window | Whole history | all |
 | Window | 1 – 365 days | 30 | Recent window |
+| Age scale | Even, By rank, Logarithmic | Even | all |
 | Fade type | Linear, Exponential, Step | Linear | all |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all |
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all |

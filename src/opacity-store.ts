@@ -38,6 +38,9 @@ export class OpacityStore {
     /** The 'now' every cached opacity was measured against, in window mode. */
     private anchor = Date.now();
 
+    /** Every note's mtime in order, which is what rank reads positions out of. */
+    private ranking: number[] = [];
+
     constructor(private readonly getSettings: () => PulsarGraphSettings) {}
 
     build(files: TFile[]): void {
@@ -101,6 +104,7 @@ export class OpacityStore {
         }
 
         this.anchor = Date.now();
+        this.rebuildRanking();
         this.opacities.clear();
         for (const [path, mtime] of this.mtimes) {
             this.opacities.set(path, this.calculateOpacity(mtime));
@@ -124,6 +128,12 @@ export class OpacityStore {
             return [];
         }
 
+        // Rank spaces notes evenly by position, so walking the calendar would
+        // say nothing. Walking the places themselves shows the ages they land on.
+        if (this.getSettings().ageScale === 'rank') {
+            return this.samplePlaces(count);
+        }
+
         const { oldest, newest } = this.normalizingRange();
         const span = newest - oldest;
 
@@ -136,6 +146,24 @@ export class OpacityStore {
 
         for (let step = 0; step < count; step++) {
             const mtime = oldest + span * (count === 1 ? 1 : step / (count - 1));
+            samples.push({ mtime, opacity: this.calculateOpacity(mtime) });
+        }
+
+        return samples;
+    }
+
+    private samplePlaces(count: number): Sample[] {
+        const places = this.ranking.length;
+        if (places === 0) {
+            return [];
+        }
+
+        const samples: Sample[] = [];
+
+        for (let step = 0; step < count; step++) {
+            const at = count === 1 ? places - 1 : Math.round((step / (count - 1)) * (places - 1));
+            const mtime = this.ranking[at];
+
             samples.push({ mtime, opacity: this.calculateOpacity(mtime) });
         }
 
@@ -175,15 +203,75 @@ export class OpacityStore {
      * usually the only part anyone is reading.
      */
     private recencyOf(mtime: number): number {
-        const { normalizeBy, windowDays } = this.getSettings();
+        const { ageScale } = this.getSettings();
 
-        if (normalizeBy === 'window') {
-            const span = windowDays * MS_PER_DAY;
-            return clamp((mtime - (this.anchor - span)) / span, 0, 1);
+        if (ageScale === 'rank') {
+            return this.rankOf(mtime);
         }
 
-        const span = this.newestMtime - this.oldestMtime;
-        return span <= 0 ? 1 : (mtime - this.oldestMtime) / span;
+        const { oldest, newest } = this.normalizingRange();
+        const span = newest - oldest;
+
+        if (span <= 0) {
+            return 1;
+        }
+
+        if (ageScale === 'log') {
+            return clamp(1 - Math.log1p(days(newest - mtime)) / Math.log1p(days(span)), 0, 1);
+        }
+
+        return clamp((mtime - oldest) / span, 0, 1);
+    }
+
+    /**
+     * Where a note sits in the running order rather than on the calendar, so
+     * half the notes are always above the halfway mark however the edits fall
+     * in time. It is the one scale a lopsided history cannot flatten.
+     */
+    private rankOf(mtime: number): number {
+        const places = this.ranking.length;
+        if (places <= 1) {
+            return 1;
+        }
+
+        // Lower bound, so notes sharing an mtime share a place.
+        let low = 0;
+        let high = places;
+
+        while (low < high) {
+            const middle = (low + high) >> 1;
+
+            if (this.ranking[middle] < mtime) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+
+        return low / (places - 1);
+    }
+
+    /**
+     * Collects the mtimes rank counts, which is every note, or every note
+     * inside the window when one is set. A note older than the window is not
+     * given a place, and falls out at 0.
+     */
+    private rebuildRanking(): void {
+        if (this.getSettings().ageScale !== 'rank') {
+            this.ranking = [];
+            return;
+        }
+
+        const { oldest } = this.normalizingRange();
+        const inRange: number[] = [];
+
+        for (const mtime of this.mtimes.values()) {
+            if (mtime >= oldest) {
+                inRange.push(mtime);
+            }
+        }
+
+        this.ranking = inRange.sort((a, b) => a - b);
     }
 
     /** The two ends of the range opacity is currently measured against. */
@@ -239,4 +327,14 @@ export class OpacityStore {
 
 function clamp(value: number, lowest: number, highest: number): number {
     return Math.min(Math.max(value, lowest), highest);
+}
+
+/**
+ * Milliseconds as days, which is the unit the logarithmic scale is shaped in.
+ * Taking the log of a span in milliseconds would put the whole vault inside a
+ * couple of units of each other and undo the point of it; a day is also a fair
+ * floor, since two edits an hour apart are equally fresh.
+ */
+function days(milliseconds: number): number {
+    return Math.max(0, milliseconds) / MS_PER_DAY;
 }
