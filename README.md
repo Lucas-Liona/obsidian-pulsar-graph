@@ -1,104 +1,128 @@
 # Pulsar Graph
 
-Fade graph nodes by how recently each note was modified, so the part of your
-vault you are actually working in stands out and the rest recedes.
+Fades the nodes in Obsidian's graph by how recently you touched each note, so the
+part of your vault you're actually working in lights up and the rest sinks back.
 
-<!-- Demo GIF goes here: docs/demo.gif (see issue #2) -->
+<p align="center">
+  <a href="https://github.com/Lucas-Liona/obsidian-pulsar-graph/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Lucas-Liona/obsidian-pulsar-graph/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Lucas-Liona/obsidian-pulsar-graph"></a>
+  <img alt="Minimum Obsidian version" src="https://img.shields.io/github/manifest-json/minAppVersion/Lucas-Liona/obsidian-pulsar-graph?label=obsidian">
+</p>
 
-## How it works
+<p align="center">
+  <img src="docs/graph-dark.png" width="880" alt="A graph of about 1200 notes. A scattering of nodes is bright white, most are dim, and the dimmest are barely visible against the background.">
+</p>
 
-Every note gets a recency value between 0 and 1: the oldest note in the vault is
-0, the newest is 1. A fade curve shapes that value, and the result is mapped onto
-the opacity range you configure. That opacity becomes the node's alpha in the
-graph view.
+<p align="center"><i>My own vault, 1200 notes. Every bright dot is something I touched this week.</i></p>
 
-Opacity is relative to your vault, not to the calendar. The newest note always
-sits at maximum opacity, so a vault you have not touched in a month looks the
-same as one you edited this morning. Absolute time windows are planned
-([#3](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/3)).
+## Why I made it
 
-## Fade curves
+I built this plugin a year ago and I've been using it since, and I wanted to share
+it with people.
 
-| Curve | Shape | Good for |
+When you have a vault this big, you forget things you used to write. Graph mode
+equalizes everything — a note from two years ago sits there looking exactly like
+the one you wrote this morning. At first it's intimidating, and then it's just
+flat. I wanted the graph to carry time in it, so I could see what I've been
+working on without reading a single label, and so the old stuff would actually
+look old.
+
+That turned out to be the useful part. You find concepts you meant to keep up
+with and haven't touched in months — all those learning notes sitting out at the
+dim edge. It makes you want to go write them properly, and it pushes you toward
+real links and well-defined notes, because that's what makes the clusters show up.
+
+## How I use it
+
+Set Obsidian's **text fade threshold** (Graph view settings → Display) so the
+titles only appear once you lean in. Then at rest you're not reading anything —
+you're just looking at colour, and you can feel what's new and what's gone quiet.
+Zoom in a little and the names fade up right where you're looking.
+
+It does the same thing for the local graph. When you're in a note and you can see
+which of its neighbours are alive and which have been sitting there for a year,
+that's a different kind of context than a list of links.
+
+## What it does
+
+Every note gets a recency value between 0 and 1 — the oldest note in your vault is
+0, the newest is 1. A fade curve shapes that number, and the result becomes the
+node's opacity.
+
+Opacity is relative to your vault, not to the calendar. Your newest note always
+sits at maximum opacity, so a vault you haven't opened in a month looks the same
+as one you edited this morning. Anchoring to real time instead is
+[planned](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/3).
+
+### Fade curves
+
+| Curve | What it does | Good for |
 | --- | --- | --- |
 | Linear | Opacity tracks recency evenly | An even spread across the vault's history |
-| Exponential | `recency ^ steepness` | Emphasising very recent work; steepness above 1 is steeper, below 1 gentler |
+| Exponential | `recency ^ steepness` | Picking out very recent work. Steepness above 1 is sharper, below 1 gentler |
 | Step | Recency rounded onto evenly spaced levels | Reading the graph as distinct bands of age |
 
-<!-- Fade curve comparison image goes here: docs/curves.png (see issue #2) -->
-
-## Settings
+### Settings
 
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
 | Fade type | Linear, Exponential, Step | Linear | all |
-| Minimum opacity | 0.0 - 1.0 | 0.1 | all |
-| Maximum opacity | 0.0 - 12.0 | 3.0 | all |
-| Steepness | 0.1 - 10.0 | 2.0 | Exponential |
-| Number of steps | 1 - 20 | 5 | Step |
+| Minimum opacity | 0.0 – 1.0 | 0.1 | all |
+| Maximum opacity | 0.0 – 12.0 | 3.0 | all |
+| Steepness | 0.1 – 10.0 | 2.0 | Exponential |
+| Number of steps | 1 – 20 | 5 | Step |
 
-Maximum opacity is allowed above 1.0 on purpose. Obsidian multiplies a node's
-opacity by its own fade factor, so a value above 1.0 keeps recent notes at full
-strength while everything older still fades. Minimum opacity is capped at 1.0,
-and the two values cannot cross.
+Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
+its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
+while everything older still falls away. The two opacity sliders can't cross — move
+one past the other and it takes the other with it.
 
-<!-- Settings screenshot goes here: docs/settings.png (see issue #2) -->
+## Worth knowing
 
-## Behaviour worth knowing
+- **Only notes are faded.** Attachments and unresolved links keep whatever colour
+  the graph gives them. Their timestamps don't say anything about when you were
+  actually working on something.
+- **Your group colours survive.** The plugin changes how transparent a node is and
+  leaves its colour alone, so anything you've set up with graph groups still works.
+- **A faded node is still there.** Obsidian draws labels, links and physics with
+  their own opacity, so a note at minimum opacity still has a visible title and
+  stays clickable. This is a fade, not a filter — that's
+  [a separate idea](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/23).
+  Turning the text fade threshold up is the fix today, and it's the better way to
+  use it anyway.
+- **Nothing runs on a timer.** Opacity is reapplied when a note changes, when a
+  graph rebuilds, and when you change a setting. While the vault is idle the plugin
+  does nothing at all.
 
-- Only markdown notes are graded. Attachments and unresolved links keep the
-  colour the graph gives them, since their timestamps say nothing about when a
-  note was worked on.
-- Group colours survive. The plugin changes a node's alpha and leaves the colour
-  Obsidian assigned it, whether that came from a graph group or the theme.
-- A faded node is still a node. Obsidian draws labels, links and physics
-  independently of node opacity, so a note at minimum opacity remains visible as
-  a label and stays clickable. This is a fade, not a filter; filtering is
-  tracked in
-  [#23](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/23).
-- Updates are event-driven, not timed. Opacity is reapplied when a note changes,
-  when a graph rebuilds its data, and when a setting changes. Nothing runs while
-  the vault is idle.
+## Install
 
-## Installation
-
-### Community plugins
-
-1. **Settings** -> **Community plugins** -> **Browse**
-2. Search for *Pulsar Graph*, then **Install** and **Enable**
-
-### Manual
+Pulsar Graph isn't in the community directory yet. Until it is:
 
 1. Download `main.js` and `manifest.json` from the
    [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
 2. Put both in `YourVault/.obsidian/plugins/pulsar-graph/`.
-3. Reload Obsidian and enable the plugin under **Community plugins**.
+3. Reload Obsidian and turn it on under **Community plugins**.
 
 ## Compatibility
 
-- Obsidian 1.8.0 or newer
-- Desktop and mobile
-- Global graph and local graph views
+Obsidian 1.8.0 or newer, desktop and mobile, global and local graph views.
 
-The plugin reaches into Obsidian's graph renderer, which is not part of the
-public API. It degrades to doing nothing rather than erroring if those internals
-change, but a graph release can still require a fix here.
+The plugin reaches into Obsidian's graph renderer, which isn't part of the public
+API. It's written to quietly do nothing rather than break if those internals
+change, but a graph update can still mean it needs a fix here.
 
-## Roadmap
+## Where it's going
 
-Work is tracked in
-[issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues) and grouped
-into [milestones](https://github.com/Lucas-Liona/obsidian-pulsar-graph/milestones).
-The near-term themes:
+I made this to do one thing well, and I'd rather keep it that way than bolt on
+everything. That said, time is a bigger idea than opacity, and the direction I'm
+interested in is making time easier to see throughout the graph: a note's age on
+hover, a spotlight on whatever you edited last, a preview of the curve while
+you're setting it, and anchoring opacity to real dates instead of to your vault's
+own range. Further out, playing nicely with other ways of exploring a graph.
 
-- **Legibility** - a note's age on hover, a live preview of the fade curve in
-  settings, a spotlight on the most recently edited note.
-- **Time model** - absolute time windows, normalisation that survives a vault
-  where most notes are old and a few are new.
-- **Reach** - compatibility with other graph plugins, opacity pooled across
-  neighbours, a per-note edit history view.
-
-Ideas and bug reports are welcome in the issue tracker.
+It's all in the [issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues)
+and grouped into [milestones](https://github.com/Lucas-Liona/obsidian-pulsar-graph/milestones).
+If you use this and something is missing, open one.
 
 ## Development
 
@@ -111,19 +135,15 @@ npm run build   # production build, type-check included
 npm run lint
 ```
 
-`main.js` is a build artifact and is not committed. To test a build in Obsidian,
-copy it next to `manifest.json` in a vault's plugin folder and reload the plugin.
-[AGENTS.md](AGENTS.md) has the repo's conventions and release process.
+`main.js` is built, not committed. To try a build, copy it next to `manifest.json`
+in a vault's plugin folder and reload the plugin.
+[AGENTS.md](AGENTS.md) has the repo conventions and the release process.
 
-## About
+## Credits
 
-This started as a pet project: I wanted to see which corner of my own vault was
-alive, and the graph view would not tell me. It tries to do one thing well and
-stay out of the way. I wrote the original plugin myself and built v1.0 with
-Claude as a pair; the git history shows which commits are which.
-
-The plugin is local and offline. It reads note modification times and nothing
-else — no network calls, no telemetry, no vault content.
+Written by me. The 1.0 cleanup — splitting it into modules, the build and release
+setup, and a pile of bug fixes — I did with Claude, in my free time, to get the
+repo into shape so other people could actually use it.
 
 ## License
 
