@@ -40,10 +40,11 @@ jobs:
           subject-path: |
             main.js
             manifest.json
+            styles.css
 
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          gh release create "$tag" --title="$tag" --draft main.js manifest.json
+          gh release create "$tag" --title="$tag" --draft main.js manifest.json styles.css

@@ -71,11 +71,25 @@ as one you edited this morning. Anchoring to real time instead is
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all |
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential |
 | Number of steps | 1 – 20 | 5 | Step |
+| Show age on hover | on / off | on | all |
+| Spotlight the newest note | on / off | off | all |
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
 while everything older still falls away. The two opacity sliders can't cross — move
 one past the other and it takes the other with it.
+
+### Hover and spotlight
+
+Hovering a node tells you how long ago that note was modified — "3 days ago",
+"5 months ago" — right next to the pointer. Obsidian's own page preview still
+works alongside it.
+
+The spotlight tints the single most recently modified note with your theme's
+accent colour, so the thing you touched last is findable at a glance. It's off
+by default, because it's the one feature here that changes a node's colour
+rather than its opacity, and it puts the original colour back the moment the
+newest note changes or you turn it off.
 
 ## Worth knowing
 
@@ -84,6 +98,8 @@ one past the other and it takes the other with it.
   actually working on something.
 - **Your group colours survive.** The plugin changes how transparent a node is and
   leaves its colour alone, so anything you've set up with graph groups still works.
+  The one exception is the newest-note spotlight, which is off unless you turn it
+  on and restores the colour it replaced.
 - **A faded node is still there.** Obsidian draws labels, links and physics with
   their own opacity, so a note at minimum opacity still has a visible title and
   stays clickable. This is a fade, not a filter — that's
@@ -98,9 +114,9 @@ one past the other and it takes the other with it.
 
 Pulsar Graph isn't in the community directory yet. Until it is:
 
-1. Download `main.js` and `manifest.json` from the
+1. Download `main.js`, `manifest.json` and `styles.css` from the
    [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
-2. Put both in `YourVault/.obsidian/plugins/pulsar-graph/`.
+2. Put all three in `YourVault/.obsidian/plugins/pulsar-graph/`.
 3. Reload Obsidian and turn it on under **Community plugins**.
 
 ## Compatibility

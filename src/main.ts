@@ -1,7 +1,16 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
-import { applyOpacity, getGraphRenderers, GraphRenderer, hookRendererData, repaint, Unhook } from './graph';
+import { formatAge } from './age';
+import { applyOpacity, getGraphRenderers, GraphRenderer, hookRendererData, repaint, SpotlightState, Unhook } from './graph';
+import { AgeLabel, hookNodeHover } from './hover';
 import { OpacityStore } from './opacity-store';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
+
+/** Everything this plugin owns for one open graph view. */
+interface AttachedGraph {
+    release: Unhook;
+    label: AgeLabel;
+    spotlight: SpotlightState;
+}
 
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
 const UPDATE_DELAY_MS = 150;
@@ -10,9 +19,9 @@ export default class PulsarGraphPlugin extends Plugin {
     settings: PulsarGraphSettings = DEFAULT_SETTINGS;
 
     private readonly store = new OpacityStore(() => this.settings);
-    private readonly unhooks = new Map<GraphRenderer, Unhook>();
+    private readonly attached = new Map<GraphRenderer, AttachedGraph>();
 
-    private readonly updateSoon = debounce(() => this.updateGraphs(), UPDATE_DELAY_MS, true);
+    private readonly updateSoon = debounce(() => this.syncRenderers(), UPDATE_DELAY_MS, true);
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -42,10 +51,10 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     onunload(): void {
-        for (const unhook of this.unhooks.values()) {
-            unhook();
+        for (const graph of this.attached.values()) {
+            graph.release();
         }
-        this.unhooks.clear();
+        this.attached.clear();
     }
 
     async loadSettings(): Promise<void> {
@@ -55,7 +64,7 @@ export default class PulsarGraphPlugin extends Plugin {
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
         this.store.markStale();
-        this.updateGraphs();
+        this.syncRenderers();
     }
 
     private onFileChanged(file: TAbstractFile): void {
@@ -68,42 +77,75 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
-     * Hooks renderers that have appeared and releases ones whose view is gone,
-     * so no graph keeps a patched setData after its leaf closes.
+     * Attaches to renderers that have appeared and releases ones whose view is
+     * gone, so no graph keeps a patched setData or a stray label after its leaf
+     * closes.
      */
     private syncRenderers(): void {
         const open = new Set(getGraphRenderers(this.app));
 
-        for (const [renderer, unhook] of this.unhooks) {
+        for (const [renderer, graph] of this.attached) {
             if (!open.has(renderer)) {
-                unhook();
-                this.unhooks.delete(renderer);
+                graph.release();
+                this.attached.delete(renderer);
             }
         }
 
         for (const renderer of open) {
-            if (this.unhooks.has(renderer)) {
-                continue;
-            }
-
-            const unhook = hookRendererData(renderer, () => this.applyTo(renderer));
-            if (unhook) {
-                this.unhooks.set(renderer, unhook);
+            if (!this.attached.has(renderer)) {
+                this.attached.set(renderer, this.attach(renderer));
             }
 
             this.applyTo(renderer);
         }
     }
 
-    private updateGraphs(): void {
-        for (const renderer of getGraphRenderers(this.app)) {
-            this.applyTo(renderer);
+    private attach(renderer: GraphRenderer): AttachedGraph {
+        const label = new AgeLabel(renderer);
+
+        const releaseData = hookRendererData(renderer, () => this.applyTo(renderer));
+        const releaseHover = hookNodeHover(renderer, {
+            onHover: (path) => this.showAge(label, path),
+            onUnhover: () => label.hide()
+        });
+
+        return {
+            label,
+            spotlight: {},
+            release: () => {
+                releaseData?.();
+                releaseHover();
+                label.destroy();
+            }
+        };
+    }
+
+    /**
+     * Nodes exist for attachments and unresolved links too, and those carry no
+     * modification time worth showing, so the label stays hidden for them.
+     */
+    private showAge(label: AgeLabel, path: string): void {
+        const mtime = this.settings.showAgeOnHover ? this.store.mtimeFor(path) : undefined;
+
+        if (mtime === undefined) {
+            label.hide();
+            return;
         }
+
+        label.show(formatAge(mtime, Date.now()));
     }
 
     private applyTo(renderer: GraphRenderer): void {
+        const graph = this.attached.get(renderer);
+        if (!graph) {
+            return;
+        }
+
         this.store.refresh();
-        applyOpacity(renderer, this.store);
+        applyOpacity(renderer, this.store, {
+            spotlightNewest: this.settings.spotlightNewest,
+            spotlight: graph.spotlight
+        });
         repaint(renderer);
     }
 }

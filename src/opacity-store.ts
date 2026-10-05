@@ -17,6 +17,7 @@ export class OpacityStore {
 
     private oldestMtime = Date.now();
     private newestMtime = 0;
+    private newestNotePath: string | undefined;
 
     constructor(private readonly getSettings: () => PulsarGraphSettings) {}
 
@@ -37,7 +38,12 @@ export class OpacityStore {
 
         if (mtime < this.oldestMtime || mtime > this.newestMtime) {
             this.oldestMtime = Math.min(this.oldestMtime, mtime);
-            this.newestMtime = Math.max(this.newestMtime, mtime);
+
+            if (mtime > this.newestMtime) {
+                this.newestMtime = mtime;
+                this.newestNotePath = file.path;
+            }
+
             this.opacitiesStale = true;
             return;
         }
@@ -79,6 +85,11 @@ export class OpacityStore {
         this.opacitiesStale = false;
     }
 
+    /** The most recently modified note, which the spotlight setting picks out. */
+    newestPath(): string | undefined {
+        return this.newestNotePath;
+    }
+
     mtimeFor(path: string): number | undefined {
         return this.mtimes.get(path);
     }
@@ -111,18 +122,24 @@ export class OpacityStore {
         if (this.mtimes.size === 0) {
             this.oldestMtime = Date.now();
             this.newestMtime = 0;
+            this.newestNotePath = undefined;
             return;
         }
 
         let oldest = Date.now();
         let newest = 0;
+        let newestPath: string | undefined;
 
-        for (const mtime of this.mtimes.values()) {
+        for (const [path, mtime] of this.mtimes) {
             if (mtime < oldest) oldest = mtime;
-            if (mtime > newest) newest = mtime;
+            if (mtime > newest) {
+                newest = mtime;
+                newestPath = path;
+            }
         }
 
         this.oldestMtime = oldest;
         this.newestMtime = newest;
+        this.newestNotePath = newestPath;
     }
 }

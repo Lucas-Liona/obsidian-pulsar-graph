@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2026-10-05
+
+### Added
+- Hovering a node shows how long ago that note was modified, next to the
+  pointer. On by default, and it leaves Obsidian's own page preview working
+- Optional spotlight on the single most recently modified note, tinting it with
+  the theme's accent colour. Off by default, and it puts back whatever colour
+  the node had when the newest note changes or the setting is turned off
+
 ## [1.0.0] - 2026-10-05
 
 First release.
