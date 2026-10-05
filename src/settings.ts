@@ -13,9 +13,20 @@ const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
     window: 'A recent window'
 };
 
+export type AgeScale = 'even' | 'rank' | 'log';
+
+const AGE_SCALES = ['even', 'rank', 'log'] as const;
+
+const AGE_SCALE_LABELS: Record<AgeScale, string> = {
+    even: 'Even',
+    rank: 'By rank',
+    log: 'Logarithmic'
+};
+
 export interface PulsarGraphSettings {
     normalizeBy: NormalizeBy;
     windowDays: number;
+    ageScale: AgeScale;
     fadeType: FadeType;
     minOpacity: number;
     maxOpacity: number;
@@ -38,6 +49,7 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     normalizeBy: 'vault',
     windowDays: 30,
+    ageScale: 'even',
     fadeType: 'linear',
     minOpacity: 0.1,
     maxOpacity: 3.0,
@@ -157,6 +169,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
     return {
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
+        ageScale: parseAgeScale(data.ageScale),
         fadeType: parseFadeType(data.fadeType),
         minOpacity: Math.min(minOpacity, maxOpacity),
         maxOpacity: Math.max(minOpacity, maxOpacity),
@@ -167,6 +180,10 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         spotlightColor: parseColor(data.spotlightColor),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
     };
+}
+
+function parseAgeScale(value: unknown): AgeScale {
+    return AGE_SCALES.find((scale) => scale === value) ?? DEFAULT_SETTINGS.ageScale;
 }
 
 function parseNormalizeBy(value: unknown): NormalizeBy {
@@ -259,6 +276,21 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+
+        new Setting(containerEl)
+            .setName('Age scale')
+            .setDesc('How a gap between two notes becomes a gap in opacity. Rank spreads them evenly however lopsided your editing has been; logarithmic magnifies recent differences and flattens old ones')
+            .addDropdown((dropdown) => {
+                for (const scale of AGE_SCALES) {
+                    dropdown.addOption(scale, AGE_SCALE_LABELS[scale]);
+                }
+
+                dropdown.setValue(settings.ageScale).onChange(async (value) => {
+                    settings.ageScale = value as AgeScale;
+                    await this.plugin.saveSettings();
+                    this.renderPreview();
+                });
+            });
 
         new Setting(containerEl)
             .setName('Fade type')

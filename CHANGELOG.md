@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.6.0] - 2026-10-05
+
+### Added
+
+- **Age scale**, choosing how a gap in time becomes a gap in opacity. Even, the
+  default, is unchanged. Closes #4.
+
+  **By rank** places a note by where it sits in the running order rather than by
+  its date, so half the vault is above the halfway mark whatever the editing
+  history looks like. It is the one scale a long tail cannot flatten. On a 1060
+  note vault with the default curve, the fifths of the opacity range go from
+  17/12/22/8/1001 to 118/235/236/235/236.
+
+  **Logarithmic** shapes opacity by the log of a note's age in days, so a day
+  against a week separates far more than a year against two. Days rather than
+  milliseconds on purpose: the log of a span in milliseconds puts a whole vault
+  within a couple of units of itself, and a day is a fair floor for two edits an
+  hour apart.
+
+  Both combine with the window from 1.5.0. Rank inside a window ranks only the
+  notes in it, and anything older falls out at the minimum.
+
+- The settings preview walks the places rather than the calendar in rank mode,
+  since even steps through time say nothing about a scale that ignores time. It
+  shows the real ages those places land on.
+
 ## [1.5.0] - 2026-10-05
 
 ### Added
