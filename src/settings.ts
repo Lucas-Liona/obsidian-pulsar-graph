@@ -1,4 +1,5 @@
 import { App, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
+import { AgeMode } from './age-label';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -8,9 +9,17 @@ export interface PulsarGraphSettings {
     maxOpacity: number;
     steepness: number;
     numSteps: number;
-    showAgeOnHover: boolean;
+    ageLabels: AgeMode;
     spotlightNewest: boolean;
 }
+
+const AGE_MODES = ['off', 'hover', 'titles'] as const;
+
+const AGE_MODE_LABELS: Record<AgeMode, string> = {
+    off: 'Never',
+    hover: 'On hover',
+    titles: 'Whenever titles are shown'
+};
 
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     fadeType: 'linear',
@@ -18,7 +27,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     maxOpacity: 3.0,
     steepness: 2.0,
     numSteps: 5,
-    showAgeOnHover: true,
+    ageLabels: 'hover',
     spotlightNewest: false
 };
 
@@ -42,7 +51,8 @@ const STEPS_RANGE = { lowest: 1, highest: 20, step: 1 };
  * Reads saved settings, repairing anything missing, malformed or out of range.
  * Fade types used to be stored capitalized ('Linear'), so saved values are
  * matched case-insensitively, and opacity used to be free text, so a stored
- * range can be inverted or far outside what the sliders allow.
+ * range can be inverted or far outside what the sliders allow. Age labels used
+ * to be a plain on-off toggle.
  */
 export function parseSettings(stored: unknown): PulsarGraphSettings {
     const data = (stored ?? {}) as Record<string, unknown>;
@@ -56,7 +66,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         maxOpacity: Math.max(minOpacity, maxOpacity),
         steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
         numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest)),
-        showAgeOnHover: parseBoolean(data.showAgeOnHover, DEFAULT_SETTINGS.showAgeOnHover),
+        ageLabels: parseAgeMode(data.ageLabels, data.showAgeOnHover),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest)
     };
 }
@@ -68,6 +78,22 @@ function parseFadeType(value: unknown): FadeType {
 
     const normalized = value.toLowerCase();
     return FADE_TYPES.find((fadeType) => fadeType === normalized) ?? DEFAULT_SETTINGS.fadeType;
+}
+
+/** Carries the 1.1 on-off toggle onto the mode that replaced it. */
+function parseAgeMode(value: unknown, legacy: unknown): AgeMode {
+    if (typeof value === 'string') {
+        const mode = AGE_MODES.find((candidate) => candidate === value);
+        if (mode) {
+            return mode;
+        }
+    }
+
+    if (typeof legacy === 'boolean') {
+        return legacy ? 'hover' : 'off';
+    }
+
+    return DEFAULT_SETTINGS.ageLabels;
 }
 
 function parseNumber(value: unknown, fallback: number): number {
@@ -185,15 +211,18 @@ export class PulsarSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('Show age on hover')
-            .setDesc('How long ago the note was modified, shown while you hover a node')
-            .addToggle((toggle) => toggle
-                .setValue(settings.showAgeOnHover)
-                .onChange(async (value) => {
-                    settings.showAgeOnHover = value;
+            .setName('Show note age')
+            .setDesc('How long ago a note was modified, drawn above its node the way the title is drawn below it')
+            .addDropdown((dropdown) => {
+                for (const mode of AGE_MODES) {
+                    dropdown.addOption(mode, AGE_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.ageLabels).onChange(async (value) => {
+                    settings.ageLabels = value as AgeMode;
                     await this.plugin.saveSettings();
-                })
-            );
+                });
+            });
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')

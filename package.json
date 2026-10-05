@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-pulsar-graph",
-	"version": "1.0.0",
+	"version": "1.2.0",
 	"description": "Temporal visualization for Obsidian's graph view - fade nodes by modification time",
 	"main": "main.js",
 	"scripts": {
