@@ -11,6 +11,8 @@ export interface PulsarGraphSettings {
     numSteps: number;
     ageLabels: AgeMode;
     spotlightNewest: boolean;
+    spotlightColor: string;
+    spotlightStrength: number;
 }
 
 const AGE_MODES = ['off', 'hover', 'titles'] as const;
@@ -28,8 +30,12 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     steepness: 2.0,
     numSteps: 5,
     ageLabels: 'hover',
-    spotlightNewest: false
+    spotlightNewest: false,
+    spotlightColor: '#ffffff',
+    spotlightStrength: 1
 };
+
+const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -67,7 +73,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
         numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest)),
         ageLabels: parseAgeMode(data.ageLabels, data.showAgeOnHover),
-        spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest)
+        spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
+        spotlightColor: parseColor(data.spotlightColor),
+        spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
     };
 }
 
@@ -94,6 +102,11 @@ function parseAgeMode(value: unknown, legacy: unknown): AgeMode {
     }
 
     return DEFAULT_SETTINGS.ageLabels;
+}
+
+/** Only a six digit hex colour survives; anything else falls back. */
+function parseColor(value: unknown): string {
+    return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : DEFAULT_SETTINGS.spotlightColor;
 }
 
 function parseNumber(value: unknown, fallback: number): number {
@@ -226,14 +239,42 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
-            .setDesc("Tint the single most recently modified note with the theme's accent colour")
+            .setDesc('Paint the single most recently modified note a colour of your own, so the thing you touched last is findable at a glance')
             .addToggle((toggle) => toggle
                 .setValue(settings.spotlightNewest)
                 .onChange(async (value) => {
                     settings.spotlightNewest = value;
                     await this.plugin.saveSettings();
+                    // The colour and strength below only apply when it is on.
+                    this.display();
                 })
             );
+
+        if (settings.spotlightNewest) {
+            new Setting(containerEl)
+                .setName('Spotlight colour')
+                .setDesc('White reads well on a dark theme. Pick something darker if yours is light')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.spotlightColor)
+                    .onChange(async (value) => {
+                        settings.spotlightColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new Setting(containerEl)
+                .setName('Spotlight strength')
+                .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it")
+                .addSlider((slider) => slider
+                    .setLimits(STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest, STRENGTH_RANGE.step)
+                    .setValue(settings.spotlightStrength)
+                    .setDynamicTooltip()
+                    .onChange(async (value) => {
+                        settings.spotlightStrength = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+        }
 
         new Setting(containerEl)
             .setName('Reset to defaults')

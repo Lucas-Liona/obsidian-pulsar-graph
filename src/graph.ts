@@ -70,13 +70,13 @@ export interface GraphRenderer {
     /** Theme colours the renderer reads from CSS. */
     colors?: {
         fill?: { rgb: number };
-        /** What Obsidian tints a node with while the cursor is on it. */
-        fillHighlight?: { rgb: number };
         /** What titles are drawn in. */
         text?: { rgb: number };
     };
     /** The per-frame draw, reassigned whenever graphics are rebuilt. */
     renderCallback?: (() => void) | null;
+    /** The node under the cursor, which Obsidian colours for itself. */
+    getHighlightNode?: () => GraphNode | null | undefined;
     /** Assigned by the graph view; see hookNodeHover. */
     onNodeHover?: ((event: MouseEvent, id: string, type: string) => void) | null;
     onNodeUnhover?: (() => void) | null;
@@ -106,8 +106,12 @@ export function getGraphRenderers(app: App): GraphRenderer[] {
 }
 
 export interface OpacityOptions {
-    /** Tints the single most recently modified note with the theme's accent. */
+    /** Picks the single most recently modified note out of the graph. */
     spotlightNewest: boolean;
+    /** The colour to paint it, as a packed 0xRRGGBB. */
+    spotlightRgb: number;
+    /** 0 leaves the node's own colour alone, 1 replaces it outright. */
+    spotlightStrength: number;
     /**
      * The node the spotlight is currently painted over, and the colour it had
      * before. Node colour is the only place a graph group's colour lives, so
@@ -120,13 +124,14 @@ export interface OpacityOptions {
 export interface SpotlightState {
     path?: string;
     originalRgb?: number;
+    /** What the spotlight settled on, so a frame can hold the tint there. */
+    paintedRgb?: number;
 }
 
 /** Writes each node's cached opacity into the colour the renderer draws with. */
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): void {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
-    const spotlightRgb = renderer.colors?.fillHighlight?.rgb;
-    const spotlitPath = options.spotlightNewest && spotlightRgb !== undefined ? store.newestPath() : undefined;
+    const spotlitPath = options.spotlightNewest ? store.newestPath() : undefined;
 
     releaseSpotlight(renderer, options.spotlight, spotlitPath);
 
@@ -139,16 +144,58 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         const opacity = store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime);
         const currentRgb = node.color?.rgb ?? fallbackRgb;
 
-        if (path === spotlitPath && spotlightRgb !== undefined) {
+        if (path === spotlitPath) {
             options.spotlight.path ??= path;
             options.spotlight.originalRgb ??= currentRgb;
 
-            node.color = { a: opacity, rgb: spotlightRgb };
+            const painted = blend(options.spotlight.originalRgb, options.spotlightRgb, options.spotlightStrength);
+            options.spotlight.paintedRgb = painted;
+
+            node.color = { a: opacity, rgb: painted };
             continue;
         }
 
         node.color = { a: opacity, rgb: currentRgb };
     }
+
+    holdSpotlightTint(renderer, options.spotlight);
+}
+
+/**
+ * Pins the spotlit node's drawn tint to the colour it was given.
+ *
+ * Obsidian eases a node's tint toward its colour by a tenth each frame and
+ * stops drawing once the graph has been idle for sixty frames, so a tint that
+ * started on a graph group's colour freezes part way and the spotlight comes out
+ * as a blend of the two. Assigning it outright is what makes the chosen colour
+ * the colour you actually see.
+ *
+ * Skipped while the node is hovered, where Obsidian owns the colour and the
+ * feedback is worth more than the spotlight.
+ */
+export function holdSpotlightTint(renderer: GraphRenderer, spotlight: SpotlightState): void {
+    const { path, paintedRgb } = spotlight;
+    if (path === undefined || paintedRgb === undefined) {
+        return;
+    }
+
+    const node = renderer.nodeLookup[path];
+    if (!node?.circle || renderer.getHighlightNode?.() === node) {
+        return;
+    }
+
+    node.circle.tint = paintedRgb;
+}
+
+/** Mixes two packed colours channel by channel. */
+function blend(from: number, to: number, amount: number): number {
+    const mix = (shift: number): number => {
+        const a = (from >> shift) & 0xff;
+        const b = (to >> shift) & 0xff;
+        return Math.round(a + (b - a) * amount) & 0xff;
+    };
+
+    return (mix(16) << 16) | (mix(8) << 8) | mix(0);
 }
 
 /** Puts back the colour the spotlight painted over, once it moves elsewhere. */
@@ -157,13 +204,45 @@ function releaseSpotlight(renderer: GraphRenderer, spotlight: SpotlightState, ne
         return;
     }
 
-    const node = renderer.nodeLookup[spotlight.path];
-    if (node?.color && spotlight.originalRgb !== undefined) {
-        node.color = { a: node.color.a, rgb: spotlight.originalRgb };
+    clearSpotlight(renderer, spotlight);
+}
+
+/**
+ * Hands the spotlit node its own colour back, tint included.
+ *
+ * Unloading without this would leave the node painted, and the next load would
+ * read that paint as the colour to preserve, losing the real one for good.
+ */
+export function clearSpotlight(renderer: GraphRenderer, spotlight: SpotlightState): void {
+    const { path, originalRgb } = spotlight;
+
+    if (path !== undefined && originalRgb !== undefined) {
+        const node = renderer.nodeLookup[path];
+
+        if (node?.color) {
+            node.color = { a: node.color.a, rgb: originalRgb };
+        }
+
+        if (node?.circle) {
+            node.circle.tint = originalRgb;
+        }
     }
 
     spotlight.path = undefined;
     spotlight.originalRgb = undefined;
+    spotlight.paintedRgb = undefined;
+}
+
+/**
+ * Forgets the colour the spotlight is preserving, without disturbing the node.
+ *
+ * Called when Obsidian has just rewritten every node's colour from group data,
+ * which makes what is on the node authoritative again and anything remembered
+ * from before it stale.
+ */
+export function forgetSpotlightColor(spotlight: SpotlightState): void {
+    spotlight.originalRgb = undefined;
+    spotlight.paintedRgb = undefined;
 }
 
 /**

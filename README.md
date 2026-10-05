@@ -104,11 +104,16 @@ That last one is worth a try if you already use the text fade threshold the way 
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
 
-The spotlight tints the single most recently modified note with your theme's
-accent colour, so the thing you touched last is findable at a glance. It's off
-by default, because it's the one feature here that changes a node's colour
-rather than its opacity, and it puts the original colour back the moment the
-newest note changes or you turn it off.
+The spotlight paints the single most recently modified note a colour of your
+own, so the thing you touched last is findable at a glance. It's off by default,
+because it's the one feature here that changes a node's colour rather than its
+opacity, and it puts the original colour back the moment the newest note changes,
+you turn it off, or the plugin unloads.
+
+**Spotlight strength** decides how far that colour overrides the node's own. At
+full strength you get exactly the colour you picked. Below that it mixes with
+whatever your graph groups gave the node, which is the only way a group colour
+should ever end up in there.
 
 ## Worth knowing
 
