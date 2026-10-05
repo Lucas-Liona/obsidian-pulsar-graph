@@ -1,7 +1,7 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
-import { applyOpacity, FrameHook, getGraphRenderers, GraphRenderer, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
+import { applyOpacity, clearSpotlight, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore } from './opacity-store';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
@@ -107,8 +107,18 @@ export default class PulsarGraphPlugin extends Plugin {
         const labels = new AgeLabels(renderer, (path) => this.describeAge(path));
         labels.setMode(this.settings.ageLabels);
 
-        const releaseData = hookRendererData(renderer, () => this.applyTo(renderer));
-        const frames = hookRendererFrame(renderer, () => labels.sync());
+        const spotlight: SpotlightState = {};
+
+        const releaseData = hookRendererData(renderer, () => {
+            // Obsidian has just rewritten every colour from group data, so the
+            // colour the spotlight was preserving is stale.
+            forgetSpotlightColor(spotlight);
+            this.applyTo(renderer);
+        });
+        const frames = hookRendererFrame(renderer, () => {
+            labels.sync();
+            holdSpotlightTint(renderer, spotlight);
+        });
 
         const releaseHover = hookNodeHover(renderer, {
             onHover: (path) => {
@@ -124,12 +134,14 @@ export default class PulsarGraphPlugin extends Plugin {
         return {
             labels,
             frames,
-            spotlight: {},
+            spotlight,
             release: () => {
                 releaseData?.();
                 releaseHover();
                 frames?.release();
                 labels.destroy();
+                clearSpotlight(renderer, spotlight);
+                repaint(renderer);
             }
         };
     }
@@ -164,7 +176,10 @@ export default class PulsarGraphPlugin extends Plugin {
         // Obsidian assigns a new render callback whenever it rebuilds a
         // graph's graphics, which drops the wrapper the labels are driven by.
         if (graph.frames && !graph.frames.isInstalled()) {
-            graph.frames = hookRendererFrame(renderer, () => graph.labels.sync());
+            graph.frames = hookRendererFrame(renderer, () => {
+                graph.labels.sync();
+                holdSpotlightTint(renderer, graph.spotlight);
+            });
         }
 
         graph.labels.setMode(this.settings.ageLabels);
@@ -172,10 +187,17 @@ export default class PulsarGraphPlugin extends Plugin {
         this.store.refresh();
         applyOpacity(renderer, this.store, {
             spotlightNewest: this.settings.spotlightNewest,
+            spotlightRgb: parseHexColor(this.settings.spotlightColor),
+            spotlightStrength: this.settings.spotlightStrength,
             spotlight: graph.spotlight
         });
         repaint(renderer);
     }
+}
+
+/** Turns a '#rrggbb' setting into the packed number the renderer tints with. */
+function parseHexColor(value: string): number {
+    return Number.parseInt(value.slice(1), 16) || 0xffffff;
 }
 
 /**

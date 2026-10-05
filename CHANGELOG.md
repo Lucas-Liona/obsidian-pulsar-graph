@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.3.0] - 2026-10-05
+
+### Added
+
+- **Spotlight colour** and **Spotlight strength**. The spotlight used to borrow
+  the theme's hover colour, which is the colour Obsidian already paints whatever
+  node you are pointing at, so the newest note and a hovered one looked the same.
+  Pick your own instead. Strength below 1 mixes it with the colour the node
+  already had, which is the only way a graph group's colour should ever reach it.
+
+### Fixed
+
+- The spotlight came out as a blend of its own colour and the group colour
+  underneath. Obsidian eases a node's tint a tenth of the way per frame and
+  stops drawing after sixty idle frames, so the colour froze part way there. The
+  spotlit node's tint is now assigned outright.
+- The spotlight stopped standing out at high maximum opacity. Opacity above 1 is
+  clamped when drawn, so once enough notes reach full strength none of them can
+  be told apart by brightness and only the colour was left to do the work — and
+  the colour was the washed out blend above.
+- Turning the plugin off, or reloading it, left the newest note painted. The
+  next load then read that paint as the colour to preserve and lost the real one.
+  The colour is handed back on unload, and forgotten whenever Obsidian rewrites
+  node colours from group data, so what is remembered is never stale.
+
 ## [1.2.0] - 2026-10-05
 
 ### Changed
