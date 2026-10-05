@@ -33,6 +33,7 @@ export interface PulsarGraphSettings {
     steepness: number;
     numSteps: number;
     ageLabels: AgeMode;
+    statusBarAge: boolean;
     spotlightNewest: boolean;
     spotlightColor: string;
     spotlightStrength: number;
@@ -56,6 +57,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     steepness: 2.0,
     numSteps: 5,
     ageLabels: 'hover',
+    statusBarAge: false,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
     spotlightStrength: 1
@@ -176,6 +178,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         steepness: clamp(parseNumber(data.steepness, DEFAULT_SETTINGS.steepness), STEEPNESS_RANGE.lowest, STEEPNESS_RANGE.highest),
         numSteps: Math.round(clamp(parseNumber(data.numSteps, DEFAULT_SETTINGS.numSteps), STEPS_RANGE.lowest, STEPS_RANGE.highest)),
         ageLabels: parseAgeMode(data.ageLabels, data.showAgeOnHover),
+        statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
@@ -390,6 +393,17 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        new Setting(containerEl)
+            .setName('Show the open note\'s age in the status bar')
+            .setDesc('Reads the note you have open rather than the graph, so it works with no graph view in sight')
+            .addToggle((toggle) => toggle
+                .setValue(settings.statusBarAge)
+                .onChange(async (value) => {
+                    settings.statusBarAge = value;
+                    await this.plugin.saveSettings();
+                })
+            );
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
