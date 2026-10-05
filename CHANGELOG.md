@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.12.0] - 2026-10-05
+
+### Added
+
+- **Trace what was written together**, off by default, with its own gap and
+  colour. The link between two notes saved within one sitting of each other is
+  coloured, so a reading of the graph shows what was worked on together rather
+  than only when. Part of #25, and the last of the four.
+
+  Trails are carried by colour and age by brightness, so the two say different
+  things about the same link instead of competing for one channel. It works
+  whether or not the links are aged. Obsidian eases a link's tint back by itself
+  once the plugin stops writing it, so switching this off needs nothing undone.
+
 ## [1.11.0] - 2026-10-05
 
 ### Added

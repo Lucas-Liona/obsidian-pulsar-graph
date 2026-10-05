@@ -53,6 +53,7 @@ export interface GraphLink {
     rendered?: boolean;
     line?: {
         alpha: number;
+        tint: number;
         texture?: GraphTexture;
     } | null;
 }
