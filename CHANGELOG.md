@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.26.0] - 2026-10-06
+
+### Added
+
+- **Blend in edit intensity**, at 0 by default. A node's brightness can now come
+  partly from how often you return to a note rather than only from how recently
+  you touched it, so the note you revisit weekly outshines the one you opened
+  once even when both were touched this morning.
+
+  `brightness = (1 - blend) * recency + blend * intensity`. Added rather than
+  multiplied, for two reasons: at 0 it is exactly the previous behaviour, so the
+  feature being off by default falls out of the arithmetic rather than needing a
+  branch; and a product would make a note with nothing recorded vanish however
+  recently it was edited, which is every note for the first weeks after the
+  history is switched on.
+
+  Intensity is a sitting count, normalised by rank by default. Counts are far
+  more lopsided than dates — most notes have one or two and a handful have dozens
+  — so measuring against the busiest note leaves nearly everything at the bottom.
+  **Against the busiest note** and **Logarithmic** are the alternatives.
+
+  Measured on a real vault, four notes with 5, 5, 1 and 0 sittings: at a blend of
+  0 their opacities were 1.72, 1.80, 1.64 and 0.05; at 0.5 they became 2.13,
+  2.18, 0.05 and 0.05; at 1 the two five-sitting notes converged exactly, as
+  equal ranks should. A blend of 0 was confirmed bit-identical to the old path.
+
+  The curve preview shows age alone, since the ages it walks belong to no note
+  and so have no intensity to read.
+
 ## [1.25.0] - 2026-10-06
 
 ### Added
