@@ -21,6 +21,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `links.ts` | Age and session trails carried into the links |
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
+| `tabs.ts` | Attention time, and fading the tab bar by it |
 | `stats.ts` | What the settings are doing to this vault |
 | `filter.ts` | Which notes survive, applied before the renderer sees them |
 | `range-bar.ts` | The unit line with a handle at each end |

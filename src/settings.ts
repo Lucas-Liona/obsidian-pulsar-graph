@@ -5,6 +5,7 @@ import { LinkRecency } from './links';
 import { OpacityRange, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { RangeBar } from './range-bar';
+import { TabFade } from './tabs';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -53,7 +54,18 @@ export interface PulsarGraphSettings {
     saved: SavedPreset[];
     filterEnabled: boolean;
     filterRanges: OpacityRange[];
+    tabFade: TabFade;
+    tabFadeAfter: number;
+    tabFadeFloor: number;
 }
+
+const TAB_MODES = ['off', 'attention', 'modified'] as const;
+
+const TAB_MODE_LABELS: Record<TabFade, string> = {
+    off: 'Never',
+    attention: 'By how long since you looked at it',
+    modified: 'By how long since it was edited'
+};
 
 export type ClusterBy = 'folder' | 'component';
 
@@ -105,8 +117,16 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailStrength: 0.55,
     saved: [],
     filterEnabled: false,
-    filterRanges: [{ ...WHOLE_RANGE }]
+    filterRanges: [{ ...WHOLE_RANGE }],
+    tabFade: 'off',
+    tabFadeAfter: 60,
+    tabFadeFloor: 0.35
 };
+
+/** A minute is twitchy; a day never arrives while you are looking. */
+const TAB_AFTER_RANGE = { lowest: 1, highest: 480, step: 1 };
+
+const TAB_FLOOR_RANGE = { lowest: 0.1, highest: 1, step: 0.05 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
@@ -248,7 +268,10 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
         filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
-        filterRanges: parseRanges(data.filterRanges)
+        filterRanges: parseRanges(data.filterRanges),
+        tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
+        tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
+        tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest)
     };
 }
 
@@ -732,6 +755,51 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             );
+
+        section('Tabs');
+
+        new Setting(containerEl)
+            .setName('Fade tabs')
+            .setDesc('Dims a tab the longer it goes untouched, so the tab bar reads as attention rather than a pile of things you opened once. The close button keeps its strength, and the tab you are in never fades')
+            .addDropdown((dropdown) => {
+                for (const mode of TAB_MODES) {
+                    dropdown.addOption(mode, TAB_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.tabFade).onChange(async (value) => {
+                    settings.tabFade = value as TabFade;
+                    await this.plugin.saveSettings();
+                    this.display();
+                });
+            });
+
+        if (settings.tabFade === 'attention') {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Faded after')
+                    .setDesc('Minutes of being ignored before a tab is as faint as it gets. Time spent in a note does not count against it'),
+                TAB_AFTER_RANGE,
+                settings.tabFadeAfter,
+                (value) => {
+                    settings.tabFadeAfter = Math.round(value);
+                    this.save();
+                }
+            );
+        }
+
+        if (settings.tabFade !== 'off') {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Faintest a tab gets')
+                    .setDesc('A tab you cannot read is a tab you cannot get back to, so this does not go to zero'),
+                TAB_FLOOR_RANGE,
+                settings.tabFadeFloor,
+                (value) => {
+                    settings.tabFadeFloor = value;
+                    this.save();
+                }
+            );
+        }
 
         section('Spotlight');
 
