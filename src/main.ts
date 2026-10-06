@@ -4,7 +4,7 @@ import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
 import { GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, Unhook } from './graph';
+import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeVault, VaultStats } from './stats';
@@ -313,8 +313,15 @@ export default class PulsarGraphPlugin extends Plugin {
             })
         );
         const preview: { ranges: OpacityRange[] | null } = { ranges: null };
+        const fonts: { multiplier?: number } = {};
 
         const frames = hookRendererFrame(renderer, () => {
+            // The ages are drawn at the size the node implies, so they are
+            // rebuilt alongside the titles rather than left behind with them.
+            if (syncLabelFonts(renderer, fonts)) {
+                labels.clear();
+            }
+
             labels.sync();
             links.sync();
             holdSpotlightTint(renderer, spotlight);
