@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0] - 2026-10-05
+
+### Added
+
+- **Show a dot beside each tab**, off by default. A small filled circle next to
+  the title, drawn at that note's brightness in the graph, so its age is in front
+  of you without the graph being open at all. The newest note's dot takes the
+  spotlight colour when the spotlight is on. Closes #55.
+
+  A dot reads at a glance where a date has to be parsed, which is what makes it
+  worth having somewhere as cramped as a tab.
+
 ## [1.21.0] - 2026-10-05
 
 ### Added

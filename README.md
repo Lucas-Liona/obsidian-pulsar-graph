@@ -175,6 +175,7 @@ alone.
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | on | all |
+| Dot beside each tab | on / off | off | all |
 | Fade tabs | Never, By attention, By edit time | Never | all |
 | Faded after | 1 - 480 minutes | 60 | By attention |
 | Faintest a tab gets | 0.1 - 1.0 | 0.35 | Fading on |
@@ -326,6 +327,11 @@ strength it is a stripe of neon, and a little under half way reads as a warmer
 line, which is much easier to sit with.
 
 ### Tabs
+
+**Show a dot beside each tab** puts a small filled circle next to the title, at
+that note's brightness in the graph. It's the cheapest way to have the idea in
+front of you without opening the graph at all, and it reads at a glance where a
+date doesn't. If the spotlight is on, the newest note's dot takes its colour.
 
 Your tab bar is usually a pile of things you opened once. **Fade tabs** dims one
 the longer it goes untouched, so it reads as attention instead.
