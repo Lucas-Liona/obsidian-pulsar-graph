@@ -35,7 +35,7 @@ quieter. It's part of the graph, not a tooltip over it, so it pans and zooms wit
 everything else. Obsidian's own page preview still works alongside it.
 
 <p align="center">
-  <img src="hover.png" width="760" alt="A dimmed graph with one node lit. Above it, centred, the text '4 minutes ago'; below it, the note's title.">
+  <img src="assets/hover.png" width="760" alt="A dimmed graph with one node lit. Above it, centred, the text '4 minutes ago'; below it, the note's title.">
 </p>
 
 **Show note age** has three settings:

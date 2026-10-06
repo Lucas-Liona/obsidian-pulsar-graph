@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Pulsar">
+  <title>Pulsar</title>
+  <circle cx="64" cy="64" r="52" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="2.0"/>
+  <circle cx="64" cy="64" r="38" fill="none" stroke="currentColor" stroke-opacity="0.26" stroke-width="2.0"/>
+  <circle cx="64" cy="64" r="25" fill="none" stroke="currentColor" stroke-opacity="0.46" stroke-width="2.5"/>
+  <circle cx="64" cy="64" r="10" fill="currentColor"/>
+</svg>
