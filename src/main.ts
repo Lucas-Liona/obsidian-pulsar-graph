@@ -177,7 +177,7 @@ export default class PulsarGraphPlugin extends Plugin {
         const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
-            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor) }
+            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
             : null);
 
         const releaseData = hookRendererData(renderer, () => {
@@ -261,7 +261,7 @@ export default class PulsarGraphPlugin extends Plugin {
         graph.labels.setMode(this.settings.ageLabels);
         graph.links.setMode(this.settings.linkRecency);
         graph.links.setTrails(this.settings.sessionTrails
-            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor) }
+            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
             : null);
 
         this.store.refresh();

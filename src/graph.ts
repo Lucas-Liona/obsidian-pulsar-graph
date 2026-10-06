@@ -99,7 +99,7 @@ export interface GraphRenderer {
         /** What titles are drawn in. */
         text?: { rgb: number };
         /** What links are drawn in, and what an attached one becomes. */
-        line?: { a: number };
+        line?: { a: number; rgb: number };
         lineHighlight?: { a: number };
     };
     /** The per-frame draw, reassigned whenever graphics are rebuilt. */
@@ -341,13 +341,18 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         }
     }
 
-    const warmed = options.clusterWarmth > 0
-        ? warmByGroup(renderer, own, options.clusterWarmth, options.clusterBy)
+    // The glow runs first. It carries brightness along links, and grouping by
+    // island draws its boundaries along those same links, so warming first
+    // would hand every node neighbours identical to itself and leave the glow
+    // with nothing to lift. Spreading locally and then taking the regional view
+    // keeps both settings meaning something together.
+    const glowed = options.neighbourBleed > 0
+        ? poolNeighbours(renderer, own, options.neighbourBleed, options.neighbourHops)
         : null;
 
-    const pooled = options.neighbourBleed > 0
-        ? poolNeighbours(renderer, warmed ?? own, options.neighbourBleed, options.neighbourHops)
-        : warmed;
+    const pooled = options.clusterWarmth > 0
+        ? warmByGroup(renderer, glowed ?? own, options.clusterWarmth, options.clusterBy)
+        : glowed;
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
         const opacity = (pooled ?? own).get(path);
@@ -361,7 +366,7 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
             options.spotlight.path ??= path;
             options.spotlight.originalRgb ??= currentRgb;
 
-            const painted = blend(options.spotlight.originalRgb, options.spotlightRgb, options.spotlightStrength);
+            const painted = blendRgb(options.spotlight.originalRgb, options.spotlightRgb, options.spotlightStrength);
             options.spotlight.paintedRgb = painted;
 
             node.color = { a: opacity, rgb: painted };
@@ -403,7 +408,7 @@ export function holdSpotlightTint(renderer: GraphRenderer, spotlight: SpotlightS
 }
 
 /** Mixes two packed colours channel by channel. */
-function blend(from: number, to: number, amount: number): number {
+export function blendRgb(from: number, to: number, amount: number): number {
     const mix = (shift: number): number => {
         const a = (from >> shift) & 0xff;
         const b = (to >> shift) & 0xff;

@@ -148,6 +148,7 @@ A preset only moves the settings that shape the fade. What you've chosen to
 | Trace what was written together | on / off | off | all |
 | Counts as one sitting | 1 - 240 minutes | 30 | Tracing on |
 | Trail colour | any | blue | Tracing on |
+| Trail strength | 0.0 - 1.0 | 0.55 | Tracing on |
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | off | all |
@@ -219,6 +220,11 @@ of its brightest neighbour, and **Glow reach** decides how many links that
 travels along — each step carries the fraction again, so it falls away with
 distance.
 
+Worth knowing: the glow travels along links, and grouping by *island of linked
+notes* draws its boundaries along those same links. The glow runs first for
+exactly that reason — warming first would hand every node neighbours identical to
+itself and leave the glow nothing to lift.
+
 How much it does for you depends on how linked your vault is. Mine is sparse —
 about 700 links across 1060 notes — so the effect is real but gentle. A densely
 linked vault will see much more.
@@ -253,7 +259,10 @@ already marks 246 of 692 links, and stretching it to 4 hours only reaches 312,
 which says most of my linked notes were written in genuine bursts rather than
 drifting together over an afternoon.
 
-Off by default, with its own colour kept clear of the spotlight's.
+Off by default, with its own colour kept clear of the spotlight's. **Trail
+strength** mixes that colour with the one links are normally drawn in — at full
+strength it is a stripe of neon, and a little under half way reads as a warmer
+line, which is much easier to sit with.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in
