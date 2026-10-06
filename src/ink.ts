@@ -9,23 +9,62 @@ import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@
  */
 const STEPS = 8;
 
+/**
+ * Whether fresh writing is coloured in, or everything else is dimmed down.
+ *
+ * They answer the same question from opposite ends and suit different moments:
+ * colouring reads better over a shoulder and in a screenshot, dimming reads
+ * better while actually working, because it never replaces a colour you chose.
+ */
+export type InkMode = 'colour' | 'dim';
+
 export interface InkOptions {
     enabled: boolean;
     /** Minutes for fresh writing to cool all the way back to ordinary text. */
     minutes: number;
+    mode: InkMode;
 }
 
 /**
  * Shared by every editor, because the settings are one object and an editor
  * extension is installed once for all of them.
  */
-const options: InkOptions = { enabled: false, minutes: 5 };
+const options: InkOptions = { enabled: false, minutes: 5, mode: 'colour' };
 
 /** Moves every mark one shade colder. */
 const cool = StateEffect.define<null>();
 
 /** Drops every mark, so whatever is on the page now counts as old. */
 const forget = StateEffect.define<null>();
+
+/** Holds a stretch at full strength until it is cleared. */
+const pin = StateEffect.define<{ from: number; to: number }>();
+
+/**
+ * Nothing in the document changed, but the settings did.
+ *
+ * The parts of this that are not the state field — the dimmer, and the tick
+ * length — only ever recompute inside an editor update, and a settings change
+ * happens entirely outside the editor. Without a transaction to hang it on, a
+ * mode switched back left the dimming it had already drawn on the page.
+ */
+const refresh = StateEffect.define<null>();
+
+/**
+ * A stretch marked to come back to.
+ *
+ * It does not cool. A pin answers "deal with this", and a marker that quietly
+ * fades is one you will miss — which also makes it the clear opposite of fresh
+ * writing: what cools is new, what does not is deliberate.
+ */
+const pinMark = Decoration.mark({ class: 'pulsar-ink-pin', pinned: true });
+
+/** Everything on screen that is neither fresh nor pinned, for the dim mode. */
+const coldMark = Decoration.mark({ class: 'pulsar-ink-cold' });
+
+function isPin(decoration: Decoration): boolean {
+    return (decoration.spec as { pinned?: boolean }).pinned === true;
+}
 
 /**
  * One decoration per shade, reused.
@@ -48,6 +87,11 @@ function cooled(set: DecorationSet): DecorationSet {
     const next: Range<Decoration>[] = [];
 
     for (const iter = set.iter(); iter.value !== null; iter.next()) {
+        if (isPin(iter.value)) {
+            next.push(iter.value.range(iter.from, iter.to));
+            continue;
+        }
+
         const shade = shadeOf(iter.value) + 1;
 
         if (shade < STEPS) {
@@ -80,6 +124,23 @@ const inkField = StateField.define<DecorationSet>({
         }
 
         set = set.map(transaction.changes);
+
+        for (const effect of transaction.effects) {
+            if (!effect.is(pin)) {
+                continue;
+            }
+
+            const { from, to } = effect.value;
+
+            // Anything already lit under the pin is dropped rather than left
+            // nested inside it, since the innermost span wins and a pin whose
+            // middle is a different colour reads as two marks.
+            set = set.update({
+                filter: (at, until, value) => isPin(value) || until <= from || at >= to,
+                add: [pinMark.range(from, to)],
+                sort: true
+            });
+        }
 
         if (transaction.effects.some((effect) => effect.is(cool))) {
             set = cooled(set);
@@ -125,6 +186,12 @@ const ticker = ViewPlugin.fromClass(
         }
 
         update(update: ViewUpdate): void {
+            if (update.transactions.some((transaction) => transaction.effects.some((effect) => effect.is(refresh)))) {
+                // The tick length is baked in when the interval is made, so a
+                // changed "cools over" needs the old one thrown away.
+                this.stop();
+            }
+
             if (update.docChanged || update.transactions.length > 0) {
                 this.sync();
             }
@@ -159,8 +226,125 @@ const ticker = ViewPlugin.fromClass(
     }
 );
 
+/**
+ * Everything on screen that is not lit, so the page can be dimmed around fresh
+ * writing rather than the writing coloured on top of the page.
+ *
+ * The complement is built from `visibleRanges`, so the cost is in what is on
+ * screen and not in the length of the note. It dims with `currentColor` toward
+ * the background, which keeps a heading's own colour instead of flattening
+ * everything to one grey.
+ *
+ * A note with nothing lit in it gets none of this. Opening a vault and finding
+ * every note greyed is a bug report, however faithful it is to the rule.
+ */
+const dimmer = ViewPlugin.fromClass(
+    class {
+        decorations: DecorationSet = Decoration.none;
+
+        constructor(private readonly view: EditorView) {
+            this.decorations = this.build();
+        }
+
+        update(update: ViewUpdate): void {
+            if (update.docChanged || update.viewportChanged || update.transactions.length > 0) {
+                this.decorations = this.build();
+            }
+        }
+
+        private build(): DecorationSet {
+            const lit = this.view.state.field(inkField, false);
+
+            if (!options.enabled || options.mode !== 'dim' || !lit || lit.size === 0) {
+                return Decoration.none;
+            }
+
+            const cold: Range<Decoration>[] = [];
+
+            for (const { from, to } of this.view.visibleRanges) {
+                let at = from;
+
+                lit.between(from, to, (start, end) => {
+                    if (start > at) {
+                        cold.push(coldMark.range(at, Math.min(start, to)));
+                    }
+
+                    at = Math.max(at, end);
+                });
+
+                if (at < to) {
+                    cold.push(coldMark.range(at, to));
+                }
+            }
+
+            return Decoration.set(cold, true);
+        }
+    },
+    { decorations: (plugin) => plugin.decorations }
+);
+
 export function inkExtension(): Extension {
-    return [inkField, ticker];
+    return [inkField, ticker, dimmer];
+}
+
+/** Marks a stretch to come back to. Returns false when there was nothing to mark. */
+export function pinInk(editor: EditorView): boolean {
+    const { state } = editor;
+
+    if (state.field(inkField, false) === undefined) {
+        return false;
+    }
+
+    const selection = state.selection.main;
+    let from = selection.from;
+    let to = selection.to;
+
+    if (from === to) {
+        // Nothing selected: the lit stretch under the cursor, or failing that
+        // the line, which is what makes this usable on text you did not just
+        // write.
+        let found = false;
+
+        state.field(inkField).between(from, to, (start, end) => {
+            from = start;
+            to = end;
+            found = true;
+        });
+
+        if (!found) {
+            const line = state.doc.lineAt(selection.head);
+            from = line.from;
+            to = line.to;
+        }
+    }
+
+    if (to <= from) {
+        return false;
+    }
+
+    editor.dispatch({ effects: pin.of({ from, to }) });
+    return true;
+}
+
+/** How many characters are lit, and how many of those are pinned. */
+export function inkCounts(editor: EditorView): { lit: number; pinned: number } {
+    const set = editor.state.field(inkField, false);
+    let lit = 0;
+    let pinned = 0;
+
+    if (set) {
+        for (const iter = set.iter(); iter.value !== null; iter.next()) {
+            const width = iter.to - iter.from;
+
+            if (isPin(iter.value)) {
+                pinned += width;
+            } else {
+                lit += width;
+            }
+        }
+    }
+
+    return { lit, pinned };
 }
 
 /**
@@ -175,9 +359,17 @@ export function setInkOptions(next: InkOptions, editors: EditorView[]): void {
 
     options.enabled = next.enabled;
     options.minutes = next.minutes;
+    options.mode = next.mode;
 
     if (wasEnabled && !next.enabled) {
         forgetInk(editors);
+        return;
+    }
+
+    for (const editor of editors) {
+        if (editor.state.field(inkField, false) !== undefined) {
+            editor.dispatch({ effects: refresh.of(null) });
+        }
     }
 }
 
@@ -189,7 +381,3 @@ export function forgetInk(editors: EditorView[]): void {
     }
 }
 
-/** How many stretches are still lit, for the statistics and for testing. */
-export function inkCount(editor: EditorView): number {
-    return editor.state.field(inkField, false)?.size ?? 0;
-}

@@ -34,12 +34,32 @@ export class AgeLabels {
     private readonly labels = new Map<GraphNode, GraphText>();
     private mode: AgeMode = 'off';
     private hovered: GraphNode | null = null;
+    /**
+     * What every name on the graph is scaled by.
+     *
+     * Obsidian derives a title's font from its node's size and offers no control
+     * over either, so the plugin's own control has to reach here too — the age
+     * is drawn beside a title at the title's size, and a title that moved
+     * without it would leave the age behind.
+     */
+    private titleScale = 1;
+
     private buildText: GraphTextConstructor | null = null;
 
     constructor(
         private readonly renderer: GraphRenderer,
         private readonly describe: (path: string) => AgeText | undefined
     ) {}
+
+    /** Returns true when the scale moved, so the labels can be rebuilt at it. */
+    setTitleScale(scale: number): boolean {
+        if (this.titleScale === scale) {
+            return false;
+        }
+
+        this.titleScale = scale;
+        return true;
+    }
 
     setMode(mode: AgeMode): void {
         this.mode = mode;
@@ -153,7 +173,7 @@ export class AgeLabels {
         }
 
         const label = new build(text, {
-            fontSize: 14 + (node.getSize?.() ?? 0) / 4,
+            fontSize: (14 + (node.getSize?.() ?? 0) / 4) * this.titleScale,
             fill: this.renderer.colors?.text?.rgb ?? 0xffffff,
             fontFamily: title.style.fontFamily,
             align: 'center'
