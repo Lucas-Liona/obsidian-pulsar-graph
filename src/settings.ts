@@ -11,13 +11,14 @@ import { TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
-export type NormalizeBy = 'vault' | 'window';
+export type NormalizeBy = 'vault' | 'window' | 'shown';
 
-const NORMALIZE_MODES = ['vault', 'window'] as const;
+const NORMALIZE_MODES = ['vault', 'window', 'shown'] as const;
 
 const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
     vault: "The vault's whole history",
-    window: 'A recent window'
+    window: 'A recent window',
+    shown: 'Whatever the graph is showing'
 };
 
 export type AgeScale = 'even' | 'rank' | 'log' | 'halflife';
@@ -61,6 +62,8 @@ export interface PulsarGraphSettings {
     spotlightNewest: boolean;
     spotlightColor: string;
     spotlightStrength: number;
+    spotlightSize: number;
+    spreadFloorHours: number;
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -160,6 +163,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightNewest: false,
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
+    spotlightSize: 2,
+    spreadFloorHours: 6,
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -244,6 +249,12 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
     colour: 'Colour what is new',
     dim: 'Dim everything else'
 };
+
+/** What the newest note's own circle is multiplied by, on top of any sizing. */
+const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
+
+/** How far the adaptive range is held open when what is shown covers no time. */
+const SPREAD_FLOOR_RANGE = { lowest: 1, highest: 168, step: 1 };
 
 /** What a title's font is multiplied by. Obsidian offers no control at all. */
 const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
@@ -363,6 +374,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
+        spotlightSize: clamp(parseNumber(data.spotlightSize, DEFAULT_SETTINGS.spotlightSize), SPOTLIGHT_SIZE_RANGE.lowest, SPOTLIGHT_SIZE_RANGE.highest),
+        spreadFloorHours: clamp(parseNumber(data.spreadFloorHours, DEFAULT_SETTINGS.spreadFloorHours), SPREAD_FLOOR_RANGE.lowest, SPREAD_FLOOR_RANGE.highest),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
         neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest)),
@@ -570,7 +583,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         } else {
             new Setting(containerEl)
                 .setName('Measure age against')
-                .setDesc("What counts as old. The whole history lets one ancient note set the far end for everything else; a window spends the entire range on the last so many days")
+                .setDesc("What counts as old. The whole history lets one ancient note set the far end for everything else; a window spends the entire range on the last so many days; whatever the graph is showing re-spreads the range across the notes actually on screen, so filtering down to today gives you a gradient across today instead of thirty identical dots. That last one pairs especially well with the rank scale")
                 .addDropdown((dropdown) => {
                     for (const mode of NORMALIZE_MODES) {
                         dropdown.addOption(mode, NORMALIZE_LABELS[mode]);
@@ -583,6 +596,20 @@ export class PulsarSettingTab extends PluginSettingTab {
                         this.display();
                     });
                 });
+
+            if (settings.normalizeBy === 'shown') {
+                new NumberControl(
+                    new Setting(containerEl)
+                        .setName('Never spread across less than')
+                        .setDesc('Hours. Filter hard enough and what is left covers almost no time at all, and a nine-minute-old note would be drawn as ancient. Below this the range simply does not use its full width, which is the honest answer'),
+                    SPREAD_FLOOR_RANGE,
+                    settings.spreadFloorHours,
+                    (value) => {
+                        settings.spreadFloorHours = Math.round(value);
+                        this.save();
+                    }
+                );
+            }
 
             if (settings.normalizeBy === 'window') {
                 new NumberControl(
@@ -1173,6 +1200,18 @@ export class PulsarSettingTab extends PluginSettingTab {
                 settings.spotlightStrength,
                 (value) => {
                     settings.spotlightStrength = value;
+                    this.save();
+                }
+            );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Spotlight size')
+                    .setDesc('What the newest note\'s own circle is multiplied by. Obsidian sizes a node by its link count and nothing else, and the note you wrote last is almost always the least linked thing in the vault — so without this the one node you always want to find is reliably the smallest on screen. Multiplied on top of any other sizing, not instead of it'),
+                SPOTLIGHT_SIZE_RANGE,
+                settings.spotlightSize,
+                (value) => {
+                    settings.spotlightSize = value;
                     this.save();
                 }
             );

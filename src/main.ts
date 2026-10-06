@@ -433,10 +433,22 @@ export default class PulsarGraphPlugin extends Plugin {
             : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
     }
 
+    /**
+     * The notes a filter is not allowed to take out: the one you have open, so
+     * a local graph cannot go blank under you, and the spotlit one, since a
+     * spotlight pointing at a node that is not there says nothing at all.
+     */
+    private keptFromFilter(): (string | undefined)[] {
+        return [
+            this.app.workspace.getActiveFile()?.path,
+            this.settings.spotlightNewest ? this.store.newestPath() : undefined
+        ];
+    }
+
     private survives(path: string, ranges: OpacityRange[]): boolean {
         const strength = this.store.opacityFor(path);
 
-        if (strength === undefined || path === this.app.workspace.getActiveFile()?.path) {
+        if (strength === undefined || this.keptFromFilter().includes(path)) {
             return true;
         }
 
@@ -671,7 +683,7 @@ export default class PulsarGraphPlugin extends Plugin {
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
                 strengthOf: (path) => (this.settings.filterEnabled ? this.store.opacityFor(path) : undefined),
-                keep: this.app.workspace.getActiveFile()?.path
+                keep: this.keptFromFilter()
             })
         );
         const preview: { ranges: OpacityRange[] | null } = { ranges: null };
@@ -783,7 +795,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         graph.caption?.set(
             this.settings.filterCaption && this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)
-                ? `Age filter · ${this.describeRange(this.settings.filterRanges)}`
+                ? `Age filter${this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : ''} · ${this.describeRange(this.settings.filterRanges)}`
                 : null
         );
 
@@ -818,10 +830,14 @@ export default class PulsarGraphPlugin extends Plugin {
             neighbourBleed: this.settings.neighbourBleed,
             neighbourHops: this.settings.neighbourHops,
             clusterWarmth: this.settings.clusterWarmth,
-            clusterBy: this.settings.clusterBy
+            clusterBy: this.settings.clusterBy,
+            adaptive: this.settings.normalizeBy === 'shown',
+            spreadFloorHours: this.settings.spreadFloorHours
         });
 
         applySizes(renderer, {
+            spotlit: this.settings.spotlightNewest ? this.store.newestPath() : undefined,
+            spotlightSize: this.settings.spotlightSize,
             byAge: this.settings.nodeSizeByAge,
             smallest: this.settings.nodeSizeSmallest,
             largest: this.settings.nodeSizeLargest,

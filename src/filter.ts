@@ -16,8 +16,12 @@ export interface FilterOptions {
     ranges: OpacityRange[];
     /** A note's own brightness, before neighbours or groups have their say. */
     strengthOf: (path: string) => number | undefined;
-    /** Never hidden, so a local graph can't go blank under you. */
-    keep: string | undefined;
+    /**
+     * Never hidden. The note you have open, so a local graph cannot go blank
+     * under you, and the spotlit note, because a filter quietly removing the
+     * one node the graph is pointing at is the graph disagreeing with itself.
+     */
+    keep: (string | undefined)[];
 }
 
 export function isWholeRange(ranges: OpacityRange[]): boolean {
@@ -56,7 +60,7 @@ export function filterGraphData(data: unknown, options: FilterOptions): unknown 
     for (const [path, node] of Object.entries(data.nodes)) {
         const strength = options.strengthOf(path);
 
-        if (strength === undefined || path === options.keep || withinRanges(Math.min(1, Math.max(0, strength)), options.ranges)) {
+        if (strength === undefined || options.keep.includes(path) || withinRanges(Math.min(1, Math.max(0, strength)), options.ranges)) {
             kept[path] = node;
         }
     }

@@ -24,6 +24,32 @@ of the vault; a window is a picture of what you're working on. The window is als
 the one that keeps meaning something when you come back after a month away,
 because it's anchored to the clock rather than to your newest note.
 
+### Whatever the graph is showing
+
+The third option re-spreads the range across the notes actually on screen rather
+than across the vault. It is the answer to a specific and annoying problem:
+filter down to the brightest few per cent and every survivor is at the top of the
+range together, so the gradient tells you nothing exactly when you have asked the
+most specific question. Measured on a 1089-note vault filtered to its brightest
+2%, all 194 surviving nodes came out between 0.981 and 1 — identical once alpha
+is clamped. Spread across what is shown, the same 194 cover the full range.
+
+It respects Obsidian's own Filters and the graph's search box too, so typing a
+tag there turns it into a time lens for just those notes.
+
+Two things keep it honest:
+
+- **It only decides how bright, never which.** The age filter still picks its
+  notes on the absolute scale, so this cannot feed itself.
+- **The range is held open to a floor**, six hours by default. Three notes from
+  the last ten minutes genuinely are all recent, and drawing the nine-minute-old
+  one as ancient would be a lie the arithmetic told.
+
+It pairs especially well with the **rank** scale — rank among the notes shown is
+a different and more useful thing than rank among all of them. A half-life
+ignores it entirely, since a half-life is measured against the calendar and
+nothing else, which is the whole point of it.
+
 ## How ages turn into gaps
 
 **Age scale** decides what a gap between two notes is worth.

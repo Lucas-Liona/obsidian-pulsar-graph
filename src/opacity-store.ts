@@ -9,6 +9,21 @@ export interface Sample {
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/**
+ * Below this many notes there is nothing to spread. Two notes put one at each
+ * end of the range whatever their dates, which says more about there being two
+ * of them than about either one.
+ */
+const SPREAD_FLOOR_NOTES = 3;
+
+/** A range and running order to measure against instead of the vault's. */
+interface Spread {
+    oldest: number;
+    newest: number;
+    ranking: number[];
+}
 
 /**
  * How far the clock may drift before window-anchored opacities are recomputed,
@@ -129,6 +144,63 @@ export class OpacityStore {
         this.opacitiesStale = false;
     }
 
+    /**
+     * The same curve, re-measured against a given set of notes.
+     *
+     * Filter a vault down to the brightest few per cent and every survivor is
+     * at the top of the range together, which is the gradient telling you
+     * nothing precisely when you have asked the most specific question. Spread
+     * across what is left and the full range comes back.
+     *
+     * Two things keep it honest. It is only ever used for how bright to draw a
+     * note, never for deciding which notes are in — the filter reads the
+     * absolute scale, so this cannot feed itself. And the range is held open to
+     * a floor, because three notes from the last ten minutes genuinely are all
+     * recent, and drawing the nine-minute-old one as ancient would be a lie the
+     * arithmetic told.
+     *
+     * Returns null when there is nothing worth spreading, and the caller keeps
+     * the absolute numbers.
+     */
+    spreadAcross(paths: Iterable<string>, floorHours: number): Map<string, number> | null {
+        // A half-life is measured against the calendar and nothing else.
+        // Re-spreading it would undo the one property it exists for.
+        if (this.getSettings().ageScale === 'halflife') {
+            return null;
+        }
+
+        const present: [string, number][] = [];
+        const times: number[] = [];
+
+        for (const path of paths) {
+            const mtime = this.mtimes.get(path);
+
+            if (mtime !== undefined) {
+                present.push([path, mtime]);
+                times.push(mtime);
+            }
+        }
+
+        if (present.length < SPREAD_FLOOR_NOTES) {
+            return null;
+        }
+
+        times.sort((a, b) => a - b);
+
+        const newest = times[times.length - 1];
+        const floor = Math.max(0, floorHours) * MS_PER_HOUR;
+        const oldest = Math.min(times[0], newest - floor);
+
+        const spread: Spread = { oldest, newest, ranking: times };
+        const spreadOut = new Map<string, number>();
+
+        for (const [path, mtime] of present) {
+            spreadOut.set(path, this.calculateOpacity(mtime, path, spread));
+        }
+
+        return spreadOut;
+    }
+
     /** The most recently modified note, which the spotlight setting picks out. */
     newestPath(): string | undefined {
         return this.newestNotePath;
@@ -210,10 +282,10 @@ export class OpacityStore {
      * that belong to no note. Without one there is no intensity to read, so the
      * preview shows the age curve alone — which is what it is for.
      */
-    private calculateOpacity(mtime: number, path?: string): number {
+    private calculateOpacity(mtime: number, path?: string, spread?: Spread): number {
         const { fadeType, minOpacity, maxOpacity, steepness, numSteps, intensityBlend } = this.getSettings();
 
-        let shaped = this.recencyOf(mtime);
+        let shaped = this.recencyOf(mtime, spread);
 
         // Added to recency rather than multiplied by it. A product would make a
         // note with nothing on record vanish however recently it was edited,
@@ -313,11 +385,11 @@ export class OpacityStore {
      * and spends the entire range on the last so many days instead, which is
      * usually the only part anyone is reading.
      */
-    private recencyOf(mtime: number): number {
+    private recencyOf(mtime: number, spread?: Spread): number {
         const { ageScale } = this.getSettings();
 
         if (ageScale === 'rank') {
-            return this.rankOf(mtime);
+            return this.rankOf(mtime, spread?.ranking ?? this.ranking);
         }
 
         // Measured against the calendar rather than against the other notes,
@@ -329,7 +401,7 @@ export class OpacityStore {
             return Math.pow(2, -days(this.anchor - mtime) / this.getSettings().halfLifeDays);
         }
 
-        const { oldest, newest } = this.normalizingRange();
+        const { oldest, newest } = spread ?? this.normalizingRange();
         const span = newest - oldest;
 
         if (span <= 0) {
@@ -348,8 +420,8 @@ export class OpacityStore {
      * half the notes are always above the halfway mark however the edits fall
      * in time. It is the one scale a lopsided history cannot flatten.
      */
-    private rankOf(mtime: number): number {
-        const places = this.ranking.length;
+    private rankOf(mtime: number, ranking: number[]): number {
+        const places = ranking.length;
         if (places <= 1) {
             return 1;
         }
@@ -361,7 +433,7 @@ export class OpacityStore {
         while (low < high) {
             const middle = (low + high) >> 1;
 
-            if (this.ranking[middle] < mtime) {
+            if (ranking[middle] < mtime) {
                 low = middle + 1;
             } else {
                 high = middle;
