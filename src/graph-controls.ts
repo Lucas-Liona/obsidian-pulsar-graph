@@ -6,6 +6,7 @@ export interface ScrubberOptions {
     enabled: () => boolean;
     ranges: () => OpacityRange[];
     histogram: () => number[];
+    describe: (ranges: OpacityRange[]) => string;
     onToggle: (enabled: boolean) => void;
     onPreview: (ranges: OpacityRange[] | null) => void;
     onChange: (ranges: OpacityRange[]) => void;
@@ -73,6 +74,7 @@ export class GraphScrubber {
 
         this.bar = new RangeBar(body, {
             histogram: this.options.histogram(),
+            describe: (ranges) => this.options.describe(ranges),
             onPreview: (ranges) => this.options.onPreview(ranges),
             onChange: (ranges) => {
                 this.options.onPreview(null);
@@ -87,4 +89,35 @@ export class GraphScrubber {
 /** Finds the panel Obsidian puts its own graph sections in. */
 export function findGraphControls(container: HTMLElement): HTMLElement | null {
     return container.querySelector('.graph-controls');
+}
+
+/**
+ * A line across the top of the graph saying what is being looked at.
+ *
+ * The filter is the one setting whose effect is invisible once it is made: a
+ * graph with half its notes taken out looks exactly like a graph. This says so
+ * where you are already looking, and it is not there at all when nothing is
+ * being hidden.
+ */
+export class FilterCaption {
+    private readonly element: HTMLElement;
+
+    constructor(container: HTMLElement) {
+        this.element = container.createDiv({ cls: 'pulsar-graph-caption' });
+        this.element.hide();
+    }
+
+    set(text: string | null): void {
+        if (text === null) {
+            this.element.hide();
+            return;
+        }
+
+        this.element.setText(text);
+        this.element.show();
+    }
+
+    destroy(): void {
+        this.element.remove();
+    }
 }

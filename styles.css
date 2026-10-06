@@ -126,26 +126,58 @@
 	background-color: var(--text-muted);
 }
 
+/* Draggable as a whole, which is what moves a slice without resizing it. */
 .pulsar-graph-range-span {
 	position: absolute;
 	top: 0;
 	bottom: 0;
 	background-color: var(--text-accent);
 	opacity: 0.22;
-	pointer-events: none;
+	cursor: grab;
+	touch-action: none;
 }
 
+.pulsar-graph-range-span:hover {
+	opacity: 0.3;
+}
+
+.pulsar-graph-range-span.is-held {
+	cursor: grabbing;
+	opacity: 0.36;
+}
+
+.pulsar-graph-range-span:focus-visible {
+	outline: 2px solid var(--text-accent);
+	outline-offset: -2px;
+}
+
+/*
+ * Narrow on purpose. At the narrowest a range is allowed to be, two handles sit
+ * about eight pixels apart, so a ten-pixel handle overlapped the one beside it
+ * and whichever was drawn last took every click. The grab area is widened past
+ * what is drawn instead, so a thin handle is still easy to catch.
+ */
 .pulsar-graph-range-handle {
 	position: absolute;
 	top: -3px;
 	bottom: -3px;
-	width: 10px;
-	margin-left: -5px;
-	border: 1px solid var(--background-modifier-border-hover);
+	width: 4px;
+	margin-left: -2px;
 	border-radius: var(--radius-s);
 	background-color: var(--interactive-accent);
 	cursor: ew-resize;
 	touch-action: none;
+}
+
+.pulsar-graph-range-handle::before {
+	position: absolute;
+	content: '';
+	inset: -2px -5px;
+}
+
+/* The one being dragged goes over its neighbour rather than under it. */
+.pulsar-graph-range-handle.is-held {
+	z-index: 1;
 }
 
 .pulsar-graph-range-handle:focus-visible {
@@ -196,8 +228,14 @@
 }
 
 .pulsar-graph-range-handle.is-held {
-	width: 12px;
-	margin-left: -6px;
+	width: 6px;
+	margin-left: -3px;
+}
+
+.pulsar-graph-range-caption {
+	margin-top: var(--size-2-1);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
 }
 
 .pulsar-graph-tab-dot {
@@ -250,4 +288,25 @@
 
 .workspace-tab-header.pulsar-graph-tab-stale .workspace-tab-header-inner {
 	box-shadow: inset 2px 0 0 0 var(--text-faint);
+}
+
+/*
+ * Sits over the graph rather than in its control panel, because the thing it
+ * answers is "what am I looking at", and that is asked while looking at the
+ * graph. Centred, so it never lands on Obsidian's own controls in the corner.
+ */
+.pulsar-graph-caption {
+	position: absolute;
+	top: var(--size-4-3);
+	left: 50%;
+	z-index: 1;
+	max-width: 70%;
+	padding: var(--size-2-2) var(--size-4-3);
+	transform: translateX(-50%);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+	pointer-events: none;
 }
