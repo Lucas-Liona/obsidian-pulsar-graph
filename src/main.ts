@@ -1,16 +1,17 @@
 import { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { Component, debounce, MarkdownView, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
+import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearSpotlight, newSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, getGraphRenderers, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
 import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink';
+import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
@@ -30,7 +31,7 @@ interface AttachedGraph {
     caption: FilterCaption | null;
     /** Ranges being dragged right now, shown by hiding rather than rebuilding. */
     preview: { ranges: OpacityRange[] | null };
-    spotlight: SpotlightState;
+    paint: PaintState;
 }
 
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
@@ -59,6 +60,15 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly attention = new Attention(this.app);
     private readonly tabs = new TabFading(this.app, this.attention);
     private readonly history = new EditHistory(this.app, this);
+
+    /**
+     * The pinned notes, as a set, because the per-node loop asks about every
+     * node in the graph on every pass and an array would make that quadratic.
+     * The settings list is the stored form; this is the index over it.
+     */
+    private readonly pins = new Pins((paths) => {
+        this.settings.pins = paths;
+    });
 
     /** Everything that only exists while the plugin is switched on. */
     private running: Component | null = null;
@@ -119,6 +129,40 @@ export default class PulsarGraphPlugin extends Plugin {
             callback: () => this.closeStaleTabs()
         });
 
+        this.addCommand({
+            id: 'pin-note-in-graph',
+            name: 'Pin this note in the graph',
+            checkCallback: (checking) => {
+                const file = this.app.workspace.getActiveFile();
+
+                if (!file || file.extension !== 'md') {
+                    return false;
+                }
+
+                if (!checking) {
+                    void this.togglePin(file.path);
+                }
+
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: 'unpin-all-from-graph',
+            name: 'Unpin every note',
+            checkCallback: (checking) => {
+                if (this.pins.size === 0) {
+                    return false;
+                }
+
+                if (!checking) {
+                    void this.unpinAll();
+                }
+
+                return true;
+            }
+        });
+
         await this.syncRunning();
     }
 
@@ -154,6 +198,12 @@ export default class PulsarGraphPlugin extends Plugin {
             if (isNote(file)) {
                 this.store.recordDelete(file);
                 this.history.forget(file.path);
+
+                if (this.pins.has(file.path)) {
+                    this.pins.forget(file.path);
+                    void this.saveData(this.settings);
+                }
+
                 this.updateSoon();
             }
         }));
@@ -162,7 +212,24 @@ export default class PulsarGraphPlugin extends Plugin {
             this.store.forget(oldPath);
             this.attention.forget(oldPath);
             this.history.rename(oldPath, file.path);
+
+            // A pin is held against a path, so filing a note away somewhere
+            // permanent is exactly the action that would otherwise lose it.
+            if (this.pins.has(oldPath)) {
+                this.pins.rename(oldPath, file.path);
+                void this.saveData(this.settings);
+            }
+
             this.onFileChanged(file);
+        }));
+
+        // Obsidian's graph fires this when a node is right-clicked, with a
+        // source of 'graph-context-menu', so one listener reaches both the
+        // graph and the file explorer and nothing in the renderer gets patched.
+        running.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
+            if (isNote(file)) {
+                addPinMenuItem(menu, file.path, this.pins.has(file.path), () => void this.togglePin(file.path));
+            }
         }));
 
         running.registerInterval(window.setInterval(() => {
@@ -409,6 +476,39 @@ export default class PulsarGraphPlugin extends Plugin {
 
     async loadSettings(): Promise<void> {
         this.settings = parseSettings(await this.loadData());
+        this.pins.load(this.settings.pins, this.app);
+    }
+
+    /** Sorted pinned paths, for the settings tab. */
+    pinnedNotes(): string[] {
+        return this.pins.list();
+    }
+
+    /**
+     * Pins or unpins one note, and says which way it went.
+     *
+     * The notice is worth it. The graph may not be open, the pin may be on a
+     * note that is off screen, and a hotkey that appears to do nothing is one
+     * nobody presses a second time.
+     */
+    async togglePin(path: string): Promise<void> {
+        const pinned = this.pins.toggle(path);
+
+        new Notice(pinned
+            ? 'Pinned. This note stays bright in the graph.'
+            : 'Unpinned. This note fades with the rest again.');
+
+        await this.saveSettings();
+    }
+
+    async unpin(path: string): Promise<void> {
+        this.pins.remove(path);
+        await this.saveSettings();
+    }
+
+    async unpinAll(): Promise<void> {
+        this.pins.clear();
+        await this.saveSettings();
     }
 
     /**
@@ -528,13 +628,20 @@ export default class PulsarGraphPlugin extends Plugin {
 
     /**
      * The notes a filter is not allowed to take out: the one you have open, so
-     * a local graph cannot go blank under you, and the spotlit one, since a
-     * spotlight pointing at a node that is not there says nothing at all.
+     * a local graph cannot go blank under you, the spotlit ones, since a
+     * spotlight pointing at a node that is not there says nothing at all, and
+     * everything pinned.
+     *
+     * Pins have to be in here or the feature defeats itself. The note you
+     * pinned is one you have not touched lately — that is why it needed
+     * pinning — so it is precisely what an age filter is built to remove, and a
+     * pin that vanishes the moment you narrow the range is not a pin.
      */
     private keptFromFilter(): (string | undefined)[] {
         return [
             this.app.workspace.getActiveFile()?.path,
-            ...(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : [])
+            ...(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : []),
+            ...this.pins.list()
         ];
     }
 
@@ -758,7 +865,7 @@ export default class PulsarGraphPlugin extends Plugin {
         const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
         labels.setMode(this.settings.ageLabels);
 
-        const spotlight = newSpotlight();
+        const paint = newPaint();
         const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
@@ -769,8 +876,10 @@ export default class PulsarGraphPlugin extends Plugin {
             renderer,
             () => {
                 // Obsidian has just rewritten every colour from group data, so
-                // the colour the spotlight was preserving is stale.
-                forgetSpotlightColor(spotlight);
+                // the colours being preserved are stale — and every node that
+                // was painted still has our tint on it, which is why this
+                // takes the renderer.
+                forgetPaintedColors(renderer, paint);
                 this.applyTo(renderer);
             },
             (supplied) => filterGraphData(supplied, {
@@ -791,7 +900,8 @@ export default class PulsarGraphPlugin extends Plugin {
 
             labels.sync();
             links.sync();
-            holdSpotlightTint(renderer, spotlight);
+            holdPaintTint(renderer, paint);
+            settleReleases(renderer, paint);
 
             if (preview.ranges) {
                 previewFilter(renderer, (path) => this.survives(path, preview.ranges ?? []));
@@ -821,7 +931,7 @@ export default class PulsarGraphPlugin extends Plugin {
             data,
             scrubber,
             preview,
-            spotlight,
+            paint,
             caption,
             release: () => {
                 caption?.destroy();
@@ -832,7 +942,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 labels.destroy();
                 links.destroy();
                 scrubber?.destroy();
-                clearSpotlight(renderer, spotlight);
+                clearPaint(renderer, paint);
                 repaint(renderer);
             }
         };
@@ -902,7 +1012,8 @@ export default class PulsarGraphPlugin extends Plugin {
             graph.frames = hookRendererFrame(renderer, () => {
                 graph.labels.sync();
                 graph.links.sync();
-                holdSpotlightTint(renderer, graph.spotlight);
+                holdPaintTint(renderer, graph.paint);
+                settleReleases(renderer, graph.paint);
             });
         }
 
@@ -924,7 +1035,12 @@ export default class PulsarGraphPlugin extends Plugin {
             spotlightRgb: parseHexColor(this.settings.spotlightColor),
             spotlightStrength: this.settings.spotlightStrength,
             spotlightCount: this.settings.spotlightCount,
-            spotlight: graph.spotlight,
+            pinned: this.pins.all(),
+            pinOpacity: this.settings.maxOpacity,
+            pinMark: this.settings.pinMark,
+            pinRgb: parseHexColor(this.settings.pinColor),
+            pinStrength: this.settings.pinStrength,
+            paint: graph.paint,
             neighbourBleed: this.settings.neighbourBleed,
             neighbourHops: this.settings.neighbourHops,
             clusterWarmth: this.settings.clusterWarmth,

@@ -66,6 +66,11 @@ export interface PulsarGraphSettings {
     spotlightStrength: number;
     spotlightSize: number;
     spotlightCount: number;
+    /** The notes held bright whatever their dates say, as vault paths. */
+    pins: string[];
+    pinMark: boolean;
+    pinColor: string;
+    pinStrength: number;
     spreadFloorHours: number;
     neighbourBleed: number;
     neighbourHops: number;
@@ -177,6 +182,14 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightStrength: 1,
     spotlightSize: 2,
     spotlightCount: 1,
+    pins: [],
+    // On, unlike every other colour here, because the list it paints starts
+    // empty and so nothing changes until the user pins something. An unmarked
+    // pin is worse than no pin: a note held at full brightness with nothing to
+    // say why reads as one you edited this morning.
+    pinMark: true,
+    pinColor: '#c084fc',
+    pinStrength: 0.85,
     spreadFloorHours: 6,
     neighbourBleed: 0,
     neighbourHops: 1,
@@ -394,6 +407,10 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
         spotlightCount: Math.round(clamp(parseNumber(data.spotlightCount, DEFAULT_SETTINGS.spotlightCount), SPOTLIGHT_COUNT_RANGE.lowest, SPOTLIGHT_COUNT_RANGE.highest)),
         spotlightSize: clamp(parseNumber(data.spotlightSize, DEFAULT_SETTINGS.spotlightSize), SPOTLIGHT_SIZE_RANGE.lowest, SPOTLIGHT_SIZE_RANGE.highest),
+        pins: parsePins(data.pins),
+        pinMark: parseBoolean(data.pinMark, DEFAULT_SETTINGS.pinMark),
+        pinColor: parseColor(data.pinColor, DEFAULT_SETTINGS.pinColor),
+        pinStrength: clamp(parseNumber(data.pinStrength, DEFAULT_SETTINGS.pinStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         spreadFloorHours: clamp(parseNumber(data.spreadFloorHours, DEFAULT_SETTINGS.spreadFloorHours), SPREAD_FLOOR_RANGE.lowest, SPREAD_FLOOR_RANGE.highest),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
@@ -440,6 +457,19 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
  * get. A preset can be incomplete or wrong; it cannot be dangerous.
  */
 /** A range is only kept if it is a real stretch of the line, in order. */
+/**
+ * Pinned paths, deduplicated and with anything that is not a string dropped.
+ * Whether each note still exists is checked on load against the vault, not
+ * here: this parser also runs over saved presets, which carry no vault.
+ */
+function parsePins(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return [...new Set(value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0))];
+}
+
 function parseRanges(value: unknown): OpacityRange[] {
     if (!Array.isArray(value)) {
         return [{ ...WHOLE_RANGE }];
@@ -902,6 +932,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+
+        section('Pins', 'Notes held bright whatever their dates say, for the ones you mean to come back to');
+
+        this.buildPins(containerEl, settings);
 
         new Setting(containerEl)
             .setName('Mark tabs you have left alone')
@@ -1622,6 +1656,99 @@ export class PulsarSettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
         this.renderPreview();
         this.renderStats();
+    }
+
+    /**
+     * The pinned notes, and how they are drawn.
+     *
+     * Pinning happens out in the vault — right-click a graph node or a note in
+     * the explorer — so this is where you see what you have accumulated and
+     * take one off. A list of paths with no way to read it is a list that grows
+     * until the graph is half pins and nobody remembers why.
+     */
+    private buildPins(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        new Setting(containerEl)
+            .setName('Give pins a colour')
+            .setDesc('A pinned note is held at full brightness, which on its own is indistinguishable from one you edited this morning. The colour is what says why it is bright')
+            .addToggle((toggle) => toggle
+                .setValue(settings.pinMark)
+                .onChange(async (value) => {
+                    settings.pinMark = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.pinMark) {
+            new Setting(containerEl)
+                .setName('Pin colour')
+                .setDesc('Worth keeping clear of your spotlight colour, since the two mean different things. Where a pinned note is also one of the newest, the spotlight wins — it moves on by itself in a note or two and the pin colour comes back')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.pinColor)
+                    .onChange(async (value) => {
+                        settings.pinColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Pin strength')
+                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
+                STRENGTH_RANGE,
+                settings.pinStrength,
+                (value) => {
+                    settings.pinStrength = value;
+                    this.save();
+                }
+            );
+        }
+
+        const pinned = this.plugin.pinnedNotes();
+
+        if (pinned.length === 0) {
+            new Setting(containerEl)
+                .setName('Nothing pinned')
+                .setDesc('Right-click a node in the graph, or a note in the file explorer, and choose to pin it. There is a command for the note you have open, and it takes a hotkey');
+
+            return;
+        }
+
+        const list = containerEl.createDiv({ cls: 'pulsar-graph-pins' });
+
+        for (const path of pinned) {
+            const row = list.createDiv({ cls: 'pulsar-graph-pin' });
+
+            // The name is what anyone recognises; the folder is what tells two
+            // notes of the same name apart, so it is kept but set back.
+            const name = path.replace(/\.md$/, '');
+            const cut = name.lastIndexOf('/');
+
+            const label = row.createDiv({ cls: 'pulsar-graph-pin-name' });
+
+            if (cut >= 0) {
+                label.createSpan({ cls: 'pulsar-graph-pin-folder', text: `${name.slice(0, cut)}/` });
+            }
+
+            label.createSpan({ text: name.slice(cut + 1) });
+
+            const remove = row.createEl('button', { cls: 'pulsar-graph-pin-remove', text: 'Unpin' });
+            remove.setAttr('aria-label', `Unpin ${name}`);
+            remove.addEventListener('click', () => {
+                void this.plugin.unpin(path).then(() => this.display());
+            });
+        }
+
+        new Setting(containerEl)
+            .setName('Unpin everything')
+            .setDesc(`${pinned.length} ${pinned.length === 1 ? 'note is' : 'notes are'} pinned`)
+            .addButton((button) => button
+                .setButtonText('Unpin all')
+                .setWarning()
+                .onClick(() => {
+                    void this.plugin.unpinAll().then(() => this.display());
+                })
+            );
     }
 
     /**

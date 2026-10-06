@@ -31,8 +31,13 @@ export interface Preset {
  * The history settings are left out for the same reason the list is: they are
  * not a look. Someone else's preset has no business switching off the record of
  * how you work, and a preset that silently emptied it would be worse still.
+ *
+ * The pinned notes are left out because they are not settings at all — they are
+ * a list of paths in this vault. A preset shared between two people would carry
+ * one of them's note paths into the other's vault, and applying it would throw
+ * away whatever they had pinned. How a pin is *drawn* is a look, and stays.
  */
-export type PresetSettings = Omit<PulsarGraphSettings, 'saved' | 'history' | 'historyCap' | 'enabled'>;
+export type PresetSettings = Omit<PulsarGraphSettings, 'saved' | 'history' | 'historyCap' | 'enabled' | 'pins'>;
 
 export interface SavedPreset {
     name: string;
@@ -41,7 +46,7 @@ export interface SavedPreset {
 
 /** Strips out what a preset does not carry, leaving a snapshot to keep. */
 export function snapshot(settings: PulsarGraphSettings): PresetSettings {
-    const { saved: _saved, history: _history, historyCap: _cap, enabled: _enabled, ...rest } = settings;
+    const { saved: _saved, history: _history, historyCap: _cap, enabled: _enabled, pins: _pins, ...rest } = settings;
     return rest;
 }
 

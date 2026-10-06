@@ -40,10 +40,13 @@ necessary — a graph with half its notes taken out looks exactly like a graph.
 While you are not, it still answers the question a graph raises on its own, which
 is *what am I looking at*.
 
-Two things it will not do:
+Three things it will not do:
 
 - **The note you have open is never hidden.** Otherwise opening an old note would
   make it vanish from the graph, and the local graph would go blank.
+- **A [pinned](pins.md) note is never hidden.** The note you pinned is old — that
+  is why it needed pinning — so it is exactly what this would otherwise take out
+  first, and a pin that vanishes when you narrow the range is not a pin.
 - **Attachments and unresolved links are never hidden.** The filter asks how old
   a note is, and those have no age to answer with.
 

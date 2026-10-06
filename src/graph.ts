@@ -200,35 +200,95 @@ export interface OpacityOptions {
     /** How far each note is pulled toward its group's middle. 0 switches it off. */
     clusterWarmth: number;
     clusterBy: 'folder' | 'component';
+    /** The notes held bright and marked whatever their dates say. */
+    pinned: ReadonlySet<string>;
+    /** What a pinned note is held at, which is the top of the opacity range. */
+    pinOpacity: number;
+    /** Whether a pin is also given a colour of its own. */
+    pinMark: boolean;
+    /** That colour, as a packed 0xRRGGBB. */
+    pinRgb: number;
+    /** 0 leaves the node's own colour alone, 1 replaces it outright. */
+    pinStrength: number;
     /**
-     * The node the spotlight is currently painted over, and the colour it had
-     * before. Node colour is the only place a graph group's colour lives, so
-     * the spotlight has to be able to put it back when the newest note changes
-     * or the setting is turned off.
+     * Every node this plugin has painted over, and the colour each had before.
+     *
+     * Node colour is the only place a graph group's colour lives, so anything
+     * that paints a node has to be able to put the real one back — when the
+     * newest note moves on, when a pin is taken off, or when either setting is
+     * switched off.
+     *
+     * Both the spotlight and pins paint, and they share this one record on
+     * purpose. Two of these, each saving and restoring the same node's colour,
+     * is how a group colour gets lost for good: whichever saved second saves
+     * the first one's paint and then faithfully restores it.
      */
-    spotlight: SpotlightState;
+    paint: PaintState;
 }
 
-/** What one spotlit node looked like before, and what it was painted. */
-export interface SpotlitNode {
+/** What one painted node looked like before, and what it was painted. */
+export interface PaintedNode {
     originalRgb: number;
     paintedRgb: number;
 }
 
-/**
- * Every node the spotlight is currently painted over.
- *
- * A map rather than a single path because the spotlight can cover the last few
- * notes rather than only the last one. Node colour is the only place a graph
- * group's colour lives, so what each node had before has to be kept here or it
- * is gone.
- */
-export interface SpotlightState {
-    painted: Map<string, SpotlitNode>;
+/** Every node currently carrying a colour of ours. */
+export interface PaintState {
+    painted: Map<string, PaintedNode>;
+    /**
+     * Nodes whose colour has just been handed back, each with the tint it is
+     * owed and a budget of frames to keep being given it.
+     *
+     * Assigning the tint once is not enough, and the reason took measuring.
+     * Unpinning a note put its colour back correctly and still left it drawn at
+     * #b3aab3 against a colour of #b3b3b3 — frozen there, not drifting, across
+     * 124 frames.
+     *
+     * Two things were going on. Taking a pin off changes what the filter keeps,
+     * so Obsidian rebuilds the graph, and the rebuild is what dropped the
+     * record of the paint before anything could hand the colour back — the
+     * node kept wearing the pin tint with nothing left that knew to take it
+     * off. And the renderer cannot ease its way out of that on its own: it
+     * steps a tenth of the gap per frame and truncates, so a channel climbing
+     * the last few units moves by `9 * 0.1 = 0` and stalls, permanently, a
+     * whisker short. That is the asymmetry — easing a channel *down* converges,
+     * easing it *up* stops about nine units out.
+     *
+     * So a released node is handed its colour on every pass until two passes
+     * running find it already right, which is the only evidence that the
+     * assignment stuck. Counting frames instead does not work: a rebuild
+     * replaces the circle object, so a budget spent before the new one exists
+     * is spent on the old one and the new one eases up from the old paint and
+     * stalls. The flip side of the stall is that an assignment which does land
+     * is permanent — at zero gap there is nothing left to step.
+     */
+    releasing: Map<string, Releasing>;
 }
 
-export function newSpotlight(): SpotlightState {
-    return { painted: new Map() };
+/** A tint owed to a node, and how many passes have found it already correct. */
+interface Releasing {
+    rgb: number;
+    stable: number;
+    /** Passes spent on this node, against the hard stop. */
+    seen: number;
+}
+
+/**
+ * How many consecutive passes have to agree before a node is let go. Two,
+ * because one is what a fresh assignment produces on its own and says nothing
+ * about whether it survived.
+ */
+const RELEASE_STABLE = 3;
+
+/**
+ * A hard stop, so a node that can never be satisfied cannot be held forever.
+ * Far beyond anything legitimate — a release normally settles within a frame or
+ * two of the rebuild that caused it.
+ */
+const RELEASE_LIMIT = 600;
+
+export function newPaint(): PaintState {
+    return { painted: new Map(), releasing: new Map() };
 }
 
 /**
@@ -394,9 +454,9 @@ function* neighboursOf(node: GraphNode): Generator<string> {
  */
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
-    const spotlit = new Set<string>(options.spotlightNewest ? store.newestPaths(options.spotlightCount) : []);
+    const wanted = wantedPaint(renderer, store, options);
 
-    releaseSpotlight(renderer, options.spotlight, spotlit);
+    releasePaint(renderer, options.paint, wanted);
 
     const own = new Map<string, number>();
 
@@ -432,20 +492,28 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         ? warmByGroup(renderer, glowed ?? own, options.clusterWarmth, options.clusterBy)
         : glowed;
 
+    // A pin is held bright after everything that averages has run. Pinning is
+    // a statement about one note, not evidence about the vault: letting it
+    // through the glow would have a pin brighten its neighbours, and letting it
+    // through the spread would have one pin squash the curve every other note
+    // is measured on.
+    const held = holdPins(pooled ?? own, options);
+
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
-        const opacity = (pooled ?? own).get(path);
+        const opacity = held.get(path);
         if (opacity === undefined) {
             continue;
         }
 
         const currentRgb = node.color?.rgb ?? fallbackRgb;
+        const target = wanted.get(path);
 
-        if (spotlit.has(path)) {
-            const kept = options.spotlight.painted.get(path);
+        if (target !== undefined) {
+            const kept = options.paint.painted.get(path);
             const originalRgb = kept?.originalRgb ?? currentRgb;
-            const paintedRgb = blendRgb(originalRgb, options.spotlightRgb, options.spotlightStrength);
+            const paintedRgb = blendRgb(originalRgb, target.rgb, target.strength);
 
-            options.spotlight.painted.set(path, { originalRgb, paintedRgb });
+            options.paint.painted.set(path, { originalRgb, paintedRgb });
             node.color = { a: opacity, rgb: paintedRgb };
             continue;
         }
@@ -453,13 +521,74 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         node.color = { a: opacity, rgb: currentRgb };
     }
 
-    holdSpotlightTint(renderer, options.spotlight);
+    holdPaintTint(renderer, options.paint);
 
-    return pooled;
+    // What each node was actually drawn at, so sizes and the tab dot agree with
+    // the picture rather than with what the curve would have said.
+    return held;
+}
+
+/** One colour a node is to be painted, and how much of it to use. */
+interface WantedPaint {
+    rgb: number;
+    strength: number;
 }
 
 /**
- * Pins the spotlit node's drawn tint to the colour it was given.
+ * Which nodes get a colour of ours this pass, and what.
+ *
+ * Pins go on first and the spotlight paints over them, so a pinned note you
+ * have just edited reads as the newest rather than as pinned. That way round
+ * because the spotlight is the transient fact: it moves on by itself within a
+ * note or two, and the pin colour comes back on its own. A pin covering the
+ * spotlight instead would hide the one signal that was about to change.
+ */
+function wantedPaint(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, WantedPaint> {
+    const wanted = new Map<string, WantedPaint>();
+
+    if (options.pinMark) {
+        for (const path of options.pinned) {
+            if (renderer.nodeLookup[path]) {
+                wanted.set(path, { rgb: options.pinRgb, strength: options.pinStrength });
+            }
+        }
+    }
+
+    if (options.spotlightNewest) {
+        for (const path of store.newestPaths(options.spotlightCount)) {
+            wanted.set(path, { rgb: options.spotlightRgb, strength: options.spotlightStrength });
+        }
+    }
+
+    return wanted;
+}
+
+/**
+ * Holds every pinned note at the top of the range.
+ *
+ * This is the whole point of a pin. The note you are heading back to is by
+ * definition one you have not touched lately, so the longer you leave it the
+ * fainter this plugin draws it — right up until the filter takes it out of the
+ * graph altogether. A pin is where the user overrules the clock.
+ */
+function holdPins(drawn: Map<string, number>, options: OpacityOptions): Map<string, number> {
+    if (options.pinned.size === 0) {
+        return drawn;
+    }
+
+    const held = new Map(drawn);
+
+    for (const path of options.pinned) {
+        if (held.has(path)) {
+            held.set(path, options.pinOpacity);
+        }
+    }
+
+    return held;
+}
+
+/**
+ * Holds a painted node's drawn tint at the colour it was given.
  *
  * Obsidian eases a node's tint toward its colour by a tenth each frame and
  * stops drawing once the graph has been idle for sixty frames, so a tint that
@@ -470,12 +599,63 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
  * Skipped while the node is hovered, where Obsidian owns the colour and the
  * feedback is worth more than the spotlight.
  */
-export function holdSpotlightTint(renderer: GraphRenderer, spotlight: SpotlightState): void {
-    for (const [path, spotlit] of spotlight.painted) {
+export function holdPaintTint(renderer: GraphRenderer, paint: PaintState): void {
+    for (const [path, marked] of paint.painted) {
         const node = renderer.nodeLookup[path];
 
         if (node?.circle && renderer.getHighlightNode?.() !== node) {
-            node.circle.tint = spotlit.paintedRgb;
+            node.circle.tint = marked.paintedRgb;
+        }
+    }
+
+    // Nodes on the way back to their own colour. Held for a bounded number of
+    // frames rather than until the tint first matches: it matches immediately,
+    // because releasing one assigns it, and the drift happens afterwards.
+}
+
+/**
+ * Hands back the colour of every node that has stopped being painted, once per
+ * frame, until the renderer is drawing it.
+ *
+ * Only ever called from the frame hook, and that is the whole point of it being
+ * a function of its own. Assigning the tint from wherever the release happened
+ * does not hold: taking a pin off changes what the age filter keeps, so
+ * Obsidian rebuilds the graph and builds a *new* circle for the node, and
+ * anything written before that lands on the object being thrown away. Nor can
+ * the evidence be gathered by counting calls — several passes run inside the
+ * one settings change, all of them before the rebuild, so the tint looks
+ * settled while the object that will actually be drawn does not exist yet.
+ *
+ * A frame is the only pass that means anything here, because a frame is when
+ * the easing that undoes this runs.
+ */
+export function settleReleases(renderer: GraphRenderer, paint: PaintState): void {
+    for (const [path, owed] of paint.releasing) {
+        // Something wants this node painted again, so it is no longer being
+        // released. Without this the two would fight over one node's tint.
+        if (paint.painted.has(path)) {
+            paint.releasing.delete(path);
+            continue;
+        }
+
+        const node = renderer.nodeLookup[path];
+
+        if (!node?.circle) {
+            paint.releasing.delete(path);
+            continue;
+        }
+
+        // Obsidian owns a hovered node's colour outright, so this neither
+        // reads nor writes it; the frame after the cursor leaves settles it.
+        if (renderer.getHighlightNode?.() === node) {
+            continue;
+        }
+
+        owed.stable = node.circle.tint === owed.rgb ? owed.stable + 1 : 0;
+        node.circle.tint = owed.rgb;
+
+        if (owed.stable >= RELEASE_STABLE || ++owed.seen > RELEASE_LIMIT) {
+            paint.releasing.delete(path);
         }
     }
 }
@@ -491,28 +671,35 @@ export function blendRgb(from: number, to: number, amount: number): number {
     return (mix(16) << 16) | (mix(8) << 8) | mix(0);
 }
 
-/** Puts back the colour the spotlight painted over, once it moves elsewhere. */
-function releaseSpotlight(renderer: GraphRenderer, spotlight: SpotlightState, next: Set<string>): void {
-    for (const [path, spotlit] of spotlight.painted) {
+/** Puts back the colour we painted over, once it is no longer wanted. */
+function releasePaint(renderer: GraphRenderer, paint: PaintState, next: Map<string, WantedPaint>): void {
+    for (const [path, marked] of paint.painted) {
         if (!next.has(path)) {
-            releaseNode(renderer, path, spotlit.originalRgb);
-            spotlight.painted.delete(path);
+            releaseNode(renderer, path, marked.originalRgb);
+            paint.releasing.set(path, { rgb: marked.originalRgb, stable: 0, seen: 0 });
+            paint.painted.delete(path);
         }
     }
 }
 
 /**
- * Hands the spotlit node its own colour back, tint included.
+ * Hands every painted node its own colour back, tint included.
  *
  * Unloading without this would leave the node painted, and the next load would
  * read that paint as the colour to preserve, losing the real one for good.
  */
-export function clearSpotlight(renderer: GraphRenderer, spotlight: SpotlightState): void {
-    for (const [path, spotlit] of spotlight.painted) {
-        releaseNode(renderer, path, spotlit.originalRgb);
+export function clearPaint(renderer: GraphRenderer, paint: PaintState): void {
+    for (const [path, marked] of paint.painted) {
+        releaseNode(renderer, path, marked.originalRgb);
     }
 
-    spotlight.painted.clear();
+    paint.painted.clear();
+    paint.releasing.clear();
+
+    // Nothing will be holding the tint after this — it is called on unload and
+    // when a view closes — so the one chance to land it is now, and a repaint
+    // is what gets the assignment drawn rather than eased away from.
+    repaint(renderer);
 }
 
 function releaseNode(renderer: GraphRenderer, path: string, originalRgb: number): void {
@@ -528,14 +715,36 @@ function releaseNode(renderer: GraphRenderer, path: string, originalRgb: number)
 }
 
 /**
- * Forgets the colour the spotlight is preserving, without disturbing the node.
+ * Forgets the colours being preserved, now that Obsidian has rewritten every
+ * node's colour from group data and what is on the node is authoritative again.
  *
- * Called when Obsidian has just rewritten every node's colour from group data,
- * which makes what is on the node authoritative again and anything remembered
- * from before it stale.
+ * What it does *not* do is forget the nodes. A rebuild restores `node.color`
+ * and leaves `circle.tint` alone, so a node that was painted a moment ago is
+ * still wearing that paint with nothing left that remembers to take it off.
+ * Each one is handed to the release queue against the colour Obsidian has just
+ * given it, which is by definition the right one. Clearing the map outright is
+ * what left an unpinned node drawn in the pin colour.
  */
-export function forgetSpotlightColor(spotlight: SpotlightState): void {
-    spotlight.painted.clear();
+export function forgetPaintedColors(renderer: GraphRenderer, paint: PaintState): void {
+    for (const [path, marked] of paint.painted) {
+        // What Obsidian has just put back, or failing that what the node had
+        // before it was painted. The fallback is not a nicety: mid-rebuild a
+        // node's colour is not assigned yet, so reading it comes back
+        // undefined for every node at once — and skipping them there is what
+        // dropped the record and left a node wearing paint nothing owned.
+        const restored = renderer.nodeLookup[path]?.color?.rgb ?? marked.originalRgb;
+
+        paint.releasing.set(path, { rgb: restored, stable: 0, seen: 0 });
+    }
+
+    paint.painted.clear();
+
+    // A rebuild is exactly what displaces a tint, so any node already waiting
+    // to be let go has to prove itself again afterwards. Keeping the evidence
+    // from before would release it against a circle that no longer exists.
+    for (const owed of paint.releasing.values()) {
+        owed.stable = 0;
+    }
 }
 
 /**
