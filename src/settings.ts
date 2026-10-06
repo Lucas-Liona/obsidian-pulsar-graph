@@ -6,7 +6,7 @@ import { LinkRecency } from './links';
 import { OpacityRange, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { RangeBar } from './range-bar';
-import { TabFade } from './tabs';
+import { TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -72,6 +72,8 @@ export interface PulsarGraphSettings {
     filterEnabled: boolean;
     filterRanges: OpacityRange[];
     tabFade: TabFade;
+    tabFadeScope: TabFadeScope;
+    tabFadeCurve: TabFadeCurve;
     tabFadeAfter: number;
     tabFadeFloor: number;
     tabDot: boolean;
@@ -89,6 +91,20 @@ const TAB_MODE_LABELS: Record<TabFade, string> = {
     off: 'Never',
     attention: 'By how long since you looked at it',
     modified: 'By how long since it was edited'
+};
+
+const TAB_SCOPES = ['title', 'tab'] as const;
+
+const TAB_SCOPE_LABELS: Record<TabFadeScope, string> = {
+    title: 'The icon and title',
+    tab: 'The whole tab'
+};
+
+const TAB_CURVES = ['over', 'at'] as const;
+
+const TAB_CURVE_LABELS: Record<TabFadeCurve, string> = {
+    over: 'Gradually, over that long',
+    at: 'All at once, at that point'
 };
 
 export type ClusterBy = 'folder' | 'component';
@@ -144,6 +160,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     filterEnabled: false,
     filterRanges: [{ ...WHOLE_RANGE }],
     tabFade: 'off',
+    tabFadeScope: 'tab',
+    tabFadeCurve: 'over',
     tabFadeAfter: 60,
     tabFadeFloor: 0.35,
     tabDot: false,
@@ -316,6 +334,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
         filterRanges: parseRanges(data.filterRanges),
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
+        tabFadeScope: TAB_SCOPES.find((scope) => scope === data.tabFadeScope) ?? DEFAULT_SETTINGS.tabFadeScope,
+        tabFadeCurve: TAB_CURVES.find((curve) => curve === data.tabFadeCurve) ?? DEFAULT_SETTINGS.tabFadeCurve,
         tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
         tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
@@ -856,7 +876,37 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
             });
 
+        if (settings.tabFade !== 'off') {
+            new Setting(containerEl)
+                .setName('What fades')
+                .setDesc('Just the icon and title, or the whole tab with its background. Either way, hovering a faded tab brings it back to full strength, which is what keeps its close button reachable')
+                .addDropdown((dropdown) => {
+                    for (const scope of TAB_SCOPES) {
+                        dropdown.addOption(scope, TAB_SCOPE_LABELS[scope]);
+                    }
+
+                    dropdown.setValue(settings.tabFadeScope).onChange(async (value) => {
+                        settings.tabFadeScope = value as TabFadeScope;
+                        await this.plugin.saveSettings();
+                    });
+                });
+        }
+
         if (settings.tabFade === 'attention') {
+            new Setting(containerEl)
+                .setName('How it fades')
+                .setDesc('Gradually reads as how long ago; all at once reads as past the line or not. A gradient over a short span saturates almost immediately, so if everything looks equally faint this is the setting to change — or the one below it')
+                .addDropdown((dropdown) => {
+                    for (const curve of TAB_CURVES) {
+                        dropdown.addOption(curve, TAB_CURVE_LABELS[curve]);
+                    }
+
+                    dropdown.setValue(settings.tabFadeCurve).onChange(async (value) => {
+                        settings.tabFadeCurve = value as TabFadeCurve;
+                        await this.plugin.saveSettings();
+                    });
+                });
+
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Faded after')

@@ -199,6 +199,8 @@ alone.
 | Age in the status bar | on / off | on | all |
 | Dot beside each tab | on / off | off | all |
 | Fade tabs | Never, By attention, By edit time | Never | all |
+| What fades | The icon and title, The whole tab | The whole tab | Fading on |
+| How it fades | Gradually, All at once | Gradually | By attention |
 | Faded after | 1 - 480 minutes | 60 | By attention |
 | Faintest a tab gets | 0.1 - 1.0 | 0.35 | Fading on |
 | Spotlight the newest note | on / off | off | all |
@@ -373,9 +375,18 @@ fades.
 You can also fade them **by how long since it was edited**, which matches what
 the graph is showing.
 
-The close button keeps its full strength either way, because the point of
-noticing a stale tab is being able to do something about it. There's a floor on
-how faint a tab gets, since one you can't read is one you can't get back to.
+**What fades** is either the icon and title, or the whole tab with its
+background. **Hovering a faded tab brings it back to full strength** either way,
+so reaching for one you can barely see works, and so a whole tab dimmed to a
+tenth doesn't take its close button down with it. There's a floor on how faint a
+tab gets anyway, since one you can't read is one you can't get back to.
+
+**How it fades** is the difference between *over* a span and *at* the end of
+one. Gradually reads as how long ago; all at once reads as past the line or not.
+Worth knowing: a gradient over a short span saturates almost immediately — set
+to fade over one minute, every tab you haven't touched in a minute sits at the
+floor together and the bar tells you nothing. If everything looks equally faint,
+that span is the setting to change.
 
 It survives a restart, but the time Obsidian spent closed doesn't count. Being
 away from the app for a week isn't a week of ignoring a note, so the gaps freeze

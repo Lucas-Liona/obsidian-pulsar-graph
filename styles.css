@@ -213,6 +213,41 @@
 	pointer-events: none;
 }
 
+/*
+ * A faded tab carries its strength as --pulsar-tab-fade rather than as an
+ * inline opacity, because an inline opacity would beat every rule here and two
+ * of them have to win: the whole-tab case has to put its own children back to
+ * full strength so they do not dim twice, and a hover has to undo the fade so
+ * the tab stays readable and its close button stays reachable.
+ */
+.workspace-tab-header.pulsar-graph-tab-faded .workspace-tab-header-inner-icon,
+.workspace-tab-header.pulsar-graph-tab-faded .workspace-tab-header-inner-title {
+	opacity: var(--pulsar-tab-fade, 1);
+	transition: opacity 120ms ease-out;
+}
+
+.workspace-tab-header.pulsar-graph-tab-faded.pulsar-graph-tab-whole {
+	opacity: var(--pulsar-tab-fade, 1);
+	transition: opacity 120ms ease-out;
+}
+
+.workspace-tab-header.pulsar-graph-tab-faded.pulsar-graph-tab-whole .workspace-tab-header-inner-icon,
+.workspace-tab-header.pulsar-graph-tab-faded.pulsar-graph-tab-whole .workspace-tab-header-inner-title {
+	opacity: 1;
+}
+
+/*
+ * Reaching for a faded tab brings it back. The hover sets the opacity and not
+ * the variable: the variable is set inline, and a normal stylesheet rule can
+ * never beat an inline declaration, so overriding it there would have done
+ * nothing at all.
+ */
+.workspace-tab-header.pulsar-graph-tab-faded:hover .workspace-tab-header-inner-icon,
+.workspace-tab-header.pulsar-graph-tab-faded:hover .workspace-tab-header-inner-title,
+.workspace-tab-header.pulsar-graph-tab-faded.pulsar-graph-tab-whole:hover {
+	opacity: 1;
+}
+
 .workspace-tab-header.pulsar-graph-tab-stale .workspace-tab-header-inner {
 	box-shadow: inset 2px 0 0 0 var(--text-faint);
 }
