@@ -181,6 +181,10 @@ export function controlsFor(app: App, renderer: GraphRenderer): HTMLElement | nu
 }
 
 export interface OpacityOptions {
+    /** Spreads brightness across the notes the graph is drawing, not the vault. */
+    adaptive: boolean;
+    /** How far the range is held open when what is shown covers almost no time. */
+    spreadFloorHours: number;
     /** Picks the single most recently modified note out of the graph. */
     spotlightNewest: boolean;
     /** The colour to paint it, as a packed 0xRRGGBB. */
@@ -384,6 +388,17 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
 
         if (mtime !== undefined) {
             own.set(path, store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime));
+        }
+    }
+
+    // Re-spread before anything pools. The glow and the folder warmth both
+    // average over this number, so handing them the absolute one and then
+    // re-spreading afterwards would spread a number that was already mixed.
+    const spread = options.adaptive ? store.spreadAcross(own.keys(), options.spreadFloorHours) : null;
+
+    if (spread) {
+        for (const [path, opacity] of spread) {
+            own.set(path, opacity);
         }
     }
 
@@ -696,6 +711,9 @@ export function syncLabelFonts(renderer: GraphRenderer, state: { multiplier?: nu
 
 /** What a node's size and title are scaled by, or nothing to leave both alone. */
 export interface SizeOptions {
+    /** The newest note, drawn larger so the one you always want is findable. */
+    spotlit: string | undefined;
+    spotlightSize: number;
     /** A note's own brightness, 0 to 1, or undefined for one with no age. */
     strengthOf: (path: string) => number | undefined;
     /** What the dimmest note's circle is multiplied by. */
@@ -737,9 +755,16 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
         const strength = options.byAge ? options.strengthOf(path) : undefined;
-        const scale = strength === undefined
+        let scale = strength === undefined
             ? 1
             : options.smallest + clamp01(strength) * (options.largest - options.smallest);
+
+        // Multiplied rather than substituted. The spotlight is a flag on top of
+        // whatever sizing is in force, so overriding it would mean switching
+        // sizing on could make the spotlight shrink.
+        if (path === options.spotlit) {
+            scale *= options.spotlightSize;
+        }
 
         changed = sizeNode(node, scale, options.titleScale) || changed;
     }

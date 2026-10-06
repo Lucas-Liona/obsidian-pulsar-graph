@@ -50,6 +50,17 @@ That last one is worth a try if you already use the text fade threshold the way 
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
 
+**Spotlight size** makes the newest note's circle larger as well as coloured.
+Worth knowing why it needs to: Obsidian sizes a node by its link count and
+nothing else, and the note you wrote last is almost always the least linked thing
+in the vault — so without this the one node you always want to find is reliably
+the *smallest* on screen. It multiplies on top of any other sizing rather than
+replacing it.
+
+The spotlit note is also never hidden by the age filter, on the same rule as the
+note you have open. A filter quietly removing the one node the graph is pointing
+at is the graph disagreeing with itself.
+
 ## Neighbour glow
 
 A note doesn't live alone. **Neighbour glow** lets a bright note lift the notes
