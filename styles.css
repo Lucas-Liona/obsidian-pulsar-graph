@@ -387,3 +387,22 @@
 .pulsar-graph-status-ink:hover {
 	text-decoration: underline;
 }
+
+/*
+ * A rule above each section heading rather than <hr> elements between them, so
+ * nothing shifts when a section hides itself. Every heading gets one, the first
+ * included: above it is the master switch, which is exactly the thing it should
+ * be separated from.
+ */
+.pulsar-graph-settings .setting-item-heading {
+	margin-top: var(--size-4-6);
+	padding-top: var(--size-4-4);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.pulsar-graph-asleep {
+	padding: var(--size-4-8) var(--size-4-4);
+	color: var(--text-faint);
+	font-size: var(--font-ui-small);
+	text-align: center;
+}

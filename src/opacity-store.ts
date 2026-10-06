@@ -84,6 +84,15 @@ export class OpacityStore {
         this.opacitiesStale = true;
     }
 
+    /** Drops every cache, for when the plugin is switched off. */
+    clear(): void {
+        this.mtimes.clear();
+        this.opacities.clear();
+        this.ranking = [];
+        this.intensityRanking = [];
+        this.recalculateRange();
+    }
+
     recordChange(file: TFile): void {
         const mtime = file.stat.mtime;
         this.mtimes.set(file.path, mtime);

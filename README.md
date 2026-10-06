@@ -71,6 +71,16 @@ being read in order.
 | **[Edit history](docs/history.md)** | Pulsar's own record of when each note was worked on, and why it is worth nothing until it has been running a while. |
 | **[Every setting](docs/settings.md)** | The reference table, with defaults and what each one applies to. |
 
+## Switching it off
+
+One toggle at the top of the settings, above everything else, and off means off:
+no events watched, no caches built, no timers running, no editor carrying
+anything of ours, no status bar item, and every graph handed back its own
+colours. The settings page collapses to that one switch.
+
+Every feature below it can also be switched off on its own, and almost all of
+them already are until you ask.
+
 ## Worth knowing
 
 - **Node names keep up with node size.** Obsidian sizes a title from its node
