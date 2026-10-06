@@ -115,8 +115,33 @@ export interface GraphRenderer {
     changed?: () => void;
 }
 
+interface GraphEngine {
+    render?: () => void;
+}
+
 interface GraphView {
     renderer?: GraphRenderer;
+    /** The global graph calls it dataEngine; the local graph calls it engine. */
+    dataEngine?: GraphEngine;
+    engine?: GraphEngine;
+}
+
+/**
+ * Asks each open graph to rebuild its data from the vault.
+ *
+ * Only needed to prime a graph that was already open when the plugin attached,
+ * since nothing has handed it any data to keep since. Every rebuild after that
+ * is served from what was kept.
+ */
+export function rebuildGraphData(app: App): void {
+    for (const viewType of GRAPH_VIEW_TYPES) {
+        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
+            const view = leaf.view as GraphView;
+            const engine = view.dataEngine ?? view.engine;
+
+            engine?.render?.();
+        }
+    }
 }
 
 export function getGraphRenderers(app: App): GraphRenderer[] {
@@ -483,23 +508,54 @@ export type Unhook = () => void;
  * wipes the opacity applied here. Reacting to that is what lets the plugin sit
  * idle instead of reapplying opacity on a timer.
  */
-export function hookRendererData(renderer: GraphRenderer, onData: () => void): Unhook | null {
+export interface DataHook {
+    release: Unhook;
+    /**
+     * Rebuilds the graph from the last data the engine supplied. False when
+     * none has been seen yet, which is the case for a graph that was already
+     * open when the plugin attached to it.
+     */
+    reapply: () => boolean;
+}
+
+export function hookRendererData(
+    renderer: GraphRenderer,
+    onData: () => void,
+    transform: (data: unknown) => unknown
+): DataHook | null {
     const original = renderer.setData;
     if (typeof original !== 'function') {
         return null;
     }
 
+    // The engine's own data, kept whole. A filter is a view of it, so changing
+    // one has to start from everything rather than from what last survived.
+    let supplied: unknown = null;
+
     const patched = function (this: GraphRenderer, data: unknown): unknown {
-        const result = original.call(this, data);
+        supplied = data;
+
+        const result = original.call(this, transform(data));
         onData();
+
         return result;
     };
 
     renderer.setData = patched;
 
-    return () => {
-        if (renderer.setData === patched) {
-            renderer.setData = original;
+    return {
+        reapply: () => {
+            if (supplied === null) {
+                return false;
+            }
+
+            patched.call(renderer, supplied);
+            return true;
+        },
+        release: () => {
+            if (renderer.setData === patched) {
+                renderer.setData = original;
+            }
         }
     };
 }

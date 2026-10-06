@@ -2,7 +2,9 @@ import { App, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent 
 import { formatAge } from './age';
 import { AgeMode } from './age-label';
 import { LinkRecency } from './links';
+import { OpacityRange, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
+import { RangeBar } from './range-bar';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -49,6 +51,8 @@ export interface PulsarGraphSettings {
     trailColor: string;
     trailStrength: number;
     saved: SavedPreset[];
+    filterEnabled: boolean;
+    filterRanges: OpacityRange[];
 }
 
 export type ClusterBy = 'folder' | 'component';
@@ -99,7 +103,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     sessionGapMinutes: 30,
     trailColor: '#5ac8fa',
     trailStrength: 0.55,
-    saved: []
+    saved: [],
+    filterEnabled: false,
+    filterRanges: [{ ...WHOLE_RANGE }]
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
@@ -240,7 +246,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         sessionGapMinutes: Math.round(clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_RANGE.lowest, SESSION_RANGE.highest)),
         trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
-        saved: parseSaved(data.saved)
+        saved: parseSaved(data.saved),
+        filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
+        filterRanges: parseRanges(data.filterRanges)
     };
 }
 
@@ -249,6 +257,31 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
  * elsewhere, so every one is put back through the same repair the live settings
  * get. A preset can be incomplete or wrong; it cannot be dangerous.
  */
+/** A range is only kept if it is a real stretch of the line, in order. */
+function parseRanges(value: unknown): OpacityRange[] {
+    if (!Array.isArray(value)) {
+        return [{ ...WHOLE_RANGE }];
+    }
+
+    const ranges: OpacityRange[] = [];
+
+    for (const entry of value) {
+        if (typeof entry !== 'object' || entry === null) {
+            continue;
+        }
+
+        const { from, to } = entry as { from?: unknown; to?: unknown };
+        const low = clamp(parseNumber(from, 0), 0, 1);
+        const high = clamp(parseNumber(to, 1), 0, 1);
+
+        if (high > low) {
+            ranges.push({ from: low, to: high });
+        }
+    }
+
+    return ranges.length > 0 ? ranges : [{ ...WHOLE_RANGE }];
+}
+
 function parseSaved(value: unknown): SavedPreset[] {
     if (!Array.isArray(value)) {
         return [];
@@ -616,6 +649,60 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.save();
                 }
             );
+        }
+
+        section('Filter');
+
+        new Setting(containerEl)
+            .setName('Hide notes outside a range')
+            .setDesc('Takes them out of the graph entirely rather than dimming them, so what is left re-packs. The note you have open is always kept')
+            .addToggle((toggle) => toggle
+                .setValue(settings.filterEnabled)
+                .onChange(async (value) => {
+                    settings.filterEnabled = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.filterEnabled) {
+            const bar = new Setting(containerEl)
+                .setName('Keep')
+                .setDesc('Drag the handles. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
+
+            const holder = containerEl.createDiv();
+
+            const rangeBar = new RangeBar(holder, {
+                histogram: this.plugin.measureVault().spread,
+                onChange: (ranges) => {
+                    settings.filterRanges = ranges;
+                    this.save();
+                }
+            });
+
+            rangeBar.setRanges(settings.filterRanges);
+
+            bar.addExtraButton((button) => button
+                .setIcon('plus')
+                .setTooltip('Add another range')
+                .onClick(async () => {
+                    settings.filterRanges.push({ from: 0, to: 0.2 });
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+            if (settings.filterRanges.length > 1) {
+                bar.addExtraButton((button) => button
+                    .setIcon('minus')
+                    .setTooltip('Remove the last range')
+                    .onClick(async () => {
+                        settings.filterRanges.pop();
+                        await this.plugin.saveSettings();
+                        this.display();
+                    })
+                );
+            }
         }
 
         section('Labels');

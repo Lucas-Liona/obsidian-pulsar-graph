@@ -254,6 +254,30 @@ linked vault will see much more.
 
 Off by default.
 
+### Filtering
+
+Fading a note is not hiding it. Obsidian draws a title, its links and its physics
+regardless of how transparent the node is, so a note at minimum opacity is still
+sitting there taking up room. **Hide notes outside a range** takes them out of
+the graph entirely, and what's left re-packs into a tighter shape.
+
+**Keep** is a line with a handle at each end, drawn over the same spread of your
+notes the statistics panel shows, so you can aim it at something real rather than
+guessing at a number. You can add more than one range — keep the oldest and the
+newest and nothing in between, or just the middle of the herd.
+
+Two things it will not do:
+
+- **The note you have open is never hidden.** Otherwise opening an old note would
+  make it vanish from the graph, and the local graph would go blank.
+- **Attachments and unresolved links are never hidden.** The filter asks how old
+  a note is, and those have no age to answer with.
+
+It reads each note's *own* brightness, not the brightness it ends up drawn at. A
+note shouldn't count as recent because something next to it is.
+
+Off by default.
+
 ### Links carry age too
 
 Obsidian draws every link in one flat colour whatever its two ends have been
