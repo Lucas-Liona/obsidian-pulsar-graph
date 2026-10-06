@@ -151,6 +151,33 @@ Three things about that loop, each learned by breaking it:
   controls: a collapsed panel's range bar has a bounding rect of zero, which
   turns a drag calculation into a division by zero.
 
+### Capturing images and video
+
+Anything published — the README, the directory listing, a release note, a short —
+comes from the **demo vault at `~/pulsar-demo-vault`**, never from a real one. It
+exists for this: 74 notes, titles only, with modification times deliberately
+spread across a year so the fade has something to show. Its note titles were
+audited and are all generic; keep them that way, because a vault anyone can
+download must say nothing about whoever made it.
+
+A frame from a real vault is only publishable if nothing in it is legible, and
+that is harder than it sounds: a wide shot at zoom 0.545 once had two private note
+titles in it plainly readable. Check every frame at full size before it goes
+anywhere, including the file explorer, the recent-files pane and any open note in
+the background. The settings tab is never in a published frame.
+
+Capture notes, learned the hard way:
+
+- `dev:screenshot` takes the whole workspace, not the focused leaf, so the
+  sidebars are in every frame unless they are collapsed first.
+- It writes into the vault root. Delete the file after reading it; a stray PNG in
+  a vault that is also a git checkout is a dirty tree.
+- Each capture is a round trip through the CLI, so a sequence assembled from them
+  is a few frames per second. That is fine for something slow (text cooling,
+  a tab fading) and not fine for anything that needs to look smooth.
+- A fake cursor can be injected into the DOM and animated to narrate an action,
+  but it has to be removed afterwards along with anything else injected.
+
 Treat a test vault's settings and contents as the user's. Reading them is fine;
 writing settings while probing means putting them back exactly, and nothing
 captured from a real vault should be published without checking what is legible
