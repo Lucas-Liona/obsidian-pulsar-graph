@@ -1,6 +1,6 @@
-# AGENTS.md — Pulsar Graph
+# AGENTS.md — Pulsar
 
-Guidance for anyone, human or otherwise, working on this repo. Pulsar Graph
+Guidance for anyone, human or otherwise, working on this repo. Pulsar
 grades Obsidian's graph by time: how recently each note was modified becomes how
 strongly its node is drawn, so the part of a vault being worked in stands out and
 the rest sinks back.

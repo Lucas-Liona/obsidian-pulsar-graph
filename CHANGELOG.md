@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.15.0] - 2026-10-05
+
+### Changed
+
+- The plugin is now called **Pulsar**. It started as a way to fade the graph by
+  time and that is still what it does, but the idea is not really about the
+  graph, and a name that says "graph" would have had to be lived with forever.
+  The id stays `pulsar-graph`, so nothing to install or configure moves.
+- The open note's age in the status bar is **on by default**. It was off on the
+  principle that nothing should appear in a part of Obsidian the plugin does not
+  otherwise own, which was the wrong rule for the one feature that is the
+  plugin's whole subject matter stated in four words. Nothing is published yet,
+  so no existing setting changes under anyone.
+
 ## [1.14.0] - 2026-10-05
 
 ### Added

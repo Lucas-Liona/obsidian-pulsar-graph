@@ -1,4 +1,4 @@
-# Pulsar Graph
+# Pulsar
 
 Fades the nodes in Obsidian's graph by how recently you touched each note, so the
 part of your vault you're actually working in lights up and the rest sinks back.
@@ -311,11 +311,12 @@ should ever end up in there.
 
 ## Install
 
-Pulsar Graph isn't in the community directory yet. Until it is:
+Pulsar isn't in the community directory yet. Until it is:
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the
    [latest release](https://github.com/Lucas-Liona/obsidian-pulsar-graph/releases).
-2. Put all three in `YourVault/.obsidian/plugins/pulsar-graph/`.
+2. Put all three in `YourVault/.obsidian/plugins/pulsar-graph/`. The folder and
+   the plugin id stay `pulsar-graph`; only the name is shorter.
 3. Reload Obsidian and turn it on under **Community plugins**.
 
 ## Compatibility
