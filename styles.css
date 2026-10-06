@@ -209,3 +209,7 @@
 	background-color: currentColor;
 	pointer-events: none;
 }
+
+.workspace-tab-header.pulsar-graph-tab-stale .workspace-tab-header-inner {
+	box-shadow: inset 2px 0 0 0 var(--text-faint);
+}

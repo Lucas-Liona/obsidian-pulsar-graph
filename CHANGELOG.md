@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.27.0] - 2026-10-06
+
+### Added
+
+- **Mark tabs you have left alone**, off by default. Once a tab has gone
+  unlooked-at past a threshold of your choosing, a quiet line appears down its
+  edge, and a **Close stale tabs** command closes the marked ones. Closes #54.
+
+  Nothing closes on its own. A tab that shuts itself feels like data loss even
+  when nothing is lost, and it is the plugin that gets blamed for losing
+  someone's place.
+
+  A pinned tab is never marked, since pinning is a deliberate statement that it
+  should stay. Nor is the tab in front of you, which reports no idle time at all.
+  Sidebar panels are excluded as well: the outline, backlinks, local graph and
+  outgoing links views each report a file of their own, so without that check the
+  command would have offered to close someone's sidebar.
+
+### Fixed
+
+- The README still said the attention clock was forgotten on every restart. It
+  has survived restarts since 1.23.0, with the time Obsidian spent closed not
+  counted against a tab.
+
 ## [1.26.0] - 2026-10-06
 
 ### Added
