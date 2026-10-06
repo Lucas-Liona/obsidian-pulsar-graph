@@ -1,8 +1,9 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
+import { filterGraphData, isWholeRange } from './filter';
 import { LinkShading } from './links';
-import { applyOpacity, clearSpotlight, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
+import { applyOpacity, clearSpotlight, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, rebuildGraphData, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeVault, VaultStats } from './stats';
@@ -17,6 +18,7 @@ interface AttachedGraph {
     pooled: { byPath: Map<string, number> | null };
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
     frames: FrameHook | null;
+    data: DataHook | null;
     spotlight: SpotlightState;
 }
 
@@ -60,7 +62,15 @@ export default class PulsarGraphPlugin extends Plugin {
             this.onFileChanged(file);
         }));
 
-        this.registerEvent(this.app.workspace.on('file-open', () => this.updateStatusBar()));
+        this.registerEvent(this.app.workspace.on('file-open', () => {
+            this.updateStatusBar();
+
+            // The open note is exempt from the filter, so which note that is
+            // changes what the graph should contain.
+            if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
+                this.refilter();
+            }
+        }));
         this.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
 
         // Graph views come and go, and each brings its own renderer to hook.
@@ -90,8 +100,32 @@ export default class PulsarGraphPlugin extends Plugin {
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
         this.store.markStale();
+        this.store.refresh();
+        this.refilter();
         this.syncRenderers();
         this.syncStatusBar();
+    }
+
+    /**
+     * Rebuilds every attached graph from the engine's own data, which is what a
+     * change to the filter needs: the nodes it would bring back are not in the
+     * graph to be updated, they have to be put back.
+     */
+    refilter(): void {
+        let primed = true;
+
+        for (const graph of this.attached.values()) {
+            if (graph.data?.reapply() !== true) {
+                primed = false;
+            }
+        }
+
+        // A graph that was already open when the plugin attached has handed it
+        // no data to rebuild from, so the engine is asked for some. This happens
+        // once per graph, not once per change.
+        if (!primed) {
+            rebuildGraphData(this.app);
+        }
     }
 
     /**
@@ -200,12 +234,20 @@ export default class PulsarGraphPlugin extends Plugin {
             ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
             : null);
 
-        const releaseData = hookRendererData(renderer, () => {
-            // Obsidian has just rewritten every colour from group data, so the
-            // colour the spotlight was preserving is stale.
-            forgetSpotlightColor(spotlight);
-            this.applyTo(renderer);
-        });
+        const data = hookRendererData(
+            renderer,
+            () => {
+                // Obsidian has just rewritten every colour from group data, so
+                // the colour the spotlight was preserving is stale.
+                forgetSpotlightColor(spotlight);
+                this.applyTo(renderer);
+            },
+            (supplied) => filterGraphData(supplied, {
+                ranges: this.settings.filterRanges,
+                strengthOf: (path) => (this.settings.filterEnabled ? this.store.opacityFor(path) : undefined),
+                keep: this.app.workspace.getActiveFile()?.path
+            })
+        );
         const frames = hookRendererFrame(renderer, () => {
             labels.sync();
             links.sync();
@@ -228,9 +270,10 @@ export default class PulsarGraphPlugin extends Plugin {
             links,
             pooled,
             frames,
+            data,
             spotlight,
             release: () => {
-                releaseData?.();
+                data?.release();
                 releaseHover();
                 frames?.release();
                 labels.destroy();

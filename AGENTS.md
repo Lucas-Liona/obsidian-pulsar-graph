@@ -22,6 +22,8 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
 | `stats.ts` | What the settings are doing to this vault |
+| `filter.ts` | Which notes survive, applied before the renderer sees them |
+| `range-bar.ts` | The unit line with a handle at each end |
 
 Works on the global and local graph views. Local and offline only.
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.17.0] - 2026-10-05
+
+### Added
+
+- **Hide notes outside a range**, off by default. Notes outside the range are
+  removed from the graph rather than dimmed, so what remains re-packs. Closes #23.
+
+  Opacity 0 never hid anything: a title still draws, links still draw, and the
+  node still pushes its neighbours around in the simulation. Removing it from the
+  data is the only thing that takes it out, and it is safe — the renderer builds
+  a link only when both ends exist, and it leaves surviving nodes' positions
+  alone, so the map does not jump.
+
+  **Keep** is a line with a handle at each end, over the same spread of notes the
+  statistics panel shows. Several ranges are allowed, so the oldest and the newest
+  with nothing between them is expressible, as is the middle on its own.
+
+  The note you have open is never hidden, so a local graph cannot go blank.
+  Attachments and unresolved links are never hidden either, having no age to be
+  judged on. The brightness read is each note's own rather than the one it ends
+  up drawn at: a note should not count as recent because something beside it is,
+  and reading the pooled value would be circular, since pooling is computed from
+  the adjacency the filter decides.
+
 ## [1.16.0] - 2026-10-05
 
 ### Added
