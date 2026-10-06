@@ -293,6 +293,7 @@ function clamp(value: number, lowest: number, highest: number): number {
 
 export class PulsarSettingTab extends PluginSettingTab {
     private previewEl: HTMLElement | null = null;
+    private statsEl: HTMLElement | null = null;
 
     constructor(app: App, private readonly plugin: PulsarGraphPlugin) {
         super(app, plugin);
@@ -684,16 +685,56 @@ export class PulsarSettingTab extends PluginSettingTab {
             })
         );
 
+        section('What this is doing to your vault');
+
+        this.statsEl = containerEl.createDiv({ cls: 'pulsar-graph-stats' });
+        this.renderStats();
+
         containerEl.scrollTop = scroll;
     }
 
     hide(): void {
         this.previewEl = null;
+        this.statsEl = null;
     }
 
     private save(): void {
         void this.plugin.saveSettings();
         this.renderPreview();
+        this.renderStats();
+    }
+
+    /**
+     * The numbers behind every choice above. A fade is only as good as the
+     * distribution it is shaping, and a vault's distribution is not something
+     * anyone can guess at from the outside.
+     */
+    private renderStats(): void {
+        const stats = this.statsEl;
+        if (!stats) {
+            return;
+        }
+
+        stats.empty();
+
+        const measured = this.plugin.measureVault();
+        const tallest = Math.max(1, ...measured.spread);
+
+        const chart = stats.createDiv({ cls: 'pulsar-graph-bars' });
+
+        for (const count of measured.spread) {
+            const column = chart.createDiv({ cls: 'pulsar-graph-bar' });
+            column.setAttr('aria-label', `${count} notes`);
+            column.createDiv({ cls: 'pulsar-graph-bar-fill' }).style.height = `${(count / tallest) * 100}%`;
+        }
+
+        chart.createDiv({ cls: 'pulsar-graph-bars-caption', text: 'dimmest to brightest fifth' });
+
+        for (const row of measured.rows) {
+            const line = stats.createDiv({ cls: 'pulsar-graph-stat' });
+            line.createDiv({ cls: 'pulsar-graph-stat-label', text: row.label });
+            line.createDiv({ cls: 'pulsar-graph-stat-value', text: row.value });
+        }
     }
 
     /**

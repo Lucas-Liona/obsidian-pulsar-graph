@@ -21,6 +21,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `links.ts` | Age and session trails carried into the links |
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
+| `stats.ts` | What the settings are doing to this vault |
 
 Works on the global and local graph views. Local and offline only.
 
