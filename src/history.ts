@@ -199,6 +199,61 @@ export class EditHistory {
         this.touch();
     }
 
+    /**
+     * Folds timestamps from somewhere else into a note's history, coalescing
+     * them into sittings exactly as live edits are. Used by the File Recovery
+     * import, which is the only record of anything from before this plugin was
+     * switched on.
+     *
+     * Safe to run twice: a timestamp that already falls inside a sitting merges
+     * back into it rather than adding another.
+     */
+    merge(path: string, times: readonly number[], gapMs: number, cap: number): void {
+        if (!this.loaded || times.length === 0) {
+            return;
+        }
+
+        const all: Bead[] = [
+            ...(this.notes.get(path) ?? []),
+            ...times.map((at) => ({ start: at, end: at, sizeStart: 0, sizeEnd: 0 }))
+        ];
+
+        all.sort((left, right) => left.start - right.start);
+
+        const merged: Bead[] = [];
+
+        for (const bead of all) {
+            const last = merged.at(-1);
+
+            if (last && bead.start - last.end <= gapMs) {
+                last.end = Math.max(last.end, bead.end);
+
+                // Sizes are only known for sittings this plugin watched happen;
+                // an imported one carries none. The merged sitting keeps
+                // whatever real numbers either end had.
+                if (hasSizes(bead)) {
+                    const had = hasSizes(last);
+                    last.sizeEnd = bead.sizeEnd;
+
+                    if (!had) {
+                        last.sizeStart = bead.sizeStart;
+                    }
+                }
+
+                continue;
+            }
+
+            merged.push({ ...bead });
+        }
+
+        if (merged.length > cap) {
+            merged.splice(0, merged.length - cap);
+        }
+
+        this.notes.set(path, merged);
+        this.touch();
+    }
+
     /** Remembers that a note was looked at, for the attention clock. */
     markSeen(path: string, at: number): void {
         if (!this.loaded) {
@@ -335,6 +390,11 @@ export class EditHistory {
 
         await this.writing;
     }
+}
+
+/** Whether a sitting was watched happen, rather than imported after the fact. */
+function hasSizes(bead: Bead): boolean {
+    return bead.sizeStart !== 0 || bead.sizeEnd !== 0;
 }
 
 function readBeads(source: unknown, into: Map<string, Bead[]>): void {

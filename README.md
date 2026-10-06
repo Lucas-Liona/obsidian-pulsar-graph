@@ -417,6 +417,19 @@ arrives by sync is dated by the note's own timestamp, so work you did on your
 phone three days ago is recorded three days ago rather than as a fictional
 sitting now.
 
+**It can start with a head start.** Obsidian's core *File recovery* plugin keeps
+a copy of every note it has seen change, usually for the last seven days, and
+**Import earlier history** in the settings folds those timestamps in. On my vault
+that turned 170 snapshots across 76 notes into 96 sittings in one press. It's a
+button rather than something that happens on its own, it says what it found
+before you press it, and it's safe to press twice — a timestamp already inside a
+sitting merges back into it instead of adding another.
+
+Only the timestamps are read. Each of those snapshots holds the note's full text,
+and the import never goes near it: the two indexes are walked with
+`openKeyCursor`, which hands back a cursor object that has no `value` property on
+it at all, so the text isn't merely left alone, it's unreachable from there.
+
 Nothing reads it yet beyond a count in the status bar. The view it's for —
 a note's history drawn as beads down the sidebar — is
 [issue #26](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/26),
@@ -449,7 +462,10 @@ already has months in it.
   the vault: the status bar re-reads it once a minute, and the tabs twice a minute.
 - **It reads timestamps and file sizes, never contents.** How recently a note was
   modified, and how long it is. Not a word of what any note says, no network calls
-  of any kind, and nothing written anywhere except this plugin's own folder.
+  of any kind, and nothing written anywhere except this plugin's own folder. The
+  one place it reads outside the vault is core *File recovery*'s snapshot
+  database, and only when you press **Import earlier history** — it takes the
+  timestamps and cannot reach the note text those snapshots contain.
 
 ## Install
 

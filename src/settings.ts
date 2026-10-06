@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
 import { formatAge } from './age';
+import { readSnapshots } from './file-recovery';
 import { AgeMode } from './age-label';
 import { LinkRecency } from './links';
 import { OpacityRange, WHOLE_RANGE } from './filter';
@@ -920,6 +921,46 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.save();
                 }
             );
+
+            // Core File Recovery holds the only local record of anything from
+            // before this was switched on. Reading another plugin's private
+            // database unasked would read badly however harmless it is, so it
+            // is a button, and the button names what it found first.
+            const recovery = new Setting(containerEl)
+                .setName('Import earlier history')
+                .setDesc('Reading what core file recovery has…')
+                .addButton((button) => button
+                    .setButtonText('Import')
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        const result = await this.plugin.importFileRecovery();
+                        button.setDisabled(false);
+
+                        if (!result) {
+                            new Notice('Core file recovery has nothing to read in this vault.');
+                            return;
+                        }
+
+                        new Notice(`Imported ${result.records} snapshots across ${result.notes} notes, adding ${result.gained} sittings.`);
+                        this.display();
+                    })
+                );
+
+            void readSnapshots(this.app).then((found) => {
+                // The tab may have been redrawn or closed while this was read.
+                if (!recovery.descEl.isConnected) {
+                    return;
+                }
+
+                if (!found) {
+                    recovery.setDesc('Core file recovery has nothing to read in this vault. It may be switched off, or this may be a platform without it');
+                    return;
+                }
+
+                const skipped = found.skipped === 0 ? '' : `, ignoring ${found.skipped} for notes you no longer have`;
+
+                recovery.setDesc(`Core file recovery holds ${found.records} snapshots across ${found.byPath.size} notes${skipped}. Only their timestamps are read — never any part of what a note says. Safe to run more than once`);
+            });
 
             const coverage = this.plugin.historyCoverage();
 
