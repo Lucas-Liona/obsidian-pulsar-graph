@@ -310,3 +310,41 @@
 	text-align: center;
 	pointer-events: none;
 }
+
+/*
+ * Fresh writing, cooling back to the normal text colour.
+ *
+ * Colour rather than opacity on purpose. Writing inside an already-lit stretch
+ * nests one span inside another, and nested opacities multiply into something
+ * far darker than either asked for, while nested colours simply let the inner
+ * one win — which is the newest edit, which is the right answer. It also means
+ * no clipping of old marks against new ones is needed anywhere.
+ */
+.pulsar-ink {
+	transition: color 1.5s linear;
+}
+
+.pulsar-ink-0 {
+	color: var(--pulsar-ink);
+}
+.pulsar-ink-1 {
+	color: color-mix(in oklab, var(--pulsar-ink) 86%, var(--text-normal));
+}
+.pulsar-ink-2 {
+	color: color-mix(in oklab, var(--pulsar-ink) 72%, var(--text-normal));
+}
+.pulsar-ink-3 {
+	color: color-mix(in oklab, var(--pulsar-ink) 58%, var(--text-normal));
+}
+.pulsar-ink-4 {
+	color: color-mix(in oklab, var(--pulsar-ink) 44%, var(--text-normal));
+}
+.pulsar-ink-5 {
+	color: color-mix(in oklab, var(--pulsar-ink) 31%, var(--text-normal));
+}
+.pulsar-ink-6 {
+	color: color-mix(in oklab, var(--pulsar-ink) 19%, var(--text-normal));
+}
+.pulsar-ink-7 {
+	color: color-mix(in oklab, var(--pulsar-ink) 9%, var(--text-normal));
+}

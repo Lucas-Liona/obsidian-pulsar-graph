@@ -1,3 +1,4 @@
+import { EditorView } from '@codemirror/view';
 import { debounce, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
@@ -8,6 +9,7 @@ import { applySizes, clearSizes, applyOpacity, clearSpotlight, controlsFor, Data
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
+import { forgetInk, inkExtension, setInkOptions } from './ink';
 import { OpacityStore, Sample } from './opacity-store';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
@@ -119,6 +121,15 @@ export default class PulsarGraphPlugin extends Plugin {
         }));
         this.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
 
+        this.registerEditorExtension(inkExtension());
+        this.syncInk();
+
+        this.addCommand({
+            id: 'cool-fresh-writing',
+            name: 'Cool fresh writing',
+            callback: () => this.forgetInk()
+        });
+
         this.addCommand({
             id: 'close-stale-tabs',
             name: 'Close stale tabs',
@@ -164,6 +175,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.attached.clear();
         this.tabs.clear();
+        document.body.style.removeProperty('--pulsar-ink');
         void this.history.flush();
     }
 
@@ -288,8 +300,40 @@ export default class PulsarGraphPlugin extends Plugin {
         this.settings = parseSettings(await this.loadData());
     }
 
+    /**
+     * Every open editor, for the one feature that lives inside them.
+     *
+     * A leaf whose view has not been built yet has no editor to reach, and
+     * Obsidian defers building one until its tab is looked at, so this is
+     * whatever is actually open rather than every note in the vault.
+     */
+    private editors(): EditorView[] {
+        const open: EditorView[] = [];
+
+        this.app.workspace.iterateAllLeaves((leaf) => {
+            const editor = (leaf.view as { editor?: { cm?: EditorView } }).editor?.cm;
+
+            if (editor) {
+                open.push(editor);
+            }
+        });
+
+        return open;
+    }
+
+    /** Cools everything at once, from the command or the settings button. */
+    forgetInk(): void {
+        forgetInk(this.editors());
+    }
+
+    private syncInk(): void {
+        document.body.style.setProperty('--pulsar-ink', this.settings.inkColor);
+        setInkOptions({ enabled: this.settings.ink, minutes: this.settings.inkMinutes }, this.editors());
+    }
+
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
+        this.syncInk();
         this.store.markStale();
         this.store.refresh();
         this.refilter();
