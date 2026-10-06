@@ -54,6 +54,7 @@ export interface GraphLink {
     line?: {
         alpha: number;
         tint: number;
+        visible: boolean;
         texture?: GraphTexture;
     } | null;
 }
@@ -72,7 +73,7 @@ export interface GraphNode {
     forward?: Record<string, unknown>;
     reverse?: Record<string, unknown>;
     text?: GraphText | null;
-    circle?: { tint: number } | null;
+    circle?: { tint: number; visible: boolean } | null;
     getSize?: () => number;
 }
 
@@ -121,6 +122,7 @@ interface GraphEngine {
 
 interface GraphView {
     renderer?: GraphRenderer;
+    containerEl?: HTMLElement;
     /** The global graph calls it dataEngine; the local graph calls it engine. */
     dataEngine?: GraphEngine;
     engine?: GraphEngine;
@@ -157,6 +159,21 @@ export function getGraphRenderers(app: App): GraphRenderer[] {
     }
 
     return renderers;
+}
+
+/** The element a graph view draws its own controls into, if it has one. */
+export function controlsFor(app: App, renderer: GraphRenderer): HTMLElement | null {
+    for (const viewType of GRAPH_VIEW_TYPES) {
+        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
+            const view = leaf.view as GraphView;
+
+            if (view.renderer === renderer) {
+                return view.containerEl?.querySelector('.graph-controls') ?? null;
+            }
+        }
+    }
+
+    return null;
 }
 
 export interface OpacityOptions {
@@ -596,4 +613,45 @@ export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void):
             }
         }
     };
+}
+
+/**
+ * Hides nodes without taking them out of the graph, for the length of a drag.
+ *
+ * A real filter rebuilds the data and lets the simulation re-pack, which is
+ * what you want when a choice has been made and badly wrong while it is being
+ * made: every frame of a scrub would re-pack, and the thing being aimed at would
+ * crawl away from the cursor. Hiding leaves every position untouched, so the
+ * graph holds still and only the contents change.
+ */
+export function previewFilter(
+    renderer: GraphRenderer,
+    keeps: (path: string) => boolean
+): void {
+    const hidden = new Set<string>();
+
+    for (const [path, node] of Object.entries(renderer.nodeLookup)) {
+        if (keeps(path)) {
+            continue;
+        }
+
+        hidden.add(path);
+
+        if (node.circle) {
+            node.circle.visible = false;
+        }
+
+        if (node.text) {
+            node.text.visible = false;
+        }
+    }
+
+    for (const link of renderer.links ?? []) {
+        const source = link.source?.id;
+        const target = link.target?.id;
+
+        if (link.line && ((source !== undefined && hidden.has(source)) || (target !== undefined && hidden.has(target)))) {
+            link.line.visible = false;
+        }
+    }
 }

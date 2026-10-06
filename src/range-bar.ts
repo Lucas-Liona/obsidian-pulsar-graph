@@ -9,6 +9,12 @@ const MINIMUM_WIDTH = 0.02;
 export interface RangeBarOptions {
     /** Drawn behind the ranges, so the ranges can be aimed at something real. */
     histogram?: number[];
+    /**
+     * Called continuously while a handle is held. Rebuilding a graph on every
+     * frame of a drag would be unusable, so this is where a cheap preview goes
+     * and onChange is where the real work goes.
+     */
+    onPreview?: (ranges: OpacityRange[]) => void;
     onChange: (ranges: OpacityRange[]) => void;
 }
 
@@ -95,6 +101,8 @@ export class RangeBar {
                 handle.removeEventListener('pointermove', move);
                 handle.removeEventListener('pointerup', release);
                 handle.removeEventListener('pointercancel', release);
+
+                this.options.onChange(this.copy());
             };
 
             handle.addEventListener('pointermove', move);
@@ -108,6 +116,12 @@ export class RangeBar {
             if (nudge !== 0) {
                 event.preventDefault();
                 this.moveTo(index, edge, this.ranges[index][edge] + nudge);
+
+                // A key press is a whole gesture, so it commits rather than
+                // leaving the graph showing a preview nothing will finish.
+                if (this.options.onPreview) {
+                    this.options.onChange(this.copy());
+                }
             }
         });
     }
@@ -127,6 +141,15 @@ export class RangeBar {
         range.to = Math.min(1, range.to);
 
         this.render();
-        this.options.onChange(this.ranges.map((kept) => ({ ...kept })));
+
+        if (this.options.onPreview) {
+            this.options.onPreview(this.copy());
+        } else {
+            this.options.onChange(this.copy());
+        }
+    }
+
+    private copy(): OpacityRange[] {
+        return this.ranges.map((kept) => ({ ...kept }));
     }
 }

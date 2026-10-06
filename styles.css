@@ -160,3 +160,32 @@
 	color: var(--text-faint);
 	font-size: var(--font-ui-smaller);
 }
+
+.graph-control-section.mod-pulsar .tree-item-children {
+	padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);
+}
+
+.graph-control-section.mod-pulsar.is-collapsed .tree-item-children {
+	display: none;
+}
+
+.graph-control-section.mod-pulsar.is-collapsed .collapse-icon {
+	transform: rotate(-90deg);
+}
+
+.pulsar-graph-control-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+}
+
+.graph-control-section.mod-pulsar .pulsar-graph-range {
+	margin-bottom: 0;
+}
+
+.graph-control-section.mod-pulsar .pulsar-graph-range-track {
+	height: 32px;
+}
