@@ -132,6 +132,25 @@ To test a build: copy `main.js` into the vault's plugin folder, then
 inside the running app with full vault access, and `dev:screenshot` captures the
 workspace rather than any open modal.
 
+Three things about that loop, each learned by breaking it:
+
+- **`eval` takes the script on the command line, so keep it small.** An 8 KB
+  payload (a stylesheet being injected) wedged the renderer and left the window
+  showing "Error" with the CLI reporting that it could not find Obsidian at all.
+  Restarting loses the main area's tab layout, which is not recoverable from
+  anywhere: `workspace.json` is rewritten on launch and is gitignored in the
+  vault repo. Read files from disk inside the script instead, or copy them in.
+- **`vault=<name>` is ignored.** With two vaults open, every command goes to the
+  focused window, so revealing a leaf can silently redirect the next call to a
+  different vault. Three test runs were measured against a demo vault running
+  version 1.0.0 before it showed. Assert `app.vault.getName()` inside the script
+  and have it return early if it is wrong.
+- **Reveal the leaf before measuring anything a frame produces.** A renderer
+  whose leaf is in a background tab never calls `render()`, so `fontDirty` is
+  never consumed and font sizes read stale forever. The same is true of the
+  controls: a collapsed panel's range bar has a bounding rect of zero, which
+  turns a drag calculation into a division by zero.
+
 Treat a test vault's settings and contents as the user's. Reading them is fine;
 writing settings while probing means putting them back exactly, and nothing
 captured from a real vault should be published without checking what is legible
