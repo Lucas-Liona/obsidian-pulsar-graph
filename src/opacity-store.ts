@@ -309,6 +309,19 @@ export class OpacityStore {
         return this.opacities.get(path);
     }
 
+    /**
+     * What a note modified at this moment would be drawn at, against the range
+     * the vault is currently measured over.
+     *
+     * Takes a timestamp rather than a path and caches nothing, because the
+     * callers are asking about moments rather than notes: the settings preview
+     * walks invented ages, and the history view asks about each past sitting
+     * with a note, none of which is the note's own modification time.
+     */
+    opacityAt(mtime: number): number {
+        return this.calculateOpacity(mtime);
+    }
+
     cacheOpacityFor(path: string, mtime: number): number {
         const opacity = this.calculateOpacity(mtime, path);
         this.opacities.set(path, opacity);

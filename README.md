@@ -80,6 +80,7 @@ being read in order.
 | **[Tabs](docs/tabs.md)** | The tab bar as a readout of attention: fading by how long since you looked, a brightness dot, and marking the ones you have left alone. |
 | **[Fresh writing](docs/writing.md)** | The part that works inside a note. Text takes a colour as you type it and cools back to normal. |
 | **[Edit history](docs/history.md)** | Pulsar's own record of when each note was worked on, and why it is worth nothing until it has been running a while. |
+| **[A note's history](docs/beads.md)** | The record drawn as beads down the sidebar, one per sitting, so a note's bursts and quiet stretches read at a glance. |
 | **[Every setting](docs/settings.md)** | The reference table, with defaults and what each one applies to. |
 
 ## Switching it off

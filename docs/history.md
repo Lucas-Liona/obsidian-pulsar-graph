@@ -58,11 +58,10 @@ against the busiest note would leave nearly everything at the bottom.
 It's worth little until the history has been running a while, and a steep fade
 curve magnifies it sharply.
 
-Nothing else reads it yet beyond a count in the status bar. The view it's for —
-a note's history drawn as beads down the sidebar — is
-[issue #26](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/26),
-and it's deliberately later: it's much easier to design against a history that
-already has months in it.
+The other thing that reads it is **[the history view](beads.md)**: a note's
+sittings drawn as beads down the sidebar, so its bursts and quiet stretches read
+at a glance. It was deliberately left until the record existed to design
+against.
 
 ---
 
