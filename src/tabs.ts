@@ -72,6 +72,12 @@ const DOT_CLASS = 'pulsar-graph-tab-dot';
 /** The class a tab wears once it has gone quiet long enough to be let go. */
 const STALE_CLASS = 'pulsar-graph-tab-stale';
 
+/**
+ * What a dimmed tab dims. The close button is left out: the whole point of
+ * noticing a stale tab is being able to act on it.
+ */
+const FADED = ['.workspace-tab-header-inner-icon', '.workspace-tab-header-inner-title'];
+
 export interface TabFadeOptions {
     mode: TabFade;
     /** Shows a filled circle beside each title at that note's own brightness. */
@@ -125,20 +131,55 @@ export class TabFading {
                 return;
             }
 
+            // Nothing in the sidebar is a tab in the sense this feature means.
+            // The outline, backlinks, local graph and a Bases view each report a
+            // file of their own, so without this the sidebar's own tabs dim,
+            // grow dots and get offered up for closing — and the file they
+            // report is not even always the one being looked at, which is why
+            // they appeared to change at random.
+            if (leaf.getRoot() !== this.app.workspace.rootSplit) {
+                this.reset(header);
+                return;
+            }
+
             if (options.mode !== 'off') {
                 this.paint(header, this.strengthFor(path, options));
             }
 
             this.markDot(header, path, options);
 
-            // Sidebar panels are left out of this. The outline, backlinks and
-            // local graph all report a file of their own, so without this the
-            // command below would offer to close someone's sidebar.
-            const inMain = leaf.getRoot() === this.app.workspace.rootSplit;
             const pinned = leaf.getViewState().pinned === true;
 
-            this.markStale(header, path, inMain && !pinned ? options.stale : null);
+            this.markStale(header, path, pinned ? null : options.stale);
         });
+    }
+
+    /**
+     * Hands one tab its appearance back, for a header that should never have
+     * been touched. Needed on upgrade as much as at runtime: a sidebar panel
+     * dimmed by an earlier version keeps that inline opacity until something
+     * takes it off.
+     */
+    private reset(header: HTMLElement): void {
+        for (const selector of FADED) {
+            const part = header.querySelector<HTMLElement>(selector);
+
+            if (part) {
+                part.style.removeProperty('opacity');
+                this.touched.delete(part);
+            }
+        }
+
+        const dot = header.querySelector<HTMLElement>(`.${DOT_CLASS}`);
+
+        if (dot) {
+            this.dots.delete(dot);
+            dot.remove();
+        }
+
+        if (this.staled.delete(header)) {
+            header.removeClass(STALE_CLASS);
+        }
     }
 
     /** Hands every tab its appearance back. */
@@ -220,12 +261,27 @@ export class TabFading {
         }
 
         const dot = existing ?? inner.parentElement.createDiv({ cls: DOT_CLASS });
-        inner.insertAdjacentElement('afterend', dot);
+
+        // Only moved when it is actually in the wrong place.
+        // insertAdjacentElement detaches and re-inserts even when the node is
+        // already where it is being put, and a single tab switch runs three
+        // passes over every tab: 42 needless re-insertions, counted with a
+        // MutationObserver, which is what the flickering was.
+        if (inner.nextElementSibling !== dot) {
+            inner.insertAdjacentElement('afterend', dot);
+        }
 
         dot.style.opacity = clamp(strength, 0, 1).toFixed(3);
-        dot.style.backgroundColor = options.spotlight && options.spotlight.path === path
-            ? options.spotlight.color
-            : 'currentColor';
+
+        // The colour belongs to the stylesheet, never to currentColor: that
+        // inherits the tab header's own text colour, which Obsidian sets muted
+        // for an inactive tab and normal for the active one. Every dot but the
+        // one you were sitting in came out the same shade of grey.
+        if (options.spotlight && options.spotlight.path === path) {
+            dot.style.backgroundColor = options.spotlight.color;
+        } else {
+            dot.style.removeProperty('background-color');
+        }
 
         this.dots.add(dot);
     }
@@ -246,7 +302,7 @@ export class TabFading {
     }
 
     private paint(header: HTMLElement, strength: number): void {
-        for (const selector of ['.workspace-tab-header-inner-icon', '.workspace-tab-header-inner-title']) {
+        for (const selector of FADED) {
             const part = header.querySelector<HTMLElement>(selector);
 
             if (part) {

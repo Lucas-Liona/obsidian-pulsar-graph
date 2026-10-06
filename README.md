@@ -350,6 +350,11 @@ line, which is much easier to sit with.
 
 ### Tabs
 
+Everything in this section means the tabs in the main editor area, and only
+those. Sidebar panels are left alone: the outline, backlinks, local graph and a
+Bases view each report a file of their own, and it isn't always the file you're
+looking at, so a sidebar tab that joined in appeared to change at random.
+
 **Show a dot beside each tab** puts a small filled circle next to the title, at
 that note's brightness in the graph. It's the cheapest way to have the idea in
 front of you without opening the graph at all, and it reads at a glance where a
@@ -385,9 +390,7 @@ Nothing closes on its own, ever. A tab that shuts itself feels like data loss
 even when nothing is lost, and it's the plugin that gets blamed for losing your
 place. A pinned tab is never marked — pinning is a deliberate statement that it
 should stay — and neither is the tab you're in, which reports no idle time at
-all. Sidebar panels are left out too: the outline, backlinks and local graph each
-report a file of their own, so without that check the command would have offered
-to close your sidebar.
+all.
 
 Both off by default.
 

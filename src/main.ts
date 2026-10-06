@@ -56,7 +56,15 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly tabs = new TabFading(this.app, this.attention);
     private readonly history = new EditHistory(this.app, this);
 
-    private readonly updateSoon = debounce(() => this.syncRenderers(), UPDATE_DELAY_MS, true);
+    /**
+     * The tab bar repaints with the graph. Both read the same brightness, and
+     * the dot and the spotlight were only redrawn on a tab switch or on the
+     * half-minute tick, so writing in a note left its own tab stale.
+     */
+    private readonly updateSoon = debounce(() => {
+        this.syncRenderers();
+        this.paintTabs();
+    }, UPDATE_DELAY_MS, true);
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -117,7 +125,10 @@ export default class PulsarGraphPlugin extends Plugin {
         });
 
         // Graph views come and go, and each brings its own renderer to hook.
-        this.registerEvent(this.app.workspace.on('layout-change', () => this.syncRenderers()));
+        this.registerEvent(this.app.workspace.on('layout-change', () => {
+            this.syncRenderers();
+            this.paintTabs();
+        }));
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             const active = this.app.workspace.getActiveFile();
 
@@ -130,8 +141,6 @@ export default class PulsarGraphPlugin extends Plugin {
             this.updateStatusBar();
             this.paintTabs();
         }));
-
-        this.registerEvent(this.app.workspace.on('layout-change', () => this.paintTabs()));
 
         this.app.workspace.onLayoutReady(() => {
             this.syncRenderers();
