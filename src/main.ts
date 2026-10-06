@@ -4,7 +4,7 @@ import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -611,6 +611,7 @@ export default class PulsarGraphPlugin extends Plugin {
             caption,
             release: () => {
                 caption?.destroy();
+                clearSizes(renderer);
                 data?.release();
                 releaseHover();
                 frames?.release();
@@ -642,6 +643,27 @@ export default class PulsarGraphPlugin extends Plugin {
             text: formatAge(mtime, Date.now()),
             strength: Math.min(1, Math.max(0, opacity))
         };
+    }
+
+    /**
+     * A note's place on the fade curve, 0 to 1, recovered from the opacity it
+     * was drawn at.
+     *
+     * Size cannot read the drawn opacity directly. Alpha above 1 is clamped
+     * when drawn, so a maximum opacity above 1 flattens the top of the curve —
+     * with it at 3, two thirds of the curve reads as "1" and every note in it
+     * would come out the same size. Undoing the min and max puts the shape
+     * back, since opacity is exactly `min + fade * (max - min)`.
+     */
+    private shapedStrength(path: string, pooled: Map<string, number> | null): number | undefined {
+        const value = pooled?.get(path) ?? this.store.opacityFor(path);
+
+        if (value === undefined) {
+            return undefined;
+        }
+
+        const span = this.settings.maxOpacity - this.settings.minOpacity;
+        return span <= 0 ? 1 : (value - this.settings.minOpacity) / span;
     }
 
     private applyTo(renderer: GraphRenderer): void {
@@ -683,6 +705,15 @@ export default class PulsarGraphPlugin extends Plugin {
             clusterWarmth: this.settings.clusterWarmth,
             clusterBy: this.settings.clusterBy
         });
+
+        applySizes(renderer, {
+            byAge: this.settings.nodeSizeByAge,
+            smallest: this.settings.nodeSizeSmallest,
+            largest: this.settings.nodeSizeLargest,
+            titleScale: this.settings.titleScale,
+            strengthOf: (path) => this.shapedStrength(path, graph.pooled.byPath)
+        });
+
         repaint(renderer);
     }
 }

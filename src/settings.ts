@@ -69,6 +69,10 @@ export interface PulsarGraphSettings {
     trailColor: string;
     trailStrength: number;
     saved: SavedPreset[];
+    nodeSizeByAge: boolean;
+    nodeSizeSmallest: number;
+    nodeSizeLargest: number;
+    titleScale: number;
     filterEnabled: boolean;
     filterCaption: boolean;
     filterRanges: OpacityRange[];
@@ -158,6 +162,10 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailColor: '#5ac8fa',
     trailStrength: 0.55,
     saved: [],
+    nodeSizeByAge: false,
+    nodeSizeSmallest: 0.7,
+    nodeSizeLargest: 1.8,
+    titleScale: 1,
     filterEnabled: false,
     filterCaption: true,
     filterRanges: [{ ...WHOLE_RANGE }],
@@ -207,6 +215,12 @@ const SESSION_RANGE = { lowest: 1, highest: 240, step: 1 };
 const HISTORY_CAP_RANGE = { lowest: 10, highest: 1000, step: 10 };
 
 const BLEND_RANGE = { lowest: 0, highest: 1, step: 0.05 };
+
+/** What a node's own size is multiplied by. Obsidian's own slider is separate. */
+const NODE_SIZE_RANGE = { lowest: 0.2, highest: 3, step: 0.1 };
+
+/** What a title's font is multiplied by. Obsidian offers no control at all. */
+const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -333,6 +347,10 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
+        nodeSizeByAge: parseBoolean(data.nodeSizeByAge, DEFAULT_SETTINGS.nodeSizeByAge),
+        nodeSizeSmallest: clamp(parseNumber(data.nodeSizeSmallest, DEFAULT_SETTINGS.nodeSizeSmallest), NODE_SIZE_RANGE.lowest, NODE_SIZE_RANGE.highest),
+        nodeSizeLargest: clamp(parseNumber(data.nodeSizeLargest, DEFAULT_SETTINGS.nodeSizeLargest), NODE_SIZE_RANGE.lowest, NODE_SIZE_RANGE.highest),
+        titleScale: clamp(parseNumber(data.titleScale, DEFAULT_SETTINGS.titleScale), TITLE_SCALE_RANGE.lowest, TITLE_SCALE_RANGE.highest),
         filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
         filterCaption: parseBoolean(data.filterCaption, DEFAULT_SETTINGS.filterCaption),
         filterRanges: parseRanges(data.filterRanges),
@@ -768,6 +786,58 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+
+        section('Size');
+
+        new Setting(containerEl)
+            .setName('Size nodes by age')
+            .setDesc("Obsidian sizes a node by how many links it has and nothing else, and that formula does not leave its floor until a note has seven of them — in this vault most notes are all exactly the same size. This multiplies Obsidian's own number rather than replacing it, so a hub still reads as a hub")
+            .addToggle((toggle) => toggle
+                .setValue(settings.nodeSizeByAge)
+                .onChange(async (value) => {
+                    settings.nodeSizeByAge = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.nodeSizeByAge) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Oldest at')
+                    .setDesc('What the dimmest note is multiplied by'),
+                NODE_SIZE_RANGE,
+                settings.nodeSizeSmallest,
+                (value) => {
+                    settings.nodeSizeSmallest = value;
+                    this.save();
+                }
+            );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Newest at')
+                    .setDesc('What the brightest note is multiplied by. Below the oldest is allowed, which runs it the other way round'),
+                NODE_SIZE_RANGE,
+                settings.nodeSizeLargest,
+                (value) => {
+                    settings.nodeSizeLargest = value;
+                    this.save();
+                }
+            );
+        }
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Title size')
+                .setDesc('What every name on the graph is multiplied by. Obsidian offers no control over this at all, and its default is tied to the node size, so a small-node graph has titles to match whether or not you wanted that'),
+            TITLE_SCALE_RANGE,
+            settings.titleScale,
+            (value) => {
+                settings.titleScale = value;
+                this.save();
+            }
+        );
 
         section('Age filter');
 

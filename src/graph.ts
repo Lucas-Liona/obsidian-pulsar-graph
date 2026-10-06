@@ -693,3 +693,126 @@ export function syncLabelFonts(renderer: GraphRenderer, state: { multiplier?: nu
 
     return true;
 }
+
+/** What a node's size and title are scaled by, or nothing to leave both alone. */
+export interface SizeOptions {
+    /** A note's own brightness, 0 to 1, or undefined for one with no age. */
+    strengthOf: (path: string) => number | undefined;
+    /** What the dimmest note's circle is multiplied by. */
+    smallest: number;
+    /** What the brightest note's circle is multiplied by. */
+    largest: number;
+    /** Whether sizing by age is on at all. */
+    byAge: boolean;
+    /** What every title's font is multiplied by, 1 to leave it alone. */
+    titleScale: number;
+}
+
+/**
+ * Sizes nodes and titles.
+ *
+ * Node size is Obsidian's, not this plugin's: `getSize()` is
+ * `fNodeSizeMult * clamp(3 * sqrt(links + 1), 8, 30)`, so a node grows with how
+ * many links it has and nothing else. That sounds like a useful channel until
+ * you measure it — in a real 1088-note vault, 381 of the first 400 nodes sat at
+ * the floor of 8, because the formula does not leave the floor until a note has
+ * seven links. The size channel is almost entirely unused, which is what makes
+ * it worth spending on age.
+ *
+ * The override multiplies Obsidian's own number rather than replacing it, so a
+ * hub still reads as a hub. It is an own property shadowing the prototype
+ * method, which is also how it is undone: deleting it hands the node back.
+ *
+ * A title's font is `14 + size / 4`, so changing the size changes the title with
+ * it — the node has to be flagged `fontDirty` for the renderer to re-rasterise
+ * it. Title scale is applied on top of that, by wrapping `getTextStyle` the
+ * same way, so the two are separable.
+ *
+ * Nothing here reaches the simulation. Obsidian's own node size slider does not
+ * either: the physics run in a worker with their own copy of the graph, so a
+ * bigger circle does not push harder.
+ */
+export function applySizes(renderer: GraphRenderer, options: SizeOptions): boolean {
+    let changed = false;
+
+    for (const [path, node] of Object.entries(renderer.nodeLookup)) {
+        const strength = options.byAge ? options.strengthOf(path) : undefined;
+        const scale = strength === undefined
+            ? 1
+            : options.smallest + clamp01(strength) * (options.largest - options.smallest);
+
+        changed = sizeNode(node, scale, options.titleScale) || changed;
+    }
+
+    if (changed) {
+        repaint(renderer);
+    }
+
+    return changed;
+}
+
+/** Hands every node its own size and title back, for unload. */
+export function clearSizes(renderer: GraphRenderer): void {
+    for (const node of Object.values(renderer.nodeLookup)) {
+        sizeNode(node, 1, 1);
+    }
+
+    repaint(renderer);
+}
+
+interface SizedNode extends GraphNode {
+    getTextStyle?: () => { fontSize?: number };
+    /** What this node is currently scaled by, so a no-op costs nothing. */
+    pulsarSize?: number;
+    pulsarTitle?: number;
+}
+
+function sizeNode(node: GraphNode, scale: number, titleScale: number): boolean {
+    const sized = node as SizedNode;
+
+    if (sized.pulsarSize === scale && sized.pulsarTitle === titleScale) {
+        return false;
+    }
+
+    const proto = Object.getPrototypeOf(node) as SizedNode;
+
+    // Always re-derive from the prototype rather than from whatever is on the
+    // node, so repeated passes cannot compound into something far larger than
+    // asked for.
+    if (scale === 1) {
+        delete sized.getSize;
+    } else {
+        const base = proto.getSize;
+        sized.getSize = function (this: GraphNode): number {
+            return (base?.call(this) ?? 8) * scale;
+        };
+    }
+
+    if (titleScale === 1) {
+        delete sized.getTextStyle;
+    } else {
+        const baseStyle = proto.getTextStyle;
+        sized.getTextStyle = function (this: GraphNode): { fontSize?: number } {
+            const style = baseStyle?.call(this) ?? {};
+
+            if (typeof style.fontSize === 'number') {
+                style.fontSize *= titleScale;
+            }
+
+            return style;
+        };
+    }
+
+    sized.pulsarSize = scale;
+    sized.pulsarTitle = titleScale;
+
+    // The title's font is derived from the size and is only rebuilt for a node
+    // flagged dirty, so without this the circles resize and the names do not.
+    node.fontDirty = true;
+
+    return true;
+}
+
+function clamp01(value: number): number {
+    return Math.min(1, Math.max(0, value));
+}

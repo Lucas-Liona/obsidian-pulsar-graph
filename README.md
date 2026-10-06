@@ -282,6 +282,28 @@ linked vault will see much more.
 
 Off by default.
 
+### Size
+
+Obsidian already sizes a node, and it is worth knowing how: `getSize()` is
+`node size slider × clamp(3 × √(links + 1), 8, 30)`. Links, and nothing else.
+That formula does not leave its floor until a note has **seven** links, so in a
+real 1088-note vault 381 of the first 400 nodes came out at exactly 8. The size
+channel is almost entirely unused, which is what makes it worth spending on age.
+
+**Size nodes by age** multiplies Obsidian's own number rather than replacing it,
+so a hub still reads as a hub. You set what the oldest and the newest are
+multiplied by; putting the newest *below* the oldest runs it backwards, which is
+a reasonable thing to want.
+
+**Title size** scales every name on the graph. Obsidian offers no control over
+this at all — a title's font is `14 + size / 4`, tied to the node size, so a
+small-node graph gets small titles whether or not you wanted that. This
+separates them.
+
+Neither reaches the simulation. Obsidian's own node size slider doesn't either:
+the physics run in a worker with their own copy of the graph, so a bigger circle
+doesn't push its neighbours any harder.
+
 ### Filtering
 
 Fading a note is not hiding it. Obsidian draws a title, its links and its physics
