@@ -69,6 +69,8 @@ export interface GraphNode {
     rendered?: boolean;
     /** How far the title is nudged clear of the node while it is hovered. */
     moveText?: number;
+    /** Set to have the title's font rebuilt on the next frame. */
+    fontDirty?: boolean;
     /** The displayed adjacency, keyed by the id at the other end. */
     forward?: Record<string, unknown>;
     reverse?: Record<string, unknown>;
@@ -89,6 +91,8 @@ export interface GraphRenderer {
     /** Zoom, and the sqrt(1/scale) nodes and titles are drawn at. */
     scale?: number;
     nodeScale?: number;
+    /** The graph's own node size slider, which feeds every node's size. */
+    fNodeSizeMult?: number;
     /** The element the graph canvas is drawn into. */
     containerEl?: HTMLElement;
     /** Cursor position within that element, or null when it is outside. */
@@ -654,4 +658,38 @@ export function previewFilter(
             link.line.visible = false;
         }
     }
+}
+
+/**
+ * Keeps node titles the size their nodes imply.
+ *
+ * A title's font is `14 + size / 4`, but the text is only re-rasterised when a
+ * node is flagged dirty, and nothing flags it when the graph's node size slider
+ * moves. So the circles grow and their names stay where they were, which is
+ * Obsidian's bug rather than this plugin's — but this plugin draws text beside
+ * those names and sizes it the same way, so it cannot leave it alone.
+ *
+ * Returns true on the frame the size changed, so anything else drawn at that
+ * size can be rebuilt with it.
+ */
+export function syncLabelFonts(renderer: GraphRenderer, state: { multiplier?: number }): boolean {
+    const multiplier = renderer.fNodeSizeMult ?? 1;
+
+    if (state.multiplier === multiplier) {
+        return false;
+    }
+
+    const first = state.multiplier === undefined;
+    state.multiplier = multiplier;
+
+    // Nothing has gone stale yet on the very first frame.
+    if (first) {
+        return false;
+    }
+
+    for (const node of renderer.nodes ?? []) {
+        node.fontDirty = true;
+    }
+
+    return true;
 }

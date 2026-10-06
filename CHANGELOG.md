@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.20.0] - 2026-10-05
+
+### Fixed
+
+- Node names stayed at their old size when the graph's node size slider moved.
+  A title's font is `14 + size / 4`, but the text is only re-rasterised when a
+  node is flagged dirty and nothing flags it when that slider changes, so circles
+  grew and their names stayed where they were. Measured: at a multiplier of 2.5 a
+  size 20 node kept a size 16 font where 19 was called for.
+
+  This is Obsidian's behaviour rather than the plugin's, but the plugin draws
+  ages beside those names at the same size, so leaving it alone was not an
+  option. The ages are rebuilt on the same frame.
+
 ## [1.19.0] - 2026-10-05
 
 ### Fixed

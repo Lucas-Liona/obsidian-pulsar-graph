@@ -340,6 +340,11 @@ should ever end up in there.
 
 ## Worth knowing
 
+- **Node names keep up with node size.** Obsidian sizes a title from its node
+  but only rebuilds the text when something flags the node dirty, and moving the
+  graph's node size slider doesn't. So the circles grow and the names stay put.
+  Pulsar flags them, because it draws text beside those names at the same size
+  and can't very well leave them behind.
 - **Only notes are faded.** Attachments and unresolved links keep whatever colour
   the graph gives them. Their timestamps don't say anything about when you were
   actually working on something.
