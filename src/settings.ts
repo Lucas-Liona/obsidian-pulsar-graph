@@ -47,6 +47,7 @@ export interface PulsarGraphSettings {
     sessionTrails: boolean;
     sessionGapMinutes: number;
     trailColor: string;
+    trailStrength: number;
 }
 
 export type ClusterBy = 'folder' | 'component';
@@ -95,7 +96,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     clusterBy: 'folder',
     sessionTrails: false,
     sessionGapMinutes: 30,
-    trailColor: '#5ac8fa'
+    trailColor: '#5ac8fa',
+    trailStrength: 0.55
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
@@ -234,7 +236,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         clusterBy: CLUSTER_MODES.find((mode) => mode === data.clusterBy) ?? DEFAULT_SETTINGS.clusterBy,
         sessionTrails: parseBoolean(data.sessionTrails, DEFAULT_SETTINGS.sessionTrails),
         sessionGapMinutes: Math.round(clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_RANGE.lowest, SESSION_RANGE.highest)),
-        trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor)
+        trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
+        trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
     };
 }
 
@@ -299,9 +302,20 @@ export class PulsarSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         const { settings } = this.plugin;
 
+        // Turning a setting on rebuilds the tab to reveal what it unlocks, and
+        // this element is the one that scrolls, so emptying it would otherwise
+        // throw the reader back to the top mid-thought.
+        const scroll = containerEl.scrollTop;
+
         containerEl.empty();
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
+
+        const section = (name: string): void => {
+            new Setting(containerEl).setName(name).setHeading();
+        };
+
+        section('Time');
 
         new Setting(containerEl)
             .setName('Measure age against')
@@ -347,6 +361,8 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.renderPreview();
                 });
             });
+
+        section('Fade');
 
         new Setting(containerEl)
             .setName('Fade type')
@@ -433,19 +449,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
-        new Setting(containerEl)
-            .setName('Show note age')
-            .setDesc('How long ago a note was modified, drawn above its node the way the title is drawn below it')
-            .addDropdown((dropdown) => {
-                for (const mode of AGE_MODES) {
-                    dropdown.addOption(mode, AGE_MODE_LABELS[mode]);
-                }
-
-                dropdown.setValue(settings.ageLabels).onChange(async (value) => {
-                    settings.ageLabels = value as AgeMode;
-                    await this.plugin.saveSettings();
-                });
-            });
+        section('Clusters');
 
         new NumberControl(
             new Setting(containerEl)
@@ -513,6 +517,8 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
+        section('Links');
+
         new Setting(containerEl)
             .setName('Age the links too')
             .setDesc('Links are drawn in one flat colour whatever their ends have been through. Give them the age of their livelier end, or fade each one along its length from the newer note to the older')
@@ -562,8 +568,35 @@ export class PulsarSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
                 );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Trail strength')
+                    .setDesc('How far a trail goes toward that colour. Below full it is mixed with the colour links are normally drawn in, which keeps it off the eye'),
+                STRENGTH_RANGE,
+                settings.trailStrength,
+                (value) => {
+                    settings.trailStrength = value;
+                    this.save();
+                }
+            );
         }
 
+        section('Labels');
+
+        new Setting(containerEl)
+            .setName('Show note age')
+            .setDesc('How long ago a note was modified, drawn above its node the way the title is drawn below it')
+            .addDropdown((dropdown) => {
+                for (const mode of AGE_MODES) {
+                    dropdown.addOption(mode, AGE_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.ageLabels).onChange(async (value) => {
+                    settings.ageLabels = value as AgeMode;
+                    await this.plugin.saveSettings();
+                });
+            });
         new Setting(containerEl)
             .setName('Show the open note\'s age in the status bar')
             .setDesc('Reads the note you have open rather than the graph, so it works with no graph view in sight')
@@ -574,6 +607,8 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             );
+
+        section('Spotlight');
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
@@ -613,6 +648,8 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
+        section('Presets');
+
         // Presets move only the settings that shape the fade. What you have
         // chosen to show — labels, status bar, spotlight colour — is left alone.
         const presets = new Setting(containerEl)
@@ -646,6 +683,8 @@ export class PulsarSettingTab extends PluginSettingTab {
                 this.display();
             })
         );
+
+        containerEl.scrollTop = scroll;
     }
 
     hide(): void {

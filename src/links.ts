@@ -1,4 +1,4 @@
-import { GraphLink, GraphRenderer, GraphTexture, GraphTextureFactory } from './graph';
+import { blendRgb, GraphLink, GraphRenderer, GraphTexture, GraphTextureFactory } from './graph';
 
 /** What Obsidian dims an unrelated link to while something is hovered. */
 const DIMMED = 0.2;
@@ -16,6 +16,8 @@ export interface TrailOptions {
     gapMs: number;
     /** What such a link is painted, as a packed 0xRRGGBB. */
     rgb: number;
+    /** How far toward that colour a trail goes. Below 1 keeps it off the eye. */
+    strength: number;
 }
 
 /**
@@ -72,7 +74,9 @@ export class LinkShading {
             }
 
             if (this.trails && this.wasWorkedOnTogether(link)) {
-                line.tint = this.trails.rgb;
+                // Mixed with the colour links are normally drawn in, so a trail
+                // reads as a warmer line rather than as a stripe of neon.
+                line.tint = blendRgb(this.renderer.colors?.line?.rgb ?? 0x888888, this.trails.rgb, this.trails.strength);
             }
 
             if (this.mode === 'off') {

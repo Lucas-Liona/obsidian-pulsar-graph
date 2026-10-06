@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.13.0] - 2026-10-05
+
+### Added
+
+- **Trail strength**, mixing the trail colour with the colour links are normally
+  drawn in. At full strength a trail is a stripe of neon; the new default of 0.55
+  reads as a warmer line and is far easier to sit with.
+
+### Changed
+
+- The settings are grouped under headings: Time, Fade, Clusters, Links, Labels,
+  Spotlight and Presets. There are enough of them now that one flat column was
+  the wrong shape.
+- The neighbour glow is applied before group temperature rather than after.
+
+### Fixed
+
+- The neighbour glow had almost no effect when groups were islands of linked
+  notes. The glow carries brightness along links and an island's boundaries are
+  drawn along those same links, so warming first gave every node neighbours
+  identical to itself and left the glow nothing to lift. Spreading locally and
+  then taking the regional view fixes it: on a real vault the glow's contribution
+  goes from 0.007 to 0.021, now slightly more than it manages with folders.
+- Turning a setting on no longer throws the settings tab back to the top. The
+  tab is rebuilt to reveal what a setting unlocks, and the element being emptied
+  is the one that scrolls.
+
 ## [1.12.0] - 2026-10-05
 
 ### Added
