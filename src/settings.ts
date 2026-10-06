@@ -86,7 +86,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     numSteps: 5,
     ageLabels: 'hover',
     linkRecency: 'off',
-    statusBarAge: false,
+    statusBarAge: true,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
