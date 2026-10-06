@@ -48,6 +48,12 @@ starts level with the rest.
 ignored past a threshold you set, a quiet line appears down its edge, and a
 **Close stale tabs** command closes the marked ones.
 
+**How they are marked** is a line down the edge, or a 💤 where the brightness dot
+goes. The line is quiet to the point of being easy to miss, which is either the
+point or the problem depending on the day. The 💤 replaces the dot rather than
+sitting beside it: a narrow tab has room for one or the other, and a tab you are
+being invited to close has nothing useful to say about its brightness.
+
 Nothing closes on its own, ever. A tab that shuts itself feels like data loss
 even when nothing is lost, and it's the plugin that gets blamed for losing your
 place. A pinned tab is never marked — pinning is a deliberate statement that it

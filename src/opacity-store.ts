@@ -216,6 +216,35 @@ export class OpacityStore {
     }
 
     /**
+     * The most recently modified notes, newest first.
+     *
+     * Selected in one pass rather than by sorting the vault, because this is
+     * asked on every repaint and the answer is almost always a handful out of
+     * thousands.
+     */
+    newestPaths(count: number): string[] {
+        const wanted = Math.max(0, Math.floor(count));
+
+        if (wanted <= 1) {
+            return this.newestNotePath === undefined ? [] : [this.newestNotePath];
+        }
+
+        const best: [string, number][] = [];
+
+        for (const [path, mtime] of this.mtimes) {
+            if (best.length < wanted) {
+                best.push([path, mtime]);
+                best.sort((a, b) => b[1] - a[1]);
+            } else if (mtime > best[best.length - 1][1]) {
+                best[best.length - 1] = [path, mtime];
+                best.sort((a, b) => b[1] - a[1]);
+            }
+        }
+
+        return best.map(([path]) => path);
+    }
+
+    /**
      * Walks the curve across whatever range opacity is currently measured
      * against, so the settings preview shows what these numbers do to real
      * ages rather than to an invented range.

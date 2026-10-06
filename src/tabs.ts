@@ -21,6 +21,9 @@ export type TabFadeScope = 'title' | 'tab';
  */
 export type TabFadeCurve = 'over' | 'at';
 
+/** How a tab that has gone quiet is marked. */
+export type StaleMark = 'line' | 'zzz';
+
 /**
  * How long since you last looked at each note.
  *
@@ -83,6 +86,9 @@ const DOT_CLASS = 'pulsar-graph-tab-dot';
 /** The class a tab wears once it has gone quiet long enough to be let go. */
 const STALE_CLASS = 'pulsar-graph-tab-stale';
 
+/** Worn alongside it when the mark is a 💤 rather than a line. */
+const ZZZ_CLASS = 'pulsar-graph-tab-zzz';
+
 /** The class a dimmed tab wears, so the stylesheet decides what dims. */
 const FADED_CLASS = 'pulsar-graph-tab-faded';
 
@@ -117,6 +123,8 @@ export interface TabFadeOptions {
     graphStrength: (path: string) => number | undefined;
     /** Minutes of being ignored before a tab is marked as closeable. */
     stale: number | null;
+    /** What that mark looks like. */
+    staleMark: StaleMark;
 }
 
 /**
@@ -174,7 +182,7 @@ export class TabFading {
 
             const pinned = leaf.getViewState().pinned === true;
 
-            this.markStale(header, path, pinned ? null : options.stale);
+            this.markStale(header, path, pinned ? null : options.stale, options.staleMark);
         });
     }
 
@@ -195,7 +203,7 @@ export class TabFading {
         }
 
         if (this.staled.delete(header)) {
-            header.removeClass(STALE_CLASS);
+            this.unmark(header);
         }
     }
 
@@ -208,7 +216,7 @@ export class TabFading {
         this.clearDots();
 
         for (const header of this.staled) {
-            header.removeClass(STALE_CLASS);
+            this.unmark(header);
         }
 
         this.staled.clear();
@@ -223,10 +231,10 @@ export class TabFading {
      * A pinned tab is never marked. Pinning is a deliberate statement that it
      * should stay, and offering to close it argues with the user.
      */
-    private markStale(header: HTMLElement, path: string, after: number | null): void {
+    private markStale(header: HTMLElement, path: string, after: number | null, mark: StaleMark): void {
         if (after === null) {
             if (this.staled.delete(header)) {
-                header.removeClass(STALE_CLASS);
+                this.unmark(header);
             }
 
             return;
@@ -236,12 +244,18 @@ export class TabFading {
 
         if (minutes !== undefined && minutes >= after) {
             header.addClass(STALE_CLASS);
+            header.toggleClass(ZZZ_CLASS, mark === 'zzz');
             this.staled.add(header);
             return;
         }
 
-        header.removeClass(STALE_CLASS);
+        this.unmark(header);
         this.staled.delete(header);
+    }
+
+    private unmark(header: HTMLElement): void {
+        header.removeClass(STALE_CLASS);
+        header.removeClass(ZZZ_CLASS);
     }
 
     private clearDots(): void {

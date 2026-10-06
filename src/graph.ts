@@ -191,6 +191,8 @@ export interface OpacityOptions {
     spotlightRgb: number;
     /** 0 leaves the node's own colour alone, 1 replaces it outright. */
     spotlightStrength: number;
+    /** How many of the most recently edited notes it covers. */
+    spotlightCount: number;
     /** How much of a neighbour's brightness carries over. 0 switches it off. */
     neighbourBleed: number;
     /** How many links the carry travels along. */
@@ -207,11 +209,26 @@ export interface OpacityOptions {
     spotlight: SpotlightState;
 }
 
+/** What one spotlit node looked like before, and what it was painted. */
+export interface SpotlitNode {
+    originalRgb: number;
+    paintedRgb: number;
+}
+
+/**
+ * Every node the spotlight is currently painted over.
+ *
+ * A map rather than a single path because the spotlight can cover the last few
+ * notes rather than only the last one. Node colour is the only place a graph
+ * group's colour lives, so what each node had before has to be kept here or it
+ * is gone.
+ */
 export interface SpotlightState {
-    path?: string;
-    originalRgb?: number;
-    /** What the spotlight settled on, so a frame can hold the tint there. */
-    paintedRgb?: number;
+    painted: Map<string, SpotlitNode>;
+}
+
+export function newSpotlight(): SpotlightState {
+    return { painted: new Map() };
 }
 
 /**
@@ -377,9 +394,9 @@ function* neighboursOf(node: GraphNode): Generator<string> {
  */
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
-    const spotlitPath = options.spotlightNewest ? store.newestPath() : undefined;
+    const spotlit = new Set<string>(options.spotlightNewest ? store.newestPaths(options.spotlightCount) : []);
 
-    releaseSpotlight(renderer, options.spotlight, spotlitPath);
+    releaseSpotlight(renderer, options.spotlight, spotlit);
 
     const own = new Map<string, number>();
 
@@ -423,14 +440,13 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
 
         const currentRgb = node.color?.rgb ?? fallbackRgb;
 
-        if (path === spotlitPath) {
-            options.spotlight.path ??= path;
-            options.spotlight.originalRgb ??= currentRgb;
+        if (spotlit.has(path)) {
+            const kept = options.spotlight.painted.get(path);
+            const originalRgb = kept?.originalRgb ?? currentRgb;
+            const paintedRgb = blendRgb(originalRgb, options.spotlightRgb, options.spotlightStrength);
 
-            const painted = blendRgb(options.spotlight.originalRgb, options.spotlightRgb, options.spotlightStrength);
-            options.spotlight.paintedRgb = painted;
-
-            node.color = { a: opacity, rgb: painted };
+            options.spotlight.painted.set(path, { originalRgb, paintedRgb });
+            node.color = { a: opacity, rgb: paintedRgb };
             continue;
         }
 
@@ -455,17 +471,13 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
  * feedback is worth more than the spotlight.
  */
 export function holdSpotlightTint(renderer: GraphRenderer, spotlight: SpotlightState): void {
-    const { path, paintedRgb } = spotlight;
-    if (path === undefined || paintedRgb === undefined) {
-        return;
-    }
+    for (const [path, spotlit] of spotlight.painted) {
+        const node = renderer.nodeLookup[path];
 
-    const node = renderer.nodeLookup[path];
-    if (!node?.circle || renderer.getHighlightNode?.() === node) {
-        return;
+        if (node?.circle && renderer.getHighlightNode?.() !== node) {
+            node.circle.tint = spotlit.paintedRgb;
+        }
     }
-
-    node.circle.tint = paintedRgb;
 }
 
 /** Mixes two packed colours channel by channel. */
@@ -480,12 +492,13 @@ export function blendRgb(from: number, to: number, amount: number): number {
 }
 
 /** Puts back the colour the spotlight painted over, once it moves elsewhere. */
-function releaseSpotlight(renderer: GraphRenderer, spotlight: SpotlightState, nextPath: string | undefined): void {
-    if (spotlight.path === undefined || spotlight.path === nextPath) {
-        return;
+function releaseSpotlight(renderer: GraphRenderer, spotlight: SpotlightState, next: Set<string>): void {
+    for (const [path, spotlit] of spotlight.painted) {
+        if (!next.has(path)) {
+            releaseNode(renderer, path, spotlit.originalRgb);
+            spotlight.painted.delete(path);
+        }
     }
-
-    clearSpotlight(renderer, spotlight);
 }
 
 /**
@@ -495,23 +508,23 @@ function releaseSpotlight(renderer: GraphRenderer, spotlight: SpotlightState, ne
  * read that paint as the colour to preserve, losing the real one for good.
  */
 export function clearSpotlight(renderer: GraphRenderer, spotlight: SpotlightState): void {
-    const { path, originalRgb } = spotlight;
-
-    if (path !== undefined && originalRgb !== undefined) {
-        const node = renderer.nodeLookup[path];
-
-        if (node?.color) {
-            node.color = { a: node.color.a, rgb: originalRgb };
-        }
-
-        if (node?.circle) {
-            node.circle.tint = originalRgb;
-        }
+    for (const [path, spotlit] of spotlight.painted) {
+        releaseNode(renderer, path, spotlit.originalRgb);
     }
 
-    spotlight.path = undefined;
-    spotlight.originalRgb = undefined;
-    spotlight.paintedRgb = undefined;
+    spotlight.painted.clear();
+}
+
+function releaseNode(renderer: GraphRenderer, path: string, originalRgb: number): void {
+    const node = renderer.nodeLookup[path];
+
+    if (node?.color) {
+        node.color = { a: node.color.a, rgb: originalRgb };
+    }
+
+    if (node?.circle) {
+        node.circle.tint = originalRgb;
+    }
 }
 
 /**
@@ -522,8 +535,7 @@ export function clearSpotlight(renderer: GraphRenderer, spotlight: SpotlightStat
  * from before it stale.
  */
 export function forgetSpotlightColor(spotlight: SpotlightState): void {
-    spotlight.originalRgb = undefined;
-    spotlight.paintedRgb = undefined;
+    spotlight.painted.clear();
 }
 
 /**
@@ -711,8 +723,8 @@ export function syncLabelFonts(renderer: GraphRenderer, state: { multiplier?: nu
 
 /** What a node's size and title are scaled by, or nothing to leave both alone. */
 export interface SizeOptions {
-    /** The newest note, drawn larger so the one you always want is findable. */
-    spotlit: string | undefined;
+    /** The spotlit notes, drawn larger so the ones you always want are findable. */
+    spotlit: Set<string>;
     spotlightSize: number;
     /** A note's own brightness, 0 to 1, or undefined for one with no age. */
     strengthOf: (path: string) => number | undefined;
@@ -762,7 +774,7 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
         // Multiplied rather than substituted. The spotlight is a flag on top of
         // whatever sizing is in force, so overriding it would mean switching
         // sizing on could make the spotlight shrink.
-        if (path === options.spotlit) {
+        if (options.spotlit.has(path)) {
             scale *= options.spotlightSize;
         }
 
