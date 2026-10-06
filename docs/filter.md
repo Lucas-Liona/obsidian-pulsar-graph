@@ -1,0 +1,55 @@
+# The age filter
+
+Taking notes out of the graph entirely rather than dimming them, and the
+scrubber that does it from inside the graph.
+
+Fading a note is not hiding it. Obsidian draws a title, its links and its physics
+regardless of how transparent the node is, so a note at minimum opacity is still
+sitting there taking up room. **Hide notes outside a range** takes them out of
+the graph entirely, and what's left re-packs into a tighter shape.
+
+**Keep** is a line with a handle at each end, drawn over the same spread of your
+notes the statistics panel shows, so you can aim it at something real rather than
+guessing at a number. You can add more than one range — keep the oldest and the
+newest and nothing in between, or just the middle of the herd.
+
+Drag a handle to move one edge. **Drag the lit stretch between them to move the
+whole range** without changing how wide it is, which is usually the thing you
+want once you have decided how big a slice to look at.
+
+Under the line is what the range is actually catching, in dates rather than in
+brightness: *223 of 1088 notes, 46 minutes ago back to 3 weeks ago*. Brightness
+is not a quantity anyone has an intuition for, so the only honest way to say what
+a position on the line means is to go and look. Nothing is inverted or estimated
+— the notes are counted.
+
+**Say so on the graph** puts that same line across the top of the graph itself,
+since a graph with half its notes taken out looks exactly like a graph. It is
+only there while something is actually being hidden.
+
+Two things it will not do:
+
+- **The note you have open is never hidden.** Otherwise opening an old note would
+  make it vanish from the graph, and the local graph would go blank.
+- **Attachments and unresolved links are never hidden.** The filter asks how old
+  a note is, and those have no age to answer with.
+
+It reads each note's *own* brightness, not the brightness it ends up drawn at. A
+note shouldn't count as recent because something next to it is.
+
+The same control lives in the graph's own panel, under **Age filter**, beside Filters,
+Groups, Display and Forces. Filtering by time is a view rather than a preference
+— you reach for it to look at something and then put it back — so it belongs
+where you already are instead of behind a settings dialog. It's the same setting
+in both places; moving one moves the other.
+
+**Dragging a handle doesn't rebuild the graph.** While you hold it, notes are
+only hidden: every position stays exactly where it was, so the thing you're
+aiming at holds still instead of crawling away from the cursor. The real filter,
+with the re-pack, happens when you let go.
+
+Off by default.
+
+---
+
+[← All docs](README.md) · [Pulsar](../README.md)
