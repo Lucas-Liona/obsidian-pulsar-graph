@@ -189,3 +189,13 @@
 .graph-control-section.mod-pulsar .pulsar-graph-range-track {
 	height: 32px;
 }
+
+.pulsar-graph-range-handle:hover,
+.pulsar-graph-range-handle.is-held {
+	background-color: var(--interactive-accent-hover);
+}
+
+.pulsar-graph-range-handle.is-held {
+	width: 12px;
+	margin-left: -6px;
+}

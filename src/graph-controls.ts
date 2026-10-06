@@ -47,7 +47,7 @@ export class GraphScrubber {
         const chevron = header.createDiv({ cls: 'tree-item-icon collapse-icon' });
         setIcon(chevron, 'chevron-down');
 
-        header.createDiv({ cls: 'tree-item-inner', text: 'Age' });
+        header.createDiv({ cls: 'tree-item-inner', text: 'Age filter' });
 
         header.addEventListener('click', () => {
             this.section.toggleClass('is-collapsed', !this.section.hasClass('is-collapsed'));

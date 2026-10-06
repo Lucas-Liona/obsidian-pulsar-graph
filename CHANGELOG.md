@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.19.0] - 2026-10-05
+
+### Fixed
+
+- The range handles moved one step per press instead of following the cursor.
+  Every move rebuilt the bar, which replaced the handle part way through the
+  gesture and threw away what was holding the drag together. The elements are
+  now built once and a drag only moves them.
+- A drag no longer depends on pointer capture succeeding. Capture is still asked
+  for, because it helps, but the gesture is held by listeners on the window, so a
+  slider that cannot capture still follows the cursor rather than silently
+  stopping.
+
+### Changed
+
+- The section is called **Age filter** in both the settings and the graph's own
+  panel. It was Filter in one and Age in the other.
+- Dragging the range in the settings dialog now previews across every open graph
+  instead of rebuilding on each step, which is what the graph panel already did.
+  The graph is usually visible behind the dialog, so it may as well respond.
+
 ## [1.18.0] - 2026-10-05
 
 ### Added

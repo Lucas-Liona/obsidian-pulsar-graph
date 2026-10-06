@@ -18,6 +18,13 @@ export interface RangeBarOptions {
     onChange: (ranges: OpacityRange[]) => void;
 }
 
+/** One range's elements, kept so a drag can move them rather than rebuild them. */
+interface Drawn {
+    span: HTMLElement;
+    from: HTMLElement;
+    to: HTMLElement;
+}
+
 /**
  * A unit line with a handle at each end of every range it holds.
  *
@@ -32,6 +39,7 @@ export interface RangeBarOptions {
  */
 export class RangeBar {
     private readonly element: HTMLElement;
+    private drawn: Drawn[] = [];
     private ranges: OpacityRange[] = [];
 
     constructor(parent: HTMLElement, private readonly options: RangeBarOptions) {
@@ -40,30 +48,58 @@ export class RangeBar {
 
     setRanges(ranges: OpacityRange[]): void {
         this.ranges = ranges.map((range) => ({ ...range }));
-        this.render();
+        this.build();
     }
 
-    private render(): void {
+    /**
+     * Builds the elements once.
+     *
+     * A drag moves them and must never rebuild them: replacing a handle part
+     * way through a gesture throws away the pointer capture holding that
+     * gesture together, and the handle stops following the cursor after a
+     * single step.
+     */
+    private build(): void {
         this.element.empty();
+        this.drawn = [];
 
         const track = this.element.createDiv({ cls: 'pulsar-graph-range-track' });
-        this.renderHistogram(track);
+        this.buildHistogram(track);
 
-        this.ranges.forEach((range, index) => {
-            const span = track.createDiv({ cls: 'pulsar-graph-range-span' });
-            span.style.left = `${range.from * 100}%`;
-            span.style.width = `${(range.to - range.from) * 100}%`;
-
-            this.addHandle(track, index, 'from');
-            this.addHandle(track, index, 'to');
+        this.ranges.forEach((_range, index) => {
+            this.drawn.push({
+                span: track.createDiv({ cls: 'pulsar-graph-range-span' }),
+                from: this.buildHandle(track, index, 'from'),
+                to: this.buildHandle(track, index, 'to')
+            });
         });
 
         const scale = this.element.createDiv({ cls: 'pulsar-graph-range-scale' });
         scale.createSpan({ text: 'dimmest' });
         scale.createSpan({ text: 'brightest' });
+
+        this.position();
     }
 
-    private renderHistogram(track: HTMLElement): void {
+    /** The only thing a drag touches. */
+    private position(): void {
+        this.ranges.forEach((range, index) => {
+            const drawn = this.drawn[index];
+            if (!drawn) {
+                return;
+            }
+
+            drawn.span.style.left = `${range.from * 100}%`;
+            drawn.span.style.width = `${(range.to - range.from) * 100}%`;
+            drawn.from.style.left = `${range.from * 100}%`;
+            drawn.to.style.left = `${range.to * 100}%`;
+
+            drawn.from.setAttr('aria-valuenow', range.from.toFixed(2));
+            drawn.to.setAttr('aria-valuenow', range.to.toFixed(2));
+        });
+    }
+
+    private buildHistogram(track: HTMLElement): void {
         const histogram = this.options.histogram;
         if (!histogram || histogram.length === 0) {
             return;
@@ -77,37 +113,63 @@ export class RangeBar {
         }
     }
 
-    private addHandle(track: HTMLElement, index: number, edge: 'from' | 'to'): void {
+    private buildHandle(track: HTMLElement, index: number, edge: 'from' | 'to'): HTMLElement {
         const handle = track.createDiv({ cls: 'pulsar-graph-range-handle' });
-        handle.style.left = `${this.ranges[index][edge] * 100}%`;
         handle.tabIndex = 0;
 
         handle.setAttr('role', 'slider');
         handle.setAttr('aria-valuemin', '0');
         handle.setAttr('aria-valuemax', '1');
-        handle.setAttr('aria-valuenow', this.ranges[index][edge].toFixed(2));
         handle.setAttr('aria-label', edge === 'from' ? 'Range start' : 'Range end');
+
+        // The drag is held together by a flag and listeners on the window, not
+        // by pointer capture. Capture is asked for because it helps, but it can
+        // fail, and a slider that silently stops following the cursor when it
+        // does is worse than one that never used it.
+        let dragging = false;
+
+        const moveWith = (event: PointerEvent): void => {
+            if (!dragging) {
+                return;
+            }
+
+            const bounds = track.getBoundingClientRect();
+            this.moveTo(index, edge, (event.clientX - bounds.left) / bounds.width, true);
+        };
+
+        const finish = (): void => {
+            if (!dragging) {
+                return;
+            }
+
+            dragging = false;
+            handle.toggleClass('is-held', false);
+
+            const win = handle.win;
+            win.removeEventListener('pointermove', moveWith);
+            win.removeEventListener('pointerup', finish);
+            win.removeEventListener('pointercancel', finish);
+
+            this.options.onChange(this.copy());
+        };
 
         handle.addEventListener('pointerdown', (event: PointerEvent) => {
             event.preventDefault();
-            handle.setPointerCapture(event.pointerId);
+            event.stopPropagation();
 
-            const move = (moved: PointerEvent): void => {
-                const bounds = track.getBoundingClientRect();
-                this.moveTo(index, edge, (moved.clientX - bounds.left) / bounds.width);
-            };
+            dragging = true;
+            handle.toggleClass('is-held', true);
 
-            const release = (): void => {
-                handle.removeEventListener('pointermove', move);
-                handle.removeEventListener('pointerup', release);
-                handle.removeEventListener('pointercancel', release);
+            try {
+                handle.setPointerCapture(event.pointerId);
+            } catch {
+                // Not available for this pointer; the window listeners cover it.
+            }
 
-                this.options.onChange(this.copy());
-            };
-
-            handle.addEventListener('pointermove', move);
-            handle.addEventListener('pointerup', release);
-            handle.addEventListener('pointercancel', release);
+            const win = handle.win;
+            win.addEventListener('pointermove', moveWith);
+            win.addEventListener('pointerup', finish);
+            win.addEventListener('pointercancel', finish);
         });
 
         handle.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -115,19 +177,18 @@ export class RangeBar {
 
             if (nudge !== 0) {
                 event.preventDefault();
-                this.moveTo(index, edge, this.ranges[index][edge] + nudge);
 
                 // A key press is a whole gesture, so it commits rather than
-                // leaving the graph showing a preview nothing will finish.
-                if (this.options.onPreview) {
-                    this.options.onChange(this.copy());
-                }
+                // leaving a preview nothing will finish.
+                this.moveTo(index, edge, this.ranges[index][edge] + nudge, false);
             }
         });
+
+        return handle;
     }
 
     /** Each edge is held clear of the other, so a range can always be reopened. */
-    private moveTo(index: number, edge: 'from' | 'to', raw: number): void {
+    private moveTo(index: number, edge: 'from' | 'to', raw: number, dragging: boolean): void {
         const range = this.ranges[index];
         const snapped = Math.round(Math.min(1, Math.max(0, raw)) / STEP) * STEP;
 
@@ -140,9 +201,9 @@ export class RangeBar {
         range.from = Math.max(0, range.from);
         range.to = Math.min(1, range.to);
 
-        this.render();
+        this.position();
 
-        if (this.options.onPreview) {
+        if (dragging && this.options.onPreview) {
             this.options.onPreview(this.copy());
         } else {
             this.options.onChange(this.copy());
