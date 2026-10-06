@@ -21,6 +21,46 @@ export interface Preset {
     settings: FadeSettings;
 }
 
+/**
+ * Everything a saved preset carries, which is every setting except the saved
+ * presets themselves. A built-in preset is a curated fade shape; one you save
+ * is "how I have this set up", so it keeps the whole look rather than a chosen
+ * slice of it. Leaving the list out is what stops a preset containing itself.
+ */
+export type PresetSettings = Omit<PulsarGraphSettings, 'saved'>;
+
+export interface SavedPreset {
+    name: string;
+    settings: PresetSettings;
+}
+
+/** Strips the preset list out of the settings, leaving a snapshot to keep. */
+export function snapshot(settings: PulsarGraphSettings): PresetSettings {
+    const { saved: _saved, ...rest } = settings;
+    return rest;
+}
+
+/** Reads presets back off the clipboard, refusing anything malformed. */
+export function parseSharedPresets(text: string, repair: (stored: unknown) => PresetSettings): SavedPreset[] {
+    const parsed: unknown = JSON.parse(text);
+    const list = Array.isArray(parsed) ? parsed : [parsed];
+    const presets: SavedPreset[] = [];
+
+    for (const entry of list) {
+        if (typeof entry !== 'object' || entry === null) {
+            continue;
+        }
+
+        const { name, settings } = entry as { name?: unknown; settings?: unknown };
+
+        if (typeof name === 'string' && name.trim().length > 0) {
+            presets.push({ name: name.trim().slice(0, 60), settings: repair(settings) });
+        }
+    }
+
+    return presets;
+}
+
 const SHARED = { steepness: 2, numSteps: 5, windowDays: 30 };
 
 export const PRESETS: Preset[] = [

@@ -141,6 +141,19 @@ bottom, next to **Reset**:
 A preset only moves the settings that shape the fade. What you've chosen to
 *show* — the age labels, the status bar, your spotlight colour — is left alone.
 
+You can also **save your own**. Name the current settings and they're kept, whole
+— everything, not just the fade, because a setup you've tuned is the whole look
+and not a slice of it. Saved presets appear in the same dropdown.
+
+**Copy** puts a preset on the clipboard as plain JSON and **Paste** reads one
+back, so a setup can be kept somewhere or handed to someone else. Nothing leaves
+your machine; it's the clipboard, not a server. Anything pasted in is put through
+the same repair the plugin's own settings get, so a preset can be wrong or
+half-written but never dangerous.
+
+**Reset** puts the settings back to their defaults and leaves your saved presets
+alone.
+
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
 | Measure age against | Whole history, Recent window | Whole history | all |
