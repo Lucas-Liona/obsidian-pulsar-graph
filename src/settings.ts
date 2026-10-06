@@ -70,6 +70,7 @@ export interface PulsarGraphSettings {
     trailStrength: number;
     saved: SavedPreset[];
     filterEnabled: boolean;
+    filterCaption: boolean;
     filterRanges: OpacityRange[];
     tabFade: TabFade;
     tabFadeScope: TabFadeScope;
@@ -158,6 +159,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailStrength: 0.55,
     saved: [],
     filterEnabled: false,
+    filterCaption: true,
     filterRanges: [{ ...WHOLE_RANGE }],
     tabFade: 'off',
     tabFadeScope: 'tab',
@@ -332,6 +334,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
         filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
+        filterCaption: parseBoolean(data.filterCaption, DEFAULT_SETTINGS.filterCaption),
         filterRanges: parseRanges(data.filterRanges),
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
         tabFadeScope: TAB_SCOPES.find((scope) => scope === data.tabFadeScope) ?? DEFAULT_SETTINGS.tabFadeScope,
@@ -781,14 +784,26 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.filterEnabled) {
+            new Setting(containerEl)
+                .setName('Say so on the graph')
+                .setDesc('A line across the top of the graph naming what is left, since a graph with half its notes taken out looks exactly like a graph. It is only there while something is actually being hidden')
+                .addToggle((toggle) => toggle
+                    .setValue(settings.filterCaption)
+                    .onChange(async (value) => {
+                        settings.filterCaption = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
             const bar = new Setting(containerEl)
                 .setName('Keep')
-                .setDesc('Drag the handles. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
+                .setDesc('Drag a handle to move one edge, or the lit stretch between them to move the whole range without changing its width. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
 
             const holder = containerEl.createDiv();
 
             const rangeBar = new RangeBar(holder, {
                 histogram: this.plugin.measureVault().spread,
+                describe: (ranges) => this.plugin.describeRange(ranges),
                 onPreview: (ranges) => this.plugin.previewRanges(ranges),
                 onChange: (ranges) => {
                     this.plugin.previewRanges(null);
@@ -1331,7 +1346,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             column.createDiv({ cls: 'pulsar-graph-bar-fill' }).style.height = `${(count / tallest) * 100}%`;
         }
 
-        chart.createDiv({ cls: 'pulsar-graph-bars-caption', text: 'dimmest to brightest fifth' });
+        chart.createDiv({ cls: 'pulsar-graph-bars-caption', text: 'dimmest to brightest' });
 
         for (const row of measured.rows) {
             const line = stats.createDiv({ cls: 'pulsar-graph-stat' });

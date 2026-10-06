@@ -4,8 +4,15 @@ import { Coverage } from './history';
 import { OpacityStore } from './opacity-store';
 import { PulsarGraphSettings } from './settings';
 
-/** Fifths of the opacity range, which is fine enough to read as a shape. */
-const BANDS = 5;
+/**
+ * How many columns the brightness spread is counted into.
+ *
+ * Fifths read as a shape but are useless to aim at, and this same array is
+ * what the range bar draws behind its handles: five columns across the whole
+ * line meant a handle could sit anywhere in a fifth of the vault without the
+ * picture under it changing at all.
+ */
+const BANDS = 20;
 
 export interface Stat {
     label: string;

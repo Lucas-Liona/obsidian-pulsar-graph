@@ -2,7 +2,7 @@ import { debounce, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'o
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
-import { GraphScrubber } from './graph-controls';
+import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
@@ -24,6 +24,7 @@ interface AttachedGraph {
     frames: FrameHook | null;
     data: DataHook | null;
     scrubber: GraphScrubber | null;
+    caption: FilterCaption | null;
     /** Ranges being dragged right now, shown by hiding rather than rebuilding. */
     preview: { ranges: OpacityRange[] | null };
     spotlight: SpotlightState;
@@ -314,6 +315,50 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /** Whether a note is inside the kept ranges, or exempt from them. */
+    /**
+     * What a range is actually selecting, in the units the question was asked
+     * in. Drawn under the bar in both places the bar appears.
+     *
+     * No attempt is made to invert the curve back into a date. Rank has no
+     * closed form, the step curve is not injective, and the answer would be
+     * about the maths rather than about the vault. Walking the notes and
+     * reporting which of them survive is both exact and the more useful thing
+     * to know: how many are left, and how old the ends of that stretch are.
+     */
+    describeRange(ranges: OpacityRange[]): string {
+        if (!this.settings.filterEnabled) {
+            return 'Off — every note is on the graph.';
+        }
+
+        const now = Date.now();
+        let kept = 0;
+        let total = 0;
+        let oldest = Number.POSITIVE_INFINITY;
+        let newest = 0;
+
+        for (const [path, mtime] of this.store.entries()) {
+            total++;
+
+            if (!this.survives(path, ranges)) {
+                continue;
+            }
+
+            kept++;
+            oldest = Math.min(oldest, mtime);
+            newest = Math.max(newest, mtime);
+        }
+
+        if (kept === 0) {
+            return `Nothing in range, of ${total} notes.`;
+        }
+
+        const count = kept === total ? `All ${total} notes` : `${kept} of ${total} notes`;
+
+        return oldest === newest
+            ? `${count}, from ${formatAge(newest, now)}`
+            : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
+    }
+
     private survives(path: string, ranges: OpacityRange[]): boolean {
         const strength = this.store.opacityFor(path);
 
@@ -335,6 +380,7 @@ export default class PulsarGraphPlugin extends Plugin {
             enabled: () => this.settings.filterEnabled,
             ranges: () => this.settings.filterRanges,
             histogram: () => this.measureVault().spread,
+            describe: (ranges) => this.describeRange(ranges),
             onToggle: (enabled) => {
                 this.settings.filterEnabled = enabled;
                 void this.saveSettings();
@@ -539,6 +585,8 @@ export default class PulsarGraphPlugin extends Plugin {
         });
 
         const scrubber = this.buildScrubber(renderer, preview);
+        const controls = controlsFor(this.app, renderer);
+        const caption = controls?.parentElement ? new FilterCaption(controls.parentElement) : null;
 
         const releaseHover = hookNodeHover(renderer, {
             onHover: (path) => {
@@ -560,7 +608,9 @@ export default class PulsarGraphPlugin extends Plugin {
             scrubber,
             preview,
             spotlight,
+            caption,
             release: () => {
+                caption?.destroy();
                 data?.release();
                 releaseHover();
                 frames?.release();
@@ -599,6 +649,12 @@ export default class PulsarGraphPlugin extends Plugin {
         if (!graph) {
             return;
         }
+
+        graph.caption?.set(
+            this.settings.filterCaption && this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)
+                ? `Age filter · ${this.describeRange(this.settings.filterRanges)}`
+                : null
+        );
 
         // Obsidian assigns a new render callback whenever it rebuilds a
         // graph's graphics, which drops the wrapper the labels are driven by.

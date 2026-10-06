@@ -294,6 +294,20 @@ notes the statistics panel shows, so you can aim it at something real rather tha
 guessing at a number. You can add more than one range — keep the oldest and the
 newest and nothing in between, or just the middle of the herd.
 
+Drag a handle to move one edge. **Drag the lit stretch between them to move the
+whole range** without changing how wide it is, which is usually the thing you
+want once you have decided how big a slice to look at.
+
+Under the line is what the range is actually catching, in dates rather than in
+brightness: *223 of 1088 notes, 46 minutes ago back to 3 weeks ago*. Brightness
+is not a quantity anyone has an intuition for, so the only honest way to say what
+a position on the line means is to go and look. Nothing is inverted or estimated
+— the notes are counted.
+
+**Say so on the graph** puts that same line across the top of the graph itself,
+since a graph with half its notes taken out looks exactly like a graph. It is
+only there while something is actually being hidden.
+
 Two things it will not do:
 
 - **The note you have open is never hidden.** Otherwise opening an old note would
