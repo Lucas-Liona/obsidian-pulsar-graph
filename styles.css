@@ -420,3 +420,43 @@
 	font-size: var(--font-ui-small);
 	text-align: center;
 }
+
+/* The pinned notes, listed in the settings tab so a pin can be taken off
+   again. Rows rather than Setting items: a pin is one line of text and a
+   button, and a Setting's name/description layout leaves most of it empty. */
+.pulsar-graph-pins {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2-1);
+    margin: var(--size-4-2) 0 var(--size-4-4);
+}
+
+.pulsar-graph-pin {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-2-2) var(--size-4-2);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background-color: var(--background-secondary);
+}
+
+.pulsar-graph-pin-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-ui-small);
+}
+
+/* Set back, because the note's own name is what anyone is scanning for and the
+   folder is only there to tell two notes of the same name apart. */
+.pulsar-graph-pin-folder {
+    color: var(--text-faint);
+}
+
+.pulsar-graph-pin-remove {
+    flex: none;
+    font-size: var(--font-ui-smaller);
+}

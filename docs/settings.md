@@ -74,6 +74,9 @@ alone.
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
+| Give pins a colour | on / off | on | all |
+| Pin colour | any | purple | Pin colour on |
+| Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on |
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
