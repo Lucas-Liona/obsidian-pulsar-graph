@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.25.0] - 2026-10-06
+
+### Added
+
+- **Import earlier history**, in the History settings. The edit history starts
+  empty, and core *File recovery* holds the only local record of anything from
+  before it was switched on — usually the last seven days. This folds those
+  timestamps in. On a real vault it turned 170 snapshots across 76 notes into 96
+  sittings, skipping 4 for notes that no longer exist, and a second press added
+  nothing: a timestamp already inside a sitting merges back into it.
+
+  A button rather than something that happens on load. Reading another plugin's
+  private database unasked reads badly however harmless it is, and the button
+  names what it found before anyone presses it.
+
+  **Only timestamps are read.** Those records hold each note's full text in a
+  `data` field, and this never goes near it: both indexes are walked with
+  `openKeyCursor`, which yields an `IDBCursor` rather than an
+  `IDBCursorWithValue` — no `value` property exists on it — and joining the
+  `path` and `ts` cursors on their shared `primaryKey` gives every pair without
+  opening a single record.
+
+  The database is named from `app.appId`, never found by looking for a name
+  ending in `-backup`. One Obsidian install holds one of these per vault it has
+  ever opened; the install this was written on has eight, so matching on the
+  suffix is how another vault's note paths end up in this one's history. Dataview
+  and Omnisearch key their own databases the same way.
+
+  It is opened at whatever version it is already at, and only if it already
+  exists. Opening with a version of our own would run File recovery's upgrade,
+  which drops and recreates the store — destroying the very thing being read —
+  and opening a name that does not exist would create it.
+
 ## [1.24.0] - 2026-10-06
 
 ### Added

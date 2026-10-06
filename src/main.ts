@@ -5,6 +5,7 @@ import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './fil
 import { GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
+import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
@@ -156,6 +157,35 @@ export default class PulsarGraphPlugin extends Plugin {
 
     async forgetHistory(): Promise<void> {
         await this.history.clear();
+    }
+
+    /**
+     * Seeds the history from core File Recovery's snapshots, which is the only
+     * local record of anything from before this plugin was switched on. One
+     * import, by hand: it is capped at a week by default and gone on iOS, so it
+     * is a head start rather than a source.
+     */
+    async importFileRecovery(): Promise<{ records: number; notes: number; skipped: number; gained: number } | null> {
+        const found = await readSnapshots(this.app);
+        if (!found) {
+            return null;
+        }
+
+        const before = this.history.coverage().beads;
+        const gap = this.settings.sessionGapMinutes * 60 * 1000;
+
+        for (const [path, times] of found.byPath) {
+            this.history.merge(path, times, gap, this.settings.historyCap);
+        }
+
+        await this.history.flush();
+
+        return {
+            records: found.records,
+            notes: found.byPath.size,
+            skipped: found.skipped,
+            gained: this.history.coverage().beads - before
+        };
     }
 
     /**
