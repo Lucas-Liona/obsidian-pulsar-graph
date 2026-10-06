@@ -6,6 +6,12 @@ The one part of Pulsar that works inside a note rather than around it.
   <img src="assets/fresh-writing.gif" width="640" alt="Animation of text being typed into a note. The new words appear in green, cool back to their normal colours over the next few seconds, and a count of lit characters appears in the status bar.">
 </p>
 
+<p align="center">
+  <img src="assets/writing-light.gif" width="680" alt="A note on a white page. A heading and a sentence are typed in, appearing in green, then cool back to ordinary black text.">
+</p>
+
+<p align="center"><i>The same thing on a light theme. Nothing about the colour is hard-coded — it cools toward whatever that text would otherwise be.</i></p>
+
 **Light up what you just wrote.** Text takes a colour as you type it and cools
 back to normal over the next few minutes, so a page you have been working in
 shows you where the work actually was. Put the whole vault's idea inside a single
