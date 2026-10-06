@@ -312,13 +312,19 @@
 }
 
 /*
- * Fresh writing, cooling back to the normal text colour.
+ * Fresh writing, cooling back to whatever that text would otherwise be.
  *
- * Colour rather than opacity on purpose. Writing inside an already-lit stretch
- * nests one span inside another, and nested opacities multiply into something
- * far darker than either asked for, while nested colours simply let the inner
- * one win — which is the newest edit, which is the right answer. It also means
- * no clipping of old marks against new ones is needed anywhere.
+ * The mix is against `currentColor`, not against a fixed text colour. Used on
+ * the `color` property itself, `currentColor` means the *inherited* value — so
+ * inside a heading it is the heading's colour, inside a link the link's. A
+ * heading therefore cools green to its own pink instead of cooling to body-text
+ * white and then snapping to pink when the mark expires.
+ *
+ * Colour rather than opacity, too. Writing inside an already-lit stretch nests
+ * one span inside another; nested opacities multiply into something far darker
+ * than either asked for, while nested colours let the inner one win — which is
+ * the newest edit, which is the right answer. It also means old marks never have
+ * to be clipped against new ones.
  */
 .pulsar-ink {
 	transition: color 1.5s linear;
@@ -327,24 +333,57 @@
 .pulsar-ink-0 {
 	color: var(--pulsar-ink);
 }
+
 .pulsar-ink-1 {
-	color: color-mix(in oklab, var(--pulsar-ink) 86%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 86%, currentColor);
 }
+
 .pulsar-ink-2 {
-	color: color-mix(in oklab, var(--pulsar-ink) 72%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 72%, currentColor);
 }
+
 .pulsar-ink-3 {
-	color: color-mix(in oklab, var(--pulsar-ink) 58%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 58%, currentColor);
 }
+
 .pulsar-ink-4 {
-	color: color-mix(in oklab, var(--pulsar-ink) 44%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 44%, currentColor);
 }
+
 .pulsar-ink-5 {
-	color: color-mix(in oklab, var(--pulsar-ink) 31%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 31%, currentColor);
 }
+
 .pulsar-ink-6 {
-	color: color-mix(in oklab, var(--pulsar-ink) 19%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 19%, currentColor);
 }
+
 .pulsar-ink-7 {
-	color: color-mix(in oklab, var(--pulsar-ink) 9%, var(--text-normal));
+	color: color-mix(in oklab, var(--pulsar-ink) 9%, currentColor);
+}
+
+/* A pin does not cool, so it has no shades and no transition. */
+.pulsar-ink-pin {
+	color: var(--pulsar-ink-pin);
+}
+
+/*
+ * The other half of the idea: leave the writing alone and take the page down
+ * around it. Mixed toward the background rather than faded with opacity, and
+ * against `currentColor` again, so a heading dims as a dimmer version of itself
+ * instead of flattening to one grey.
+ */
+.pulsar-ink-cold {
+	color: color-mix(in oklab, currentColor var(--pulsar-ink-dim, 55%), var(--background-primary));
+	transition: color 1.5s linear;
+}
+
+/* The lit count in the status bar doubles as the reset. */
+.pulsar-graph-status-ink {
+	color: var(--pulsar-ink);
+	cursor: pointer;
+}
+
+.pulsar-graph-status-ink:hover {
+	text-decoration: underline;
 }

@@ -7,6 +7,25 @@ back to normal over the next few minutes, so a page you have been working in
 shows you where the work actually was. Put the whole vault's idea inside a single
 note: not *which* notes are warm, but *which paragraphs*.
 
+**How it shows** is either of two opposite things. *Colour what is new* tints the
+fresh writing and leaves the page alone. *Dim everything else* leaves the writing
+alone and takes the rest of the page down toward the background — which never
+replaces a colour you chose, so it suits actually working, where the tint suits a
+screenshot. A note with nothing lit in it is never dimmed at all, so opening a
+vault does not grey it.
+
+**Pin this writing** holds a stretch at full strength and stops it cooling. A pin
+is a marker rather than a timestamp — it answers *come back to this* — so it does
+not fade, and it has its own colour. With nothing selected it pins the lit
+stretch under the cursor, or the current line if there is none, which is what
+makes it usable on text you did not just write. Pins clear when you reset or
+when the note closes; nothing is written to the file, so there is nothing to
+leave behind.
+
+The status bar says how much of the note you are in is still lit — *· 340 lit ·
+12 pinned* — and clicking it cools everything. It is only there while something
+is lit.
+
 **Start again** cools everything at once. That is the setting that makes it
 usable rather than exhausting — once everything on the page counts as old, the
 next thing you write stands on its own instead of competing with the last hour.
@@ -22,6 +41,11 @@ Three things worth knowing about how it works:
   diffing, no snapshots, no comparing anything to anything.
 - **It reads where you wrote, never what you wrote.** Offsets and lengths. The
   text is never looked at, stored or counted.
+- **It cools toward whatever that text would otherwise be.** The shades are mixed
+  against `currentColor`, which on the `color` property means the inherited
+  value — so a heading cools to its own colour rather than to body-text white and
+  then snapping back when the mark expires. The dimming works the same way, so a
+  dimmed heading is a dimmer version of itself instead of one flat grey.
 
 Writing inside something already lit nests the new stretch inside the old one.
 That is why the shades are colours rather than opacities — nested opacities

@@ -17,7 +17,8 @@ so a hub still reads as a hub. You set what the oldest and the newest are
 multiplied by; putting the newest *below* the oldest runs it backwards, which is
 a reasonable thing to want.
 
-**Title size** scales every name on the graph. Obsidian offers no control over
+**Title size** scales every name on the graph, and the age drawn above a node
+with it. Obsidian offers no control over
 this at all — a title's font is `14 + size / 4`, tied to the node size, so a
 small-node graph gets small titles whether or not you wanted that. This
 separates them.

@@ -2,6 +2,7 @@ import { App, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent 
 import { formatAge } from './age';
 import { readSnapshots } from './file-recovery';
 import { AgeMode } from './age-label';
+import { InkMode } from './ink';
 import { LinkRecency } from './links';
 import { OpacityRange, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
@@ -70,8 +71,11 @@ export interface PulsarGraphSettings {
     trailStrength: number;
     saved: SavedPreset[];
     ink: boolean;
+    inkMode: InkMode;
     inkMinutes: number;
     inkColor: string;
+    inkPinColor: string;
+    inkDim: number;
     nodeSizeByAge: boolean;
     nodeSizeSmallest: number;
     nodeSizeLargest: number;
@@ -166,8 +170,11 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailStrength: 0.55,
     saved: [],
     ink: false,
+    inkMode: 'colour',
     inkMinutes: 5,
     inkColor: '#ff7a45',
+    inkPinColor: '#ffc53d',
+    inkDim: 0.45,
     nodeSizeByAge: false,
     nodeSizeSmallest: 0.7,
     nodeSizeLargest: 1.8,
@@ -227,6 +234,16 @@ const NODE_SIZE_RANGE = { lowest: 0.2, highest: 3, step: 0.1 };
 
 /** Minutes for fresh writing to cool back to ordinary text. */
 const INK_RANGE = { lowest: 1, highest: 240, step: 1 };
+
+/** How far the rest of the page dims, as a fraction of the way to the background. */
+const INK_DIM_RANGE = { lowest: 0.1, highest: 0.9, step: 0.05 };
+
+const INK_MODES = ['colour', 'dim'] as const;
+
+const INK_MODE_LABELS: Record<InkMode, string> = {
+    colour: 'Colour what is new',
+    dim: 'Dim everything else'
+};
 
 /** What a title's font is multiplied by. Obsidian offers no control at all. */
 const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
@@ -357,6 +374,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
         ink: parseBoolean(data.ink, DEFAULT_SETTINGS.ink),
+        inkMode: INK_MODES.find((mode) => mode === data.inkMode) ?? DEFAULT_SETTINGS.inkMode,
+        inkPinColor: parseColor(data.inkPinColor, DEFAULT_SETTINGS.inkPinColor),
+        inkDim: clamp(parseNumber(data.inkDim, DEFAULT_SETTINGS.inkDim), INK_DIM_RANGE.lowest, INK_DIM_RANGE.highest),
         inkMinutes: clamp(parseNumber(data.inkMinutes, DEFAULT_SETTINGS.inkMinutes), INK_RANGE.lowest, INK_RANGE.highest),
         inkColor: parseColor(data.inkColor, DEFAULT_SETTINGS.inkColor),
         nodeSizeByAge: parseBoolean(data.nodeSizeByAge, DEFAULT_SETTINGS.nodeSizeByAge),
@@ -814,6 +834,35 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.ink) {
+            new Setting(containerEl)
+                .setName('How it shows')
+                .setDesc('Colour the new writing and leave the page alone, or leave the writing alone and dim everything around it. Dimming never replaces a colour you chose, so it suits working; colouring reads better in a screenshot')
+                .addDropdown((dropdown) => {
+                    for (const mode of INK_MODES) {
+                        dropdown.addOption(mode, INK_MODE_LABELS[mode]);
+                    }
+
+                    dropdown.setValue(settings.inkMode).onChange(async (value) => {
+                        settings.inkMode = value as InkMode;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    });
+                });
+
+            if (settings.inkMode === 'dim') {
+                new NumberControl(
+                    new Setting(containerEl)
+                        .setName('How far it dims')
+                        .setDesc('How much of the way toward the background the rest of the page goes. A note with nothing lit in it is never dimmed at all'),
+                    INK_DIM_RANGE,
+                    settings.inkDim,
+                    (value) => {
+                        settings.inkDim = value;
+                        this.save();
+                    }
+                );
+            }
+
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Cools over')
@@ -828,11 +877,22 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName('Colour')
-                .setDesc('What the newest writing is drawn in, fading to your normal text colour from there')
+                .setDesc('What the newest writing is drawn in. It cools toward whatever colour that text would otherwise be, so a heading ends up its own colour rather than your body text colour')
                 .addColorPicker((picker) => picker
                     .setValue(settings.inkColor)
                     .onChange(async (value) => {
                         settings.inkColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new Setting(containerEl)
+                .setName('Pinned colour')
+                .setDesc('What a stretch you have pinned is drawn in. A pin does not cool — it is a marker rather than a timestamp, and one that faded is one you would miss')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.inkPinColor)
+                    .onChange(async (value) => {
+                        settings.inkPinColor = value;
                         await this.plugin.saveSettings();
                     })
                 );

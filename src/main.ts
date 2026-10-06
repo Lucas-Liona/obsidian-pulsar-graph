@@ -1,5 +1,5 @@
 import { EditorView } from '@codemirror/view';
-import { debounce, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
+import { debounce, MarkdownView, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
@@ -9,7 +9,7 @@ import { applySizes, clearSizes, applyOpacity, clearSpotlight, controlsFor, Data
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
-import { forgetInk, inkExtension, setInkOptions } from './ink';
+import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink';
 import { OpacityStore, Sample } from './opacity-store';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
@@ -131,6 +131,25 @@ export default class PulsarGraphPlugin extends Plugin {
         });
 
         this.addCommand({
+            id: 'pin-writing',
+            name: 'Pin this writing',
+            editorCallback: (_editor, view) => {
+                const editor = (view as { editor?: { cm?: EditorView } }).editor?.cm;
+
+                if (!this.settings.ink) {
+                    new Notice('Fresh writing is switched off.');
+                    return;
+                }
+
+                if (editor && !pinInk(editor)) {
+                    new Notice('Nothing here to pin.');
+                }
+
+                this.updateStatusBar();
+            }
+        });
+
+        this.addCommand({
             id: 'close-stale-tabs',
             name: 'Close stale tabs',
             callback: () => this.closeStaleTabs()
@@ -175,7 +194,10 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.attached.clear();
         this.tabs.clear();
-        document.body.style.removeProperty('--pulsar-ink');
+
+        for (const property of ['--pulsar-ink', '--pulsar-ink-pin', '--pulsar-ink-dim']) {
+            document.body.style.removeProperty(property);
+        }
         void this.history.flush();
     }
 
@@ -324,11 +346,19 @@ export default class PulsarGraphPlugin extends Plugin {
     /** Cools everything at once, from the command or the settings button. */
     forgetInk(): void {
         forgetInk(this.editors());
+        this.updateStatusBar();
     }
 
     private syncInk(): void {
         document.body.style.setProperty('--pulsar-ink', this.settings.inkColor);
-        setInkOptions({ enabled: this.settings.ink, minutes: this.settings.inkMinutes }, this.editors());
+        document.body.style.setProperty('--pulsar-ink-pin', this.settings.inkPinColor);
+        document.body.style.setProperty('--pulsar-ink-dim', `${Math.round((1 - this.settings.inkDim) * 100)}%`);
+
+        setInkOptions({
+            enabled: this.settings.ink,
+            minutes: this.settings.inkMinutes,
+            mode: this.settings.inkMode
+        }, this.editors());
     }
 
     async saveSettings(): Promise<void> {
@@ -506,7 +536,42 @@ export default class PulsarGraphPlugin extends Plugin {
         const sittings = this.settings.history ? this.history.sittings(file.path) : 0;
         const worked = sittings > 1 ? ` · ${sittings} sittings` : '';
 
-        element.setText(`Edited ${formatAge(mtime, Date.now())}${worked}`);
+        element.empty();
+        element.createSpan({ text: `Edited ${formatAge(mtime, Date.now())}${worked}` });
+
+        this.showInkCount(element);
+    }
+
+    /**
+     * How much of the note you are in is still lit, and a way to clear it.
+     *
+     * Only there while something is lit, so the status bar is not carrying a
+     * permanent zero, and it reports the open note because that is what the rest
+     * of this line is about. Clicking runs the same command as everything else
+     * that resets, since one reset concept should not mean two things.
+     */
+    private showInkCount(element: HTMLElement): void {
+        if (!this.settings.ink) {
+            return;
+        }
+
+        const editor = (this.app.workspace.getActiveViewOfType(MarkdownView) as { editor?: { cm?: EditorView } } | null)?.editor?.cm;
+
+        if (!editor) {
+            return;
+        }
+
+        const { lit, pinned } = inkCounts(editor);
+
+        if (lit === 0 && pinned === 0) {
+            return;
+        }
+
+        const parts = [lit > 0 ? `${lit} lit` : null, pinned > 0 ? `${pinned} pinned` : null].filter(Boolean);
+        const button = element.createSpan({ cls: 'pulsar-graph-status-ink', text: ` · ${parts.join(' · ')}` });
+
+        button.setAttr('aria-label', 'Cool fresh writing');
+        button.addEventListener('click', () => this.forgetInk());
     }
 
     /**
@@ -730,6 +795,12 @@ export default class PulsarGraphPlugin extends Plugin {
                 graph.links.sync();
                 holdSpotlightTint(renderer, graph.spotlight);
             });
+        }
+
+        if (graph.labels.setTitleScale(this.settings.titleScale)) {
+            // The size is baked into each label when it is built, so they have
+            // to go and be made again rather than be adjusted in place.
+            graph.labels.clear();
         }
 
         graph.labels.setMode(this.settings.ageLabels);
