@@ -7,6 +7,7 @@ import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
+import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
@@ -36,12 +37,21 @@ const UPDATE_DELAY_MS = 150;
  */
 const STATUS_REFRESH_MS = 60 * 1000;
 
+/**
+ * How often the tabs are redrawn. They fade against the clock, so nothing else
+ * would ever prompt it; half a minute is far finer than the shortest fade anyone
+ * would set and costs a handful of style writes.
+ */
+const TAB_REFRESH_MS = 30 * 1000;
+
 export default class PulsarGraphPlugin extends Plugin {
     settings: PulsarGraphSettings = DEFAULT_SETTINGS;
 
     private readonly store = new OpacityStore(() => this.settings);
     private readonly attached = new Map<GraphRenderer, AttachedGraph>();
     private statusBarEl: HTMLElement | null = null;
+    private readonly attention = new Attention(this.app);
+    private readonly tabs = new TabFading(this.app, this.attention);
 
     private readonly updateSoon = debounce(() => this.syncRenderers(), UPDATE_DELAY_MS, true);
 
@@ -63,10 +73,18 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
             this.store.forget(oldPath);
+            this.attention.forget(oldPath);
             this.onFileChanged(file);
         }));
 
-        this.registerEvent(this.app.workspace.on('file-open', () => {
+        this.registerInterval(window.setInterval(() => this.paintTabs(), TAB_REFRESH_MS));
+
+        this.registerEvent(this.app.workspace.on('file-open', (file) => {
+            if (file) {
+                this.attention.touch(file.path);
+            }
+
+            this.paintTabs();
             this.updateStatusBar();
 
             // The open note is exempt from the filter, so which note that is
@@ -80,13 +98,24 @@ export default class PulsarGraphPlugin extends Plugin {
         // Graph views come and go, and each brings its own renderer to hook.
         this.registerEvent(this.app.workspace.on('layout-change', () => this.syncRenderers()));
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
+            const active = this.app.workspace.getActiveFile();
+
+            if (active) {
+                this.attention.touch(active.path);
+            }
+
             this.syncRenderers();
             this.updateStatusBar();
+            this.paintTabs();
         }));
+
+        this.registerEvent(this.app.workspace.on('layout-change', () => this.paintTabs()));
 
         this.app.workspace.onLayoutReady(() => {
             this.syncRenderers();
             this.syncStatusBar();
+            this.attention.seed();
+            this.paintTabs();
         });
     }
 
@@ -94,7 +123,21 @@ export default class PulsarGraphPlugin extends Plugin {
         for (const graph of this.attached.values()) {
             graph.release();
         }
+
         this.attached.clear();
+        this.tabs.clear();
+    }
+
+    /** Dims the tabs that have gone untouched, if that is switched on. */
+    private paintTabs(): void {
+        this.store.refresh();
+
+        this.tabs.apply({
+            mode: this.settings.tabFade,
+            after: this.settings.tabFadeAfter,
+            floor: this.settings.tabFadeFloor,
+            graphStrength: (path) => this.store.opacityFor(path)
+        });
     }
 
     async loadSettings(): Promise<void> {
@@ -108,6 +151,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.refilter();
         this.syncRenderers();
         this.syncStatusBar();
+        this.paintTabs();
 
         for (const graph of this.attached.values()) {
             graph.scrubber?.refresh();

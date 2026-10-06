@@ -174,7 +174,10 @@ alone.
 | Trail strength | 0.0 - 1.0 | 0.55 | Tracing on |
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
-| Age in the status bar | on / off | off | all |
+| Age in the status bar | on / off | on | all |
+| Fade tabs | Never, By attention, By edit time | Never | all |
+| Faded after | 1 - 480 minutes | 60 | By attention |
+| Faintest a tab gets | 0.1 - 1.0 | 0.35 | Fading on |
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
@@ -321,6 +324,31 @@ Off by default, with its own colour kept clear of the spotlight's. **Trail
 strength** mixes that colour with the one links are normally drawn in — at full
 strength it is a stripe of neon, and a little under half way reads as a warmer
 line, which is much easier to sit with.
+
+### Tabs
+
+Your tab bar is usually a pile of things you opened once. **Fade tabs** dims one
+the longer it goes untouched, so it reads as attention instead.
+
+The useful setting is **by how long since you looked at it**, which is not the
+same as when the file was edited. For a tab the question isn't when it was last
+written, it's when you last had your eyes on it — an hour is a long time for
+something sitting open in front of you. Obsidian doesn't record that, so Pulsar
+keeps it. Sitting in a note doesn't count against it, and the tab you're in never
+fades.
+
+You can also fade them **by how long since it was edited**, which matches what
+the graph is showing.
+
+The close button keeps its full strength either way, because the point of
+noticing a stale tab is being able to do something about it. There's a floor on
+how faint a tab gets, since one you can't read is one you can't get back to.
+
+It isn't remembered across restarts. "How long since you looked at this" is a
+fact about a session, and claiming otherwise would mean counting hours Obsidian
+wasn't running for. Everything open at launch starts level.
+
+Off by default.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in

@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.21.0] - 2026-10-05
+
+### Added
+
+- **Fade tabs**, off by default. A tab dims the longer it goes untouched, so the
+  tab bar reads as attention rather than as a pile of things opened once.
+  Closes #53.
+
+  The default basis is how long since you last *looked* at a note, which is not
+  its modification time. For a tab the question is when you last had your eyes on
+  it, and an hour is a long time for something sitting open in front of you.
+  Obsidian records nothing like it, so it is kept here. Time spent in a note does
+  not count against it and the tab you are in never fades. Fading by edit time is
+  offered too, which keeps the tabs in step with the graph.
+
+  Attention is not carried across a restart. It is a fact about a session, and
+  persisting it would mean counting hours the app was not running for; everything
+  open at launch starts level and diverges as you work.
+
+  Only the icon and the title dim. The close button keeps its strength, because
+  the point of noticing a stale tab is being able to act on it, and a floor keeps
+  a tab readable — one you cannot read is one you cannot get back to.
+
 ## [1.20.0] - 2026-10-05
 
 ### Fixed
