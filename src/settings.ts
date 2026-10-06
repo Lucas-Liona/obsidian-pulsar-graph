@@ -7,7 +7,7 @@ import { LinkRecency } from './links';
 import { OpacityRange, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { RangeBar } from './range-bar';
-import { TabFade, TabFadeCurve, TabFadeScope } from './tabs';
+import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -65,6 +65,7 @@ export interface PulsarGraphSettings {
     spotlightColor: string;
     spotlightStrength: number;
     spotlightSize: number;
+    spotlightCount: number;
     spreadFloorHours: number;
     neighbourBleed: number;
     neighbourHops: number;
@@ -95,6 +96,7 @@ export interface PulsarGraphSettings {
     tabFadeFloor: number;
     tabDot: boolean;
     staleTabs: boolean;
+    staleTabMark: StaleMark;
     staleTabAfter: number;
     history: boolean;
     historyCap: number;
@@ -115,6 +117,13 @@ const TAB_SCOPES = ['title', 'tab'] as const;
 const TAB_SCOPE_LABELS: Record<TabFadeScope, string> = {
     title: 'The icon and title',
     tab: 'The whole tab'
+};
+
+const STALE_MARKS = ['line', 'zzz'] as const;
+
+const STALE_MARK_LABELS: Record<StaleMark, string> = {
+    line: 'A line down the edge',
+    zzz: 'A 💤 where the dot goes'
 };
 
 const TAB_CURVES = ['over', 'at'] as const;
@@ -167,6 +176,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
     spotlightSize: 2,
+    spotlightCount: 1,
     spreadFloorHours: 6,
     neighbourBleed: 0,
     neighbourHops: 1,
@@ -197,6 +207,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     tabFadeFloor: 0.35,
     tabDot: false,
     staleTabs: false,
+    staleTabMark: 'line',
     staleTabAfter: 240,
     // On by default, unlike everything else past the core fade. The rule that
     // keeps extras off exists so nothing changes the look of someone's Obsidian
@@ -252,6 +263,9 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
     colour: 'Colour what is new',
     dim: 'Dim everything else'
 };
+
+/** How many of the most recently edited notes the spotlight covers. */
+const SPOTLIGHT_COUNT_RANGE = { lowest: 1, highest: 25, step: 1 };
 
 /** What the newest note's own circle is multiplied by, on top of any sizing. */
 const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
@@ -378,6 +392,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
+        spotlightCount: Math.round(clamp(parseNumber(data.spotlightCount, DEFAULT_SETTINGS.spotlightCount), SPOTLIGHT_COUNT_RANGE.lowest, SPOTLIGHT_COUNT_RANGE.highest)),
         spotlightSize: clamp(parseNumber(data.spotlightSize, DEFAULT_SETTINGS.spotlightSize), SPOTLIGHT_SIZE_RANGE.lowest, SPOTLIGHT_SIZE_RANGE.highest),
         spreadFloorHours: clamp(parseNumber(data.spreadFloorHours, DEFAULT_SETTINGS.spreadFloorHours), SPREAD_FLOOR_RANGE.lowest, SPREAD_FLOOR_RANGE.highest),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
@@ -410,6 +425,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
         tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
         staleTabs: parseBoolean(data.staleTabs, DEFAULT_SETTINGS.staleTabs),
+        staleTabMark: STALE_MARKS.find((mark) => mark === data.staleTabMark) ?? DEFAULT_SETTINGS.staleTabMark,
         staleTabAfter: Math.round(clamp(parseNumber(data.staleTabAfter, DEFAULT_SETTINGS.staleTabAfter), STALE_AFTER_RANGE.lowest, STALE_AFTER_RANGE.highest)),
         history: parseBoolean(data.history, DEFAULT_SETTINGS.history),
         historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest)),
@@ -864,6 +880,18 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new NumberControl(
                 new Setting(containerEl)
+                    .setName('How many notes')
+                    .setDesc('The spotlight can cover more than the single newest note. At 5 it marks the last five things you touched, which reads as where you have been rather than where you are'),
+                SPOTLIGHT_COUNT_RANGE,
+                settings.spotlightCount,
+                (value) => {
+                    settings.spotlightCount = Math.round(value);
+                    this.save();
+                }
+            );
+
+            new NumberControl(
+                new Setting(containerEl)
                     .setName('Spotlight size')
                     .setDesc('What the newest note\'s own circle is multiplied by. Obsidian sizes a node by its link count and nothing else, and the note you wrote last is almost always the least linked thing in the vault — so without this the one node you always want to find is reliably the smallest on screen. Multiplied on top of any other sizing, not instead of it'),
                 SPOTLIGHT_SIZE_RANGE,
@@ -888,6 +916,20 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.staleTabs) {
+            new Setting(containerEl)
+                .setName('How they are marked')
+                .setDesc('A line is quiet to the point of being easy to miss; the 💤 is not. The 💤 takes the brightness dot\'s place rather than sitting beside it, since a narrow tab has room for one or the other')
+                .addDropdown((dropdown) => {
+                    for (const mark of STALE_MARKS) {
+                        dropdown.addOption(mark, STALE_MARK_LABELS[mark]);
+                    }
+
+                    dropdown.setValue(settings.staleTabMark).onChange(async (value) => {
+                        settings.staleTabMark = value as StaleMark;
+                        await this.plugin.saveSettings();
+                    });
+                });
+
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Marked after')
@@ -1051,7 +1093,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.filterEnabled) {
             new Setting(containerEl)
                 .setName('Say so on the graph')
-                .setDesc('A line across the top of the graph naming what is left, since a graph with half its notes taken out looks exactly like a graph. It is only there while something is actually being hidden')
+                .setDesc('A line across the top of the graph naming what is on it and how far back it reaches. Useful while filtering, because a graph with half its notes taken out looks exactly like a graph — and worth leaving on anyway, since it answers what you are looking at')
                 .addToggle((toggle) => toggle
                     .setValue(settings.filterCaption)
                     .onChange(async (value) => {

@@ -3,10 +3,10 @@ import { EditorView } from '@codemirror/view';
 import { Component, debounce, MarkdownView, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
-import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
+import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearSpotlight, newSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -402,7 +402,8 @@ export default class PulsarGraphPlugin extends Plugin {
                 ? { path: this.store.newestPath(), color: this.settings.spotlightColor }
                 : null,
             graphStrength: (path) => this.store.opacityFor(path),
-            stale: this.settings.staleTabs ? this.settings.staleTabAfter : null
+            stale: this.settings.staleTabs ? this.settings.staleTabAfter : null,
+            staleMark: this.settings.staleTabMark
         });
     }
 
@@ -496,10 +497,6 @@ export default class PulsarGraphPlugin extends Plugin {
      * to know: how many are left, and how old the ends of that stretch are.
      */
     describeRange(ranges: OpacityRange[]): string {
-        if (!this.settings.filterEnabled) {
-            return 'Off — every note is on the graph.';
-        }
-
         const now = Date.now();
         let kept = 0;
         let total = 0;
@@ -522,7 +519,7 @@ export default class PulsarGraphPlugin extends Plugin {
             return `Nothing in range, of ${total} notes.`;
         }
 
-        const count = kept === total ? `All ${total} notes` : `${kept} of ${total} notes`;
+        const count = `${kept} of ${total} notes`;
 
         return oldest === newest
             ? `${count}, from ${formatAge(newest, now)}`
@@ -537,7 +534,7 @@ export default class PulsarGraphPlugin extends Plugin {
     private keptFromFilter(): (string | undefined)[] {
         return [
             this.app.workspace.getActiveFile()?.path,
-            this.settings.spotlightNewest ? this.store.newestPath() : undefined
+            ...(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : [])
         ];
     }
 
@@ -761,7 +758,7 @@ export default class PulsarGraphPlugin extends Plugin {
         const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
         labels.setMode(this.settings.ageLabels);
 
-        const spotlight: SpotlightState = {};
+        const spotlight = newSpotlight();
         const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
@@ -889,9 +886,13 @@ export default class PulsarGraphPlugin extends Plugin {
             return;
         }
 
+        // Not only while something is hidden. The line answers "what am I
+        // looking at", which is a question a graph raises whether or not a
+        // filter is on.
         graph.caption?.set(
-            this.settings.filterCaption && this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)
-                ? `Age filter${this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : ''} · ${this.describeRange(this.settings.filterRanges)}`
+            this.settings.filterCaption
+                ? this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE])
+                    + (this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : '')
                 : null
         );
 
@@ -922,6 +923,7 @@ export default class PulsarGraphPlugin extends Plugin {
             spotlightNewest: this.settings.spotlightNewest,
             spotlightRgb: parseHexColor(this.settings.spotlightColor),
             spotlightStrength: this.settings.spotlightStrength,
+            spotlightCount: this.settings.spotlightCount,
             spotlight: graph.spotlight,
             neighbourBleed: this.settings.neighbourBleed,
             neighbourHops: this.settings.neighbourHops,
@@ -932,7 +934,7 @@ export default class PulsarGraphPlugin extends Plugin {
         });
 
         applySizes(renderer, {
-            spotlit: this.settings.spotlightNewest ? this.store.newestPath() : undefined,
+            spotlit: new Set(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : []),
             spotlightSize: this.settings.spotlightSize,
             byAge: this.settings.nodeSizeByAge,
             smallest: this.settings.nodeSizeSmallest,

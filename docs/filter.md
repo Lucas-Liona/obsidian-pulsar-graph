@@ -27,9 +27,14 @@ is not a quantity anyone has an intuition for, so the only honest way to say wha
 a position on the line means is to go and look. Nothing is inverted or estimated
 — the notes are counted.
 
-**Say so on the graph** puts that same line across the top of the graph itself,
-since a graph with half its notes taken out looks exactly like a graph. It is
-only there while something is actually being hidden.
+**Say so on the graph** puts that same line across the top of the graph itself:
+
+> 110 of 110 notes, 1 hour ago back to 4 months ago
+
+It is worth leaving on whether or not you are filtering. While you are, it is
+necessary — a graph with half its notes taken out looks exactly like a graph.
+While you are not, it still answers the question a graph raises on its own, which
+is *what am I looking at*.
 
 Two things it will not do:
 

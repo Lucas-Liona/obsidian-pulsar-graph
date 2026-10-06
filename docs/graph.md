@@ -50,6 +50,12 @@ That last one is worth a try if you already use the text fade threshold the way 
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
 
+**How many notes** the spotlight covers is yours. At 1 it marks the thing you
+touched last. At 5 it marks the last five, which reads as *where you have been*
+rather than *where you are* — a short trail through the graph instead of a single
+point. Each one keeps the colour it had underneath, so turning it back down hands
+them all back.
+
 **Spotlight size** makes the newest note's circle larger as well as coloured.
 Worth knowing why it needs to: Obsidian sizes a node by its link count and
 nothing else, and the note you wrote last is almost always the least linked thing

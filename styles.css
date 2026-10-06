@@ -286,8 +286,22 @@
 	opacity: 1;
 }
 
-.workspace-tab-header.pulsar-graph-tab-stale .workspace-tab-header-inner {
+.workspace-tab-header.pulsar-graph-tab-stale:not(.pulsar-graph-tab-zzz) .workspace-tab-header-inner {
 	box-shadow: inset 2px 0 0 0 var(--text-faint);
+}
+
+/*
+ * The louder mark. It takes the brightness dot's place rather than sitting
+ * beside it, because a narrow tab has room for one or the other and a tab you
+ * are being invited to close has nothing useful to say about its brightness.
+ */
+.workspace-tab-header.pulsar-graph-tab-zzz .workspace-tab-header-inner-title::after {
+	content: '\00a0💤';
+	font-size: 0.9em;
+}
+
+.workspace-tab-header.pulsar-graph-tab-zzz .pulsar-graph-tab-dot {
+	display: none;
 }
 
 /*
