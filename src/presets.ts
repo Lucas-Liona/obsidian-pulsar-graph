@@ -22,21 +22,26 @@ export interface Preset {
 }
 
 /**
- * Everything a saved preset carries, which is every setting except the saved
- * presets themselves. A built-in preset is a curated fade shape; one you save
- * is "how I have this set up", so it keeps the whole look rather than a chosen
- * slice of it. Leaving the list out is what stops a preset containing itself.
+ * Everything a saved preset carries, which is every setting that decides how
+ * the vault looks. A built-in preset is a curated fade shape; one you save is
+ * "how I have this set up", so it keeps the whole look rather than a chosen
+ * slice of it. Leaving the preset list out is what stops a preset containing
+ * itself.
+ *
+ * The history settings are left out for the same reason the list is: they are
+ * not a look. Someone else's preset has no business switching off the record of
+ * how you work, and a preset that silently emptied it would be worse still.
  */
-export type PresetSettings = Omit<PulsarGraphSettings, 'saved'>;
+export type PresetSettings = Omit<PulsarGraphSettings, 'saved' | 'history' | 'historyCap'>;
 
 export interface SavedPreset {
     name: string;
     settings: PresetSettings;
 }
 
-/** Strips the preset list out of the settings, leaving a snapshot to keep. */
+/** Strips out what a preset does not carry, leaving a snapshot to keep. */
 export function snapshot(settings: PulsarGraphSettings): PresetSettings {
-    const { saved: _saved, ...rest } = settings;
+    const { saved: _saved, history: _history, historyCap: _cap, ...rest } = settings;
     return rest;
 }
 

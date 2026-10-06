@@ -58,6 +58,8 @@ export interface PulsarGraphSettings {
     tabFadeAfter: number;
     tabFadeFloor: number;
     tabDot: boolean;
+    history: boolean;
+    historyCap: number;
 }
 
 const TAB_MODES = ['off', 'attention', 'modified'] as const;
@@ -122,7 +124,14 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     tabFade: 'off',
     tabFadeAfter: 60,
     tabFadeFloor: 0.35,
-    tabDot: false
+    tabDot: false,
+    // On by default, unlike everything else past the core fade. The rule that
+    // keeps extras off exists so nothing changes the look of someone's Obsidian
+    // uninvited; this changes nothing on screen, writes only numbers, and into
+    // a file of this plugin's own. It is also worth nothing until it has been
+    // running a while, so starting it off would mean nobody ever has history.
+    history: true,
+    historyCap: 100
 };
 
 /** A minute is twitchy; a day never arrives while you are looking. */
@@ -144,6 +153,8 @@ const WARMTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** Five minutes is one distracted pass; four hours is a long sitting. */
 const SESSION_RANGE = { lowest: 1, highest: 240, step: 1 };
+
+const HISTORY_CAP_RANGE = { lowest: 10, highest: 1000, step: 10 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -274,7 +285,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
         tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
-        tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot)
+        tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
+        history: parseBoolean(data.history, DEFAULT_SETTINGS.history),
+        historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest))
     };
 }
 
@@ -853,6 +866,52 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.save();
                 }
             );
+        }
+
+        section('History');
+
+        new Setting(containerEl)
+            .setName('Keep a record of when notes were worked on')
+            .setDesc('Obsidian keeps only the latest modification time and throws the rest away. This writes each sitting down, in a file of its own, so the graph can one day show how a note was worked on rather than only when it was last touched. Timestamps and file sizes, never any part of what a note says')
+            .addToggle((toggle) => toggle
+                .setValue(settings.history)
+                .onChange(async (value) => {
+                    settings.history = value;
+                    await this.plugin.saveSettings();
+                    // What it has collected, and the cap, only matter when on.
+                    this.display();
+                })
+            );
+
+        if (settings.history) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Sittings kept per note')
+                    .setDesc('The oldest are dropped past this. A note is a sitting at a time rather than a write at a time, so a note worked on weekly reaches this in two years'),
+                HISTORY_CAP_RANGE,
+                settings.historyCap,
+                (value) => {
+                    settings.historyCap = Math.round(value);
+                    this.save();
+                }
+            );
+
+            const coverage = this.plugin.historyCoverage();
+
+            new Setting(containerEl)
+                .setName('Forget everything recorded')
+                .setDesc(coverage.beads === 0
+                    ? 'Nothing has been recorded yet'
+                    : `${coverage.beads} sittings across ${coverage.notes} notes. This cannot be undone, and nothing can bring the history back`)
+                .addButton((button) => button
+                    .setButtonText('Forget')
+                    .setWarning()
+                    .onClick(async () => {
+                        await this.plugin.forgetHistory();
+                        new Notice('Pulsar has forgotten its edit history.');
+                        this.display();
+                    })
+                );
         }
 
         section('Presets');
