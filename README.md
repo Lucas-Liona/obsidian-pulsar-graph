@@ -276,6 +276,17 @@ Two things it will not do:
 It reads each note's *own* brightness, not the brightness it ends up drawn at. A
 note shouldn't count as recent because something next to it is.
 
+The same control lives in the graph's own panel, under **Age**, beside Filters,
+Groups, Display and Forces. Filtering by time is a view rather than a preference
+— you reach for it to look at something and then put it back — so it belongs
+where you already are instead of behind a settings dialog. It's the same setting
+in both places; moving one moves the other.
+
+**Dragging a handle doesn't rebuild the graph.** While you hold it, notes are
+only hidden: every position stays exactly where it was, so the thing you're
+aiming at holds still instead of crawling away from the cursor. The real filter,
+with the re-pack, happens when you let go.
+
 Off by default.
 
 ### Links carry age too

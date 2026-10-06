@@ -1,9 +1,10 @@
 import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
-import { filterGraphData, isWholeRange } from './filter';
+import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
+import { GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applyOpacity, clearSpotlight, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, rebuildGraphData, repaint, SpotlightState, Unhook } from './graph';
+import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeVault, VaultStats } from './stats';
@@ -19,6 +20,9 @@ interface AttachedGraph {
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
     frames: FrameHook | null;
     data: DataHook | null;
+    scrubber: GraphScrubber | null;
+    /** Ranges being dragged right now, shown by hiding rather than rebuilding. */
+    preview: { ranges: OpacityRange[] | null };
     spotlight: SpotlightState;
 }
 
@@ -104,6 +108,54 @@ export default class PulsarGraphPlugin extends Plugin {
         this.refilter();
         this.syncRenderers();
         this.syncStatusBar();
+
+        for (const graph of this.attached.values()) {
+            graph.scrubber?.refresh();
+        }
+    }
+
+    /** Whether a note is inside the kept ranges, or exempt from them. */
+    private survives(path: string, ranges: OpacityRange[]): boolean {
+        const strength = this.store.opacityFor(path);
+
+        if (strength === undefined || path === this.app.workspace.getActiveFile()?.path) {
+            return true;
+        }
+
+        return withinRanges(Math.min(1, Math.max(0, strength)), ranges);
+    }
+
+    /** Adds the age section to a graph's own control panel, where it has one. */
+    private buildScrubber(renderer: GraphRenderer, preview: { ranges: OpacityRange[] | null }): GraphScrubber | null {
+        const controls = controlsFor(this.app, renderer);
+        if (!controls) {
+            return null;
+        }
+
+        return new GraphScrubber(controls, {
+            enabled: () => this.settings.filterEnabled,
+            ranges: () => this.settings.filterRanges,
+            histogram: () => this.measureVault().spread,
+            onToggle: (enabled) => {
+                this.settings.filterEnabled = enabled;
+                void this.saveSettings();
+            },
+            onPreview: (ranges) => {
+                preview.ranges = ranges;
+
+                if (!ranges) {
+                    // Whatever was hidden has to be drawn again, and only a
+                    // frame can do that.
+                    repaint(renderer);
+                }
+
+                repaint(renderer);
+            },
+            onChange: (ranges) => {
+                this.settings.filterRanges = ranges;
+                void this.saveSettings();
+            }
+        });
     }
 
     /**
@@ -248,11 +300,19 @@ export default class PulsarGraphPlugin extends Plugin {
                 keep: this.app.workspace.getActiveFile()?.path
             })
         );
+        const preview: { ranges: OpacityRange[] | null } = { ranges: null };
+
         const frames = hookRendererFrame(renderer, () => {
             labels.sync();
             links.sync();
             holdSpotlightTint(renderer, spotlight);
+
+            if (preview.ranges) {
+                previewFilter(renderer, (path) => this.survives(path, preview.ranges ?? []));
+            }
         });
+
+        const scrubber = this.buildScrubber(renderer, preview);
 
         const releaseHover = hookNodeHover(renderer, {
             onHover: (path) => {
@@ -271,6 +331,8 @@ export default class PulsarGraphPlugin extends Plugin {
             pooled,
             frames,
             data,
+            scrubber,
+            preview,
             spotlight,
             release: () => {
                 data?.release();
@@ -278,6 +340,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 frames?.release();
                 labels.destroy();
                 links.destroy();
+                scrubber?.destroy();
                 clearSpotlight(renderer, spotlight);
                 repaint(renderer);
             }

@@ -24,6 +24,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `stats.ts` | What the settings are doing to this vault |
 | `filter.ts` | Which notes survive, applied before the renderer sees them |
 | `range-bar.ts` | The unit line with a handle at each end |
+| `graph-controls.ts` | The Age section inside the graph's own panel |
 
 Works on the global and local graph views. Local and offline only.
 

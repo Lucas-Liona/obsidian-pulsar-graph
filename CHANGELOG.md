@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.18.0] - 2026-10-05
+
+### Added
+
+- An **Age** section in the graph's own control panel, beside Filters, Groups,
+  Display and Forces, holding the filter's switch and a scrubber for its range.
+  Filtering by time is a view rather than a preference, so it belongs where you
+  are already looking instead of behind a settings dialog. It is the same setting
+  in both places.
+- Dragging a handle previews instead of rebuilding. A real filter re-packs the
+  graph, which is right once a choice is made and wrong while it is being made:
+  every frame of a drag would re-pack and the thing being aimed at would crawl
+  away from the cursor. During a drag notes are only hidden, so every position
+  holds still; the rebuild happens on release. Measured on a real vault, a
+  preview leaves all 1264 nodes in place and the commit takes it to 312.
+
 ## [1.17.0] - 2026-10-05
 
 ### Added
