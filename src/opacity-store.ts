@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 import { shapeRecency } from './fade';
-import { PulsarGraphSettings } from './settings';
+import { AgeScale, PulsarGraphSettings } from './settings';
 
 /** One point on the fade curve, at a real age from this vault. */
 export interface Sample {
@@ -210,6 +210,87 @@ export class OpacityStore {
         return spreadOut;
     }
 
+    /**
+     * How far either side of one note each of a set of notes was worked on.
+     *
+     * The same curve, with "how recent" replaced by "how close to this". A
+     * local graph is a question about one note, and the useful question in it is
+     * rarely how recent its neighbours are in absolute terms — it is which of
+     * them you were in at the same time as the one in the middle. Both
+     * directions count: a note written the day before the centre is as much
+     * part of that sitting as one written the day after.
+     *
+     * Every age scale still means something here, because each of them is a way
+     * of turning a gap in time into a gap in brightness and a distance is a
+     * gap in time. A half-life needs no span at all, which is the one case this
+     * can answer for a panel of two notes.
+     *
+     * Returns null when there is no centre to measure from or too little around
+     * it to be worth measuring, and the caller keeps the absolute numbers.
+     */
+    aroundAnchor(paths: Iterable<string>, anchorPath: string, floorHours: number): Map<string, number> | null {
+        const anchor = this.mtimes.get(anchorPath);
+
+        if (anchor === undefined) {
+            return null;
+        }
+
+        const present: [string, number][] = [];
+
+        for (const path of paths) {
+            const mtime = this.mtimes.get(path);
+
+            if (mtime !== undefined) {
+                present.push([path, Math.abs(mtime - anchor)]);
+            }
+        }
+
+        if (present.length < SPREAD_FLOOR_NOTES) {
+            return null;
+        }
+
+        const { ageScale, halfLifeDays } = this.getSettings();
+        const span = anchorSpan(present.map(([, gap]) => gap), floorHours);
+
+        // Ranked by distance rather than by date, so the notes nearest in time
+        // to the centre are spread evenly across the range however lopsided
+        // the gaps happen to be. Reversed, because a short distance is what
+        // earns brightness here.
+        const ranking = ageScale === 'rank' ? present.map(([, gap]) => gap).sort((a, b) => a - b) : [];
+
+        const around = new Map<string, number>();
+
+        for (const [path, gap] of present) {
+            around.set(path, this.shapeInto(recencyAround(gap, span, ranking, ageScale, halfLifeDays, (g, r) => this.rankOf(g, r)), path));
+        }
+
+        return around;
+    }
+
+    /**
+     * How far either side of the centre an anchored panel reaches, for saying
+     * so in the caption. Null whenever `aroundAnchor` would also decline.
+     */
+    anchorSpan(paths: Iterable<string>, anchorPath: string, floorHours: number): number | null {
+        const anchor = this.mtimes.get(anchorPath);
+
+        if (anchor === undefined) {
+            return null;
+        }
+
+        const gaps: number[] = [];
+
+        for (const path of paths) {
+            const mtime = this.mtimes.get(path);
+
+            if (mtime !== undefined) {
+                gaps.push(Math.abs(mtime - anchor));
+            }
+        }
+
+        return gaps.length < SPREAD_FLOOR_NOTES ? null : anchorSpan(gaps, floorHours);
+    }
+
     /** The most recently modified note, which the spotlight setting picks out. */
     newestPath(): string | undefined {
         return this.newestNotePath;
@@ -367,9 +448,22 @@ export class OpacityStore {
      * preview shows the age curve alone — which is what it is for.
      */
     private calculateOpacity(mtime: number, path?: string, spread?: Spread): number {
+        return this.shapeInto(this.recencyOf(mtime, spread), path);
+    }
+
+    /**
+     * A 0-1 recency through the curve and onto the opacity range.
+     *
+     * Kept apart from where the recency came from, because not every one of
+     * them is a position between an oldest and a newest note. An anchored
+     * local graph measures a distance either side of one note instead, and
+     * every setting from here on — the intensity blend, the curve, the two
+     * opacity ends — applies to it exactly the same way.
+     */
+    private shapeInto(recency: number, path?: string): number {
         const { fadeType, minOpacity, maxOpacity, steepness, numSteps, intensityBlend } = this.getSettings();
 
-        let shaped = this.recencyOf(mtime, spread);
+        let shaped = recency;
 
         // Added to recency rather than multiplied by it. A product would make a
         // note with nothing on record vanish however recently it was edited,
@@ -622,4 +716,48 @@ function clamp(value: number, lowest: number, highest: number): number {
  */
 function days(milliseconds: number): number {
     return Math.max(0, milliseconds) / MS_PER_DAY;
+}
+
+/**
+ * The widest gap from the centre, held open to the same floor the vault spread
+ * uses. Twelve notes all written within an hour of the centre genuinely were
+ * all written around it, and drawing the one fifty minutes out as unrelated
+ * would be a lie the arithmetic told.
+ */
+function anchorSpan(gaps: number[], floorHours: number): number {
+    return Math.max(Math.max(...gaps), Math.max(0, floorHours) * MS_PER_HOUR);
+}
+
+/**
+ * A distance from the centre as a 0-1 figure, 1 for the centre itself.
+ *
+ * Each branch is the same scale the vault uses, with a distance in place of a
+ * position in a range. The subtraction from 1 is the whole difference: on this
+ * measure it is closeness that earns brightness, not lateness.
+ */
+function recencyAround(
+    gap: number,
+    span: number,
+    ranking: number[],
+    ageScale: AgeScale,
+    halfLifeDays: number,
+    rank: (gap: number, ranking: number[]) => number
+): number {
+    if (ageScale === 'halflife') {
+        return Math.pow(2, -days(gap) / halfLifeDays);
+    }
+
+    if (ageScale === 'rank') {
+        return clamp(1 - rank(gap, ranking), 0, 1);
+    }
+
+    if (span <= 0) {
+        return 1;
+    }
+
+    if (ageScale === 'log') {
+        return clamp(1 - Math.log1p(days(gap)) / Math.log1p(days(span)), 0, 1);
+    }
+
+    return clamp(1 - gap / span, 0, 1);
 }

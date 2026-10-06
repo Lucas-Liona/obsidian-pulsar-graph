@@ -242,6 +242,13 @@ export function controlsFor(app: App, renderer: GraphRenderer): HTMLElement | nu
 export interface OpacityOptions {
     /** Spreads brightness across the notes the graph is drawing, not the vault. */
     adaptive: boolean;
+    /**
+     * The note to measure time from instead of from now, which only a graph
+     * with a centre has. Replaces the spread when set: both are a
+     * re-measurement, and running one after the other would measure a number
+     * that had already been measured.
+     */
+    anchorPath: string | null;
     /** How far the range is held open when what is shown covers almost no time. */
     spreadFloorHours: number;
     /**
@@ -533,7 +540,11 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     // Re-spread before anything pools. The glow and the folder warmth both
     // average over this number, so handing them the absolute one and then
     // re-spreading afterwards would spread a number that was already mixed.
-    const spread = options.adaptive ? store.spreadAcross(own.keys(), options.spreadFloorHours) : null;
+    const anchored = options.anchorPath !== null
+        ? store.aroundAnchor(own.keys(), options.anchorPath, options.spreadFloorHours)
+        : null;
+
+    const spread = anchored ?? (options.adaptive ? store.spreadAcross(own.keys(), options.spreadFloorHours) : null);
 
     if (spread) {
         for (const [path, opacity] of spread) {

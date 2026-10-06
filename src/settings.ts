@@ -91,6 +91,8 @@ export interface PulsarGraphSettings {
     spreadFloorHours: number;
     /** What a local graph's own brightness and spotlight are measured against. */
     localScope: LocalScope;
+    /** Measures a local graph's time from the note in the middle, not from now. */
+    localAnchor: boolean;
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -213,6 +215,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     // The vault, because that is what every graph was measured against before
     // this setting existed and nothing should change under anyone on upgrade.
     localScope: 'vault',
+    localAnchor: false,
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -415,6 +418,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         enabled: parseBoolean(data.enabled, DEFAULT_SETTINGS.enabled),
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         localScope: parseLocalScope(data.localScope),
+        localAnchor: parseBoolean(data.localAnchor, DEFAULT_SETTINGS.localAnchor),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
         halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
@@ -702,11 +706,11 @@ export class PulsarSettingTab extends PluginSettingTab {
                     });
                 });
 
-            if (settings.normalizeBy === 'shown' || settings.localScope === 'graph') {
+            if (settings.normalizeBy === 'shown' || settings.localScope === 'graph' || settings.localAnchor) {
                 new NumberControl(
                     new Setting(containerEl)
                         .setName('Never spread across less than')
-                        .setDesc('Hours. Narrow the notes being measured enough and what is left covers almost no time at all, and a nine-minute-old note would be drawn as ancient. Below this the range simply does not use its full width, which is the honest answer. Read by anything that re-spreads: the graph-is-showing scale above, and a local graph measured against its own panel'),
+                        .setDesc('Hours. Narrow the notes being measured enough and what is left covers almost no time at all, and a nine-minute-old note would be drawn as ancient. Below this the range simply does not use its full width, which is the honest answer. Read by anything that re-spreads: the graph-is-showing scale above, a local graph measured against its own panel, and how far either side of a note an anchored panel reaches'),
                     SPREAD_FLOOR_RANGE,
                     settings.spreadFloorHours,
                     (value) => {
@@ -1223,6 +1227,17 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.display();
                 });
             });
+
+        new Setting(containerEl)
+            .setName('Measure from the note in the middle')
+            .setDesc("Time is read as distance either side of the note the panel is about, rather than as age. A note you were in the day before it is as bright as one you were in the day after, and six months either way is dark. It answers a different question — what else was being worked on at the time — and that is the question you actually have when you open a local graph on something written months ago. While this is on it replaces the choice above for brightness; which note the spotlight picks is still that setting's business")
+            .addToggle((toggle) => toggle
+                .setValue(settings.localAnchor)
+                .onChange(async (value) => {
+                    settings.localAnchor = value;
+                    await this.plugin.saveSettings();
+                })
+            );
 
         section('Tabs', 'The tab bar in the main editor area, read as attention rather than as a pile of things you opened once');
 
