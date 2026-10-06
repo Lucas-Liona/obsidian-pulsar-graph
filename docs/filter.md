@@ -31,6 +31,10 @@ a position on the line means is to go and look. Nothing is inverted or estimated
 
 > 110 of 110 notes, 1 hour ago back to 4 months ago
 
+<p align="center">
+  <img src="assets/graph-caption.png" width="560" alt="A note graph with a line across the top reading: 110 of 110 notes, 2 hours ago back to 11 months ago.">
+</p>
+
 It is worth leaving on whether or not you are filtering. While you are, it is
 necessary — a graph with half its notes taken out looks exactly like a graph.
 While you are not, it still answers the question a graph raises on its own, which

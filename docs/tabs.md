@@ -48,6 +48,10 @@ starts level with the rest.
 ignored past a threshold you set, a quiet line appears down its edge, and a
 **Close stale tabs** command closes the marked ones.
 
+<p align="center">
+  <img src="assets/stale-tabs.gif" width="760" alt="A row of editor tabs. Two are dimmed and carry a sleep symbol. A cursor moves to one of them, a green ring opens where it clicks, and the tab closes.">
+</p>
+
 **How they are marked** is a line down the edge, or a 💤 where the brightness dot
 goes. The line is quiet to the point of being easy to miss, which is either the
 point or the problem depending on the day. The 💤 replaces the dot rather than

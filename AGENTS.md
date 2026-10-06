@@ -183,6 +183,21 @@ which is worth reusing rather than reinventing:
   shot this way before anyone noticed it was animating nothing.
 - Anything in the editor has to be `dev:screenshot` and cropped, since only the
   graph can export itself.
+- **Pan and scale are CSS pixels; the canvas is device pixels.** PIXI runs the
+  stage at CSS scale and the view at `devicePixelRatio`, so framing computed
+  against `renderer.px.view.width` comes out wrong by the ratio and the graph
+  sits off-centre. Use `renderer.width` and `renderer.height`.
+- **Set the pan after the zoom has finished easing.** `zoomTo` moves the pan
+  while it runs, so centring before it settles is immediately undone.
+- Chrome can be hidden for a shot by injecting a stylesheet over
+  `.workspace-ribbon`, `.status-bar`, `.view-header`,
+  `.workspace-tab-header-container`, `.graph-controls` and
+  `.titlebar-button-container`. Call `renderer.onResize()` afterwards, and take
+  the whole lot out again when the shoot is over.
+- A fake cursor and a click halo are two injected divs positioned per frame.
+  Position them against a **text range**, not an element box: a tab's title fills
+  the tab as a flex item, so its right edge is over a hundred pixels past the end
+  of the text, and the cursor lands on the wrong tab.
 
 Capture notes, learned the hard way:
 

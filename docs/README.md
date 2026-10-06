@@ -27,7 +27,9 @@ Everything these pages and the README use lives in [`assets/`](assets).
 | `graph-demo.png` · `graph-dark.png` | A graph at rest |
 | `fade-sweep.gif` | The fade swept from hardest to softest |
 | `age-filter.gif` | The age filter opened from newest-only to everything |
-| `fresh-writing.gif` | Text typed, cooling, and reset |
+| `fresh-writing.gif` · `writing-light.gif` | Text typed, cooling, and reset — on a dark theme and a light one |
+| `stale-tabs.gif` | A sleeping tab, clicked and closed |
+| `banner-graph.png` · `graph-caption.png` | The graph with the line that says what is on it |
 | `hover.png` | A node's age on hover |
 | `icon.svg` · `icon-mark.svg` | The mark: one bright point, and the same point further into the past |
 
