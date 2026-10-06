@@ -63,8 +63,15 @@ export class Attention {
     }
 }
 
+/** The class the dot carries, so it can be found again and taken away. */
+const DOT_CLASS = 'pulsar-graph-tab-dot';
+
 export interface TabFadeOptions {
     mode: TabFade;
+    /** Shows a filled circle beside each title at that note's own brightness. */
+    dot: boolean;
+    /** What the newest note's dot is painted, when the spotlight is on. */
+    spotlight: { path: string | undefined; color: string } | null;
     /** Minutes of being ignored before a tab is as faint as it will get. */
     after: number;
     /** How faint that is. A tab you cannot read is a tab you cannot get back to. */
@@ -83,13 +90,22 @@ export interface TabFadeOptions {
  */
 export class TabFading {
     private readonly touched = new Set<HTMLElement>();
+    private readonly dots = new Set<HTMLElement>();
 
     constructor(private readonly app: App, private readonly attention: Attention) {}
 
     apply(options: TabFadeOptions): void {
-        if (options.mode === 'off') {
+        if (options.mode === 'off' && !options.dot) {
             this.clear();
             return;
+        }
+
+        if (options.mode === 'off') {
+            for (const part of this.touched) {
+                part.style.removeProperty('opacity');
+            }
+
+            this.touched.clear();
         }
 
         this.app.workspace.iterateAllLeaves((leaf) => {
@@ -100,7 +116,11 @@ export class TabFading {
                 return;
             }
 
-            this.paint(header, this.strengthFor(path, options));
+            if (options.mode !== 'off') {
+                this.paint(header, this.strengthFor(path, options));
+            }
+
+            this.markDot(header, path, options);
         });
     }
 
@@ -111,6 +131,50 @@ export class TabFading {
         }
 
         this.touched.clear();
+        this.clearDots();
+    }
+
+    private clearDots(): void {
+        for (const dot of this.dots) {
+            dot.remove();
+        }
+
+        this.dots.clear();
+    }
+
+    /**
+     * A filled circle beside the title, at the brightness that note has in the
+     * graph. It is the cheapest way to put the idea in front of someone who
+     * never opens the graph, and it reads at a glance where a date does not.
+     */
+    private markDot(header: HTMLElement, path: string, options: TabFadeOptions): void {
+        const existing = header.querySelector<HTMLElement>(`.${DOT_CLASS}`);
+
+        if (!options.dot) {
+            existing?.remove();
+            return;
+        }
+
+        const strength = options.graphStrength(path);
+        if (strength === undefined) {
+            existing?.remove();
+            return;
+        }
+
+        const inner = header.querySelector('.workspace-tab-header-inner-title');
+        if (!inner?.parentElement) {
+            return;
+        }
+
+        const dot = existing ?? inner.parentElement.createDiv({ cls: DOT_CLASS });
+        inner.insertAdjacentElement('afterend', dot);
+
+        dot.style.opacity = clamp(strength, 0, 1).toFixed(3);
+        dot.style.backgroundColor = options.spotlight && options.spotlight.path === path
+            ? options.spotlight.color
+            : 'currentColor';
+
+        this.dots.add(dot);
     }
 
     private strengthFor(path: string, options: TabFadeOptions): number {

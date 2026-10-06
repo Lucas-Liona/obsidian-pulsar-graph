@@ -134,8 +134,12 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.tabs.apply({
             mode: this.settings.tabFade,
+            dot: this.settings.tabDot,
             after: this.settings.tabFadeAfter,
             floor: this.settings.tabFadeFloor,
+            spotlight: this.settings.spotlightNewest
+                ? { path: this.store.newestPath(), color: this.settings.spotlightColor }
+                : null,
             graphStrength: (path) => this.store.opacityFor(path)
         });
     }

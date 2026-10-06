@@ -199,3 +199,13 @@
 	width: 12px;
 	margin-left: -6px;
 }
+
+.pulsar-graph-tab-dot {
+	flex: 0 0 auto;
+	width: 6px;
+	height: 6px;
+	margin-left: var(--size-2-2);
+	border-radius: 50%;
+	background-color: currentColor;
+	pointer-events: none;
+}

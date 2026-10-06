@@ -57,6 +57,7 @@ export interface PulsarGraphSettings {
     tabFade: TabFade;
     tabFadeAfter: number;
     tabFadeFloor: number;
+    tabDot: boolean;
 }
 
 const TAB_MODES = ['off', 'attention', 'modified'] as const;
@@ -120,7 +121,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     filterRanges: [{ ...WHOLE_RANGE }],
     tabFade: 'off',
     tabFadeAfter: 60,
-    tabFadeFloor: 0.35
+    tabFadeFloor: 0.35,
+    tabDot: false
 };
 
 /** A minute is twitchy; a day never arrives while you are looking. */
@@ -271,7 +273,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         filterRanges: parseRanges(data.filterRanges),
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
         tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
-        tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest)
+        tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
+        tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot)
     };
 }
 
@@ -757,6 +760,17 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         section('Tabs');
+
+        new Setting(containerEl)
+            .setName('Show a dot beside each tab')
+            .setDesc("A filled circle at that note's brightness in the graph, so its age reads at a glance without opening the graph at all. The newest note takes the spotlight colour when the spotlight is on")
+            .addToggle((toggle) => toggle
+                .setValue(settings.tabDot)
+                .onChange(async (value) => {
+                    settings.tabDot = value;
+                    await this.plugin.saveSettings();
+                })
+            );
 
         new Setting(containerEl)
             .setName('Fade tabs')
