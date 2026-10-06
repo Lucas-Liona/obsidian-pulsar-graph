@@ -270,6 +270,8 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.tabs.apply({
             mode: this.settings.tabFade,
+            scope: this.settings.tabFadeScope,
+            curve: this.settings.tabFadeCurve,
             dot: this.settings.tabDot,
             after: this.settings.tabFadeAfter,
             floor: this.settings.tabFadeFloor,

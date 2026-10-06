@@ -10,6 +10,17 @@ const MS_PER_MINUTE = 60 * 1000;
 
 export type TabFade = 'off' | 'attention' | 'modified';
 
+/** Whether the dimming takes the icon and title, or the whole tab with them. */
+export type TabFadeScope = 'title' | 'tab';
+
+/**
+ * Whether a tab slides down to its faintest across the whole span, or holds
+ * full strength and drops at the end of it. Both are useful and they answer
+ * different questions: a gradient reads as "how long ago", a step reads as
+ * "past the line or not".
+ */
+export type TabFadeCurve = 'over' | 'at';
+
 /**
  * How long since you last looked at each note.
  *
@@ -72,14 +83,28 @@ const DOT_CLASS = 'pulsar-graph-tab-dot';
 /** The class a tab wears once it has gone quiet long enough to be let go. */
 const STALE_CLASS = 'pulsar-graph-tab-stale';
 
+/** The class a dimmed tab wears, so the stylesheet decides what dims. */
+const FADED_CLASS = 'pulsar-graph-tab-faded';
+
+/** Worn alongside it when the whole tab dims rather than its icon and title. */
+const WHOLE_CLASS = 'pulsar-graph-tab-whole';
+
 /**
- * What a dimmed tab dims. The close button is left out: the whole point of
- * noticing a stale tab is being able to act on it.
+ * How faint, as a custom property rather than as an opacity.
+ *
+ * Setting the strength itself inline would win against every rule in the
+ * stylesheet, and two things depend on a rule being able to beat it: the close
+ * button has to stay usable when the whole tab dims, and hovering a faded tab
+ * has to bring it back. A variable the stylesheet reads gives both for free.
  */
-const FADED = ['.workspace-tab-header-inner-icon', '.workspace-tab-header-inner-title'];
+const FADE_VAR = '--pulsar-tab-fade';
 
 export interface TabFadeOptions {
     mode: TabFade;
+    /** Whether the icon and title dim, or the whole tab does. */
+    scope: TabFadeScope;
+    /** Whether it slides down across `after`, or drops at the end of it. */
+    curve: TabFadeCurve;
     /** Shows a filled circle beside each title at that note's own brightness. */
     dot: boolean;
     /** What the newest note's dot is painted, when the spotlight is on. */
@@ -98,12 +123,13 @@ export interface TabFadeOptions {
  * Dims a tab the longer it goes untouched, so the tab bar reads as attention
  * rather than as a pile of things opened once.
  *
- * Only the icon and the title are dimmed. The close button keeps its full
- * strength, because the whole point of noticing a stale tab is being able to
- * act on it.
+ * Either the icon and title dim, or the whole tab does, which is a question of
+ * taste and so a setting. Either way hovering a faded tab brings it back to
+ * full strength: a tab too faint to read is one you cannot get back to, and a
+ * whole tab dimmed to a tenth takes its close button down with it.
  */
 export class TabFading {
-    private readonly touched = new Set<HTMLElement>();
+    private readonly faded = new Set<HTMLElement>();
     private readonly dots = new Set<HTMLElement>();
     private readonly staled = new Set<HTMLElement>();
 
@@ -116,11 +142,9 @@ export class TabFading {
         }
 
         if (options.mode === 'off') {
-            for (const part of this.touched) {
-                part.style.removeProperty('opacity');
+            for (const header of [...this.faded]) {
+                this.unpaint(header);
             }
-
-            this.touched.clear();
         }
 
         this.app.workspace.iterateAllLeaves((leaf) => {
@@ -143,7 +167,7 @@ export class TabFading {
             }
 
             if (options.mode !== 'off') {
-                this.paint(header, this.strengthFor(path, options));
+                this.paint(header, this.strengthFor(path, options), options.scope);
             }
 
             this.markDot(header, path, options);
@@ -161,14 +185,7 @@ export class TabFading {
      * takes it off.
      */
     private reset(header: HTMLElement): void {
-        for (const selector of FADED) {
-            const part = header.querySelector<HTMLElement>(selector);
-
-            if (part) {
-                part.style.removeProperty('opacity');
-                this.touched.delete(part);
-            }
-        }
+        this.unpaint(header);
 
         const dot = header.querySelector<HTMLElement>(`.${DOT_CLASS}`);
 
@@ -184,11 +201,10 @@ export class TabFading {
 
     /** Hands every tab its appearance back. */
     clear(): void {
-        for (const part of this.touched) {
-            part.style.removeProperty('opacity');
+        for (const header of [...this.faded]) {
+            this.unpaint(header);
         }
 
-        this.touched.clear();
         this.clearDots();
 
         for (const header of this.staled) {
@@ -297,19 +313,31 @@ export class TabFading {
             return 1;
         }
 
+        if (options.curve === 'at') {
+            return minutes >= options.after ? options.floor : 1;
+        }
+
         const spent = options.after <= 0 ? 1 : Math.min(1, minutes / options.after);
         return clamp(1 - spent * (1 - options.floor), options.floor, 1);
     }
 
-    private paint(header: HTMLElement, strength: number): void {
-        for (const selector of FADED) {
-            const part = header.querySelector<HTMLElement>(selector);
-
-            if (part) {
-                part.style.opacity = strength >= 1 ? '' : strength.toFixed(3);
-                this.touched.add(part);
-            }
+    private paint(header: HTMLElement, strength: number, scope: TabFadeScope): void {
+        if (strength >= 1) {
+            this.unpaint(header);
+            return;
         }
+
+        header.addClass(FADED_CLASS);
+        header.toggleClass(WHOLE_CLASS, scope === 'tab');
+        header.style.setProperty(FADE_VAR, strength.toFixed(3));
+        this.faded.add(header);
+    }
+
+    private unpaint(header: HTMLElement): void {
+        header.removeClass(FADED_CLASS);
+        header.removeClass(WHOLE_CLASS);
+        header.style.removeProperty(FADE_VAR);
+        this.faded.delete(header);
     }
 }
 
