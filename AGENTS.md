@@ -21,6 +21,8 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `links.ts` | Age and session trails carried into the links |
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
+| `pins.ts` | The notes held bright whatever their dates say |
+| `bead-view.ts` | A note's sittings, drawn down the sidebar |
 | `tabs.ts` | Attention time, and fading the tab bar by it |
 | `stats.ts` | What the settings are doing to this vault |
 | `filter.ts` | Which notes survive, applied before the renderer sees them |
@@ -90,6 +92,32 @@ the renderer's own target rather than reading back its output.
 uses `colors.fillHighlight`, and a node of type `focused` uses
 `colors.fillFocused` when that has any alpha. Borrowing either as a feature
 colour makes that feature indistinguishable from a hover.
+
+**A node right-click goes through the public API.** The renderer has
+`onNodeClick`, `onNodeRightClick`, `onNodeHover` and `onNodeUnhover`, all with
+the same `(event, id, type)` shape — but the right-click one does not need
+touching, because Obsidian's own handler fires the documented `file-menu`
+workspace event with a source of `graph-context-menu`. One listener puts an item
+on a graph node and in the file explorer both. Wrapping `onNodeRightClick`
+instead gets you nothing to add to: it builds and shows its menu in one
+synchronous call.
+
+**Easing a tint upward stalls; downward converges.** A circle's tint moves a
+tenth of the gap per frame and the step truncates, so a channel climbing the last
+few units moves by `9 * 0.1 = 0` and stops there permanently — a node left
+drawn at `#b3aab3` against a colour of `#b3b3b3`, frozen across 124 frames. The
+flip side is that an assignment which lands is permanent: at zero gap there is
+nothing left to step. Anything that paints a node has to hand the colour back by
+assigning it on a **frame**, and keep doing so until the renderer agrees.
+Counting anything other than frames does not work — several passes run inside one
+settings change, all of them before the rebuild those changes trigger, so the
+tint looks settled while the circle that will actually be drawn does not exist
+yet.
+
+**Mid-rebuild a node has no colour.** Inside the `setData` wrapper,
+`node.color` reads back `undefined` for every node at once, so code that
+preserves a colour by reading it there preserves nothing. Keep what the node had
+before as the fallback.
 
 **Alpha above 1 is clamped when drawn.** A high maximum opacity flattens the top
 of the curve rather than extending it.

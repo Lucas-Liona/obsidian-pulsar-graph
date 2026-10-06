@@ -2,6 +2,7 @@ import { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
+import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
@@ -84,6 +85,7 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly updateSoon = debounce(() => {
         this.syncRenderers();
         this.paintTabs();
+        this.refreshBeadViews();
     }, UPDATE_DELAY_MS, true);
 
     async onload(): Promise<void> {
@@ -98,6 +100,22 @@ export default class PulsarGraphPlugin extends Plugin {
         // Commands stay registered either way. They are inert data in the
         // palette until something invokes one, and a command that vanished
         // would take any hotkey assigned to it with it.
+        // Registered in onload rather than with everything else that runs,
+        // because Obsidian restores an open view as the layout loads and a type
+        // it does not know about leaves the user staring at an error. The view
+        // itself says so when there is no history being kept.
+        this.registerView(BEAD_VIEW_TYPE, (leaf) => new BeadView(leaf, {
+            beadsFor: (path) => this.history.beadsFor(path),
+            recording: () => this.settings.enabled && this.settings.history,
+            opacityAt: (at) => this.store.opacityAt(at)
+        }));
+
+        this.addCommand({
+            id: 'open-note-history',
+            name: 'Show this note\'s history',
+            callback: () => void this.openBeadView()
+        });
+
         this.addCommand({
             id: 'cool-fresh-writing',
             name: 'Cool fresh writing',
@@ -249,6 +267,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
             this.paintTabs();
             this.updateStatusBar();
+            this.refreshBeadViews();
 
             // The open note is exempt from the filter, so which note that is
             // changes what the graph should contain.
@@ -276,6 +295,7 @@ export default class PulsarGraphPlugin extends Plugin {
             this.syncRenderers();
             this.updateStatusBar();
             this.paintTabs();
+            this.refreshBeadViews();
         }));
 
         // Best effort by Obsidian's own admission, so it is a backstop for the
@@ -298,6 +318,7 @@ export default class PulsarGraphPlugin extends Plugin {
             this.syncStatusBar();
             this.attention.seed((path) => this.history.seenAt(path));
             this.paintTabs();
+            this.refreshBeadViews();
         });
     }
 
@@ -322,6 +343,10 @@ export default class PulsarGraphPlugin extends Plugin {
         this.clearInkProperties();
         this.store.clear();
         void this.history.flush();
+
+        // Last, so an open history view says it is switched off rather than
+        // keeping the beads it was showing a moment ago on screen.
+        this.refreshBeadViews();
     }
 
     onunload(): void {
@@ -479,6 +504,52 @@ export default class PulsarGraphPlugin extends Plugin {
         this.pins.load(this.settings.pins, this.app);
     }
 
+    /**
+     * Opens the history in the right sidebar and reveals it, reusing the leaf
+     * if one is already open rather than stacking a second copy.
+     */
+    private async openBeadView(): Promise<void> {
+        const existing = this.app.workspace.getLeavesOfType(BEAD_VIEW_TYPE);
+        const leaf = existing[0] ?? this.app.workspace.getRightLeaf(false);
+
+        if (!leaf) {
+            return;
+        }
+
+        if (existing.length === 0) {
+            await leaf.setViewState({ type: BEAD_VIEW_TYPE, active: true });
+        }
+
+        await this.app.workspace.revealLeaf(leaf);
+        this.refreshBeadViews();
+    }
+
+    /**
+     * Redraws every open history view against the note being looked at.
+     *
+     * The active file rather than each view's own leaf, because the view is a
+     * readout of what you are doing: a sidebar panel has no file of its own and
+     * the question it answers is always about the note in front of you.
+     */
+    private refreshBeadViews(): void {
+        const views = this.app.workspace.getLeavesOfType(BEAD_VIEW_TYPE);
+
+        if (views.length === 0) {
+            return;
+        }
+
+        const file = this.app.workspace.getActiveFile() ?? fileOf(this.app.workspace.getMostRecentLeaf());
+        const path = file && file.extension === 'md' ? file.path : null;
+
+        for (const leaf of views) {
+            const view = leaf.view;
+
+            if (view instanceof BeadView) {
+                view.render(path, path === null ? null : (file?.basename ?? path));
+            }
+        }
+    }
+
     /** Sorted pinned paths, for the settings tab. */
     pinnedNotes(): string[] {
         return this.pins.list();
@@ -567,6 +638,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.syncRenderers();
         this.syncStatusBar();
         this.paintTabs();
+        this.refreshBeadViews();
 
         for (const graph of this.attached.values()) {
             graph.scrubber?.refresh();

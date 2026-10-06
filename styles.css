@@ -460,3 +460,87 @@
     flex: none;
     font-size: var(--font-ui-smaller);
 }
+
+/* A note's edit history, drawn as beads down a rail. The rail is a fixed
+   height on purpose: a bead's position is where that sitting falls in the
+   vault's history, so a rail that resized with the sidebar would move every
+   bead whenever the pane did. */
+.pulsar-graph-history {
+    padding: var(--size-4-3);
+}
+
+.pulsar-graph-history-title {
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--size-2-1);
+    overflow-wrap: anywhere;
+}
+
+.pulsar-graph-history-summary {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    margin-bottom: var(--size-4-4);
+}
+
+.pulsar-graph-history-rail {
+    position: relative;
+    margin-left: var(--size-4-5);
+}
+
+/* The rail itself, drawn as a border rather than an element, so the beads are
+   the only children and a bead's `top` is measured against one box. */
+.pulsar-graph-history-rail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-left: 1px solid var(--background-modifier-border);
+}
+
+.pulsar-graph-history-bead {
+    position: absolute;
+    left: 0;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background-color: var(--text-normal);
+}
+
+/* Brightness carries the age, as it does everywhere else here, so a bead needs
+   a visible edge of its own to stay findable once it is nearly transparent. */
+.pulsar-graph-history-bead::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 1px solid var(--background-modifier-border-hover);
+}
+
+.pulsar-graph-history-tick {
+    position: absolute;
+    left: var(--size-4-3);
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    white-space: nowrap;
+}
+
+.pulsar-graph-history-tick.is-top {
+    top: 0;
+    transform: translateY(-50%);
+}
+
+.pulsar-graph-history-tick.is-bottom {
+    bottom: 0;
+    transform: translateY(50%);
+}
+
+.pulsar-graph-history-empty {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: var(--line-height-tight);
+}
+
+.pulsar-graph-history-empty-title {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--size-2-2);
+}
