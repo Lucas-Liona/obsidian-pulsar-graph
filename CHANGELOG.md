@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0] - 2026-10-05
+
+### Added
+
+- **What this is doing to your vault**, a panel at the foot of the settings. It
+  shows how notes are spread across the brightness range as a small chart, how
+  many distinct brightnesses exist, how many sit at full, how the folders divide
+  up, and — when a graph is open — its nodes and links, its islands of linked
+  notes and the largest of them, and how many links join notes written in the
+  same sitting.
+
+  Islands and trails are properties of the drawn graph rather than of the vault,
+  so they only appear while one is open.
+
 ## [1.13.0] - 2026-10-05
 
 ### Added

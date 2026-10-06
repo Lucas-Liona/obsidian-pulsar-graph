@@ -42,3 +42,58 @@
 	width: 5em;
 	text-align: right;
 }
+
+.pulsar-graph-stats {
+	margin-top: var(--size-4-2);
+	padding: var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.pulsar-graph-bars {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--size-4-1);
+	height: 52px;
+	margin-bottom: var(--size-4-1);
+}
+
+.pulsar-graph-bar {
+	display: flex;
+	flex: 1;
+	align-items: flex-end;
+	height: 100%;
+}
+
+.pulsar-graph-bar-fill {
+	width: 100%;
+	min-height: 1px;
+	border-radius: var(--radius-s) var(--radius-s) 0 0;
+	background-color: var(--text-accent);
+}
+
+.pulsar-graph-bars-caption {
+	margin-bottom: var(--size-4-2);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+}
+
+.pulsar-graph-stat {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-2-1) 0;
+	font-size: var(--font-ui-smaller);
+}
+
+.pulsar-graph-stat-label {
+	color: var(--text-muted);
+}
+
+.pulsar-graph-stat-value {
+	color: var(--text-normal);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}

@@ -117,6 +117,16 @@ Every slider has a number box beside it, and a preview at the top of the setting
 shows dots at real ages from your own vault at the opacity each would get, so you
 can see what a change does before you close the dialog.
 
+At the bottom, **What this is doing to your vault** shows the numbers behind all
+of it: how your notes are spread across the brightness range, how many distinct
+brightnesses exist, how your folders divide up, how many islands of linked notes
+the open graph has and how big the largest is, and how many links join notes
+written in the same sitting.
+
+Every design decision in this plugin was settled by measuring rather than
+arguing, and the measurements kept turning out to say more about the vault than
+about the plugin. There's no reason to keep that to whoever's holding a debugger.
+
 If you'd rather not assemble a combination yourself, there are presets at the
 bottom, next to **Reset**:
 

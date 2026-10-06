@@ -5,6 +5,7 @@ import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, repaint, SpotlightState, Unhook } from './graph';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
+import { describeVault, VaultStats } from './stats';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
@@ -123,6 +124,25 @@ export default class PulsarGraphPlugin extends Plugin {
         const mtime = file && isNote(file) ? this.store.mtimeFor(file.path) ?? file.stat.mtime : undefined;
 
         element.setText(mtime === undefined ? '' : `Edited ${formatAge(mtime, Date.now())}`);
+    }
+
+    /**
+     * What the current settings are doing to this vault, read from the graph
+     * that is open if there is one.
+     */
+    measureVault(): VaultStats {
+        this.store.refresh();
+
+        const [first] = this.attached.entries();
+        const renderer = first?.[0] ?? null;
+        const graph = first?.[1];
+
+        return describeVault(
+            this.store,
+            this.settings,
+            renderer,
+            (path) => graph?.pooled.byPath?.get(path) ?? this.store.opacityFor(path)
+        );
     }
 
     /** Walks the current curve across this vault's ages, for the settings preview. */

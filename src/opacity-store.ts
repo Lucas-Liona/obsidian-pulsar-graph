@@ -170,6 +170,11 @@ export class OpacityStore {
         return samples;
     }
 
+    /** Every graded note and when it was last modified. */
+    entries(): IterableIterator<[string, number]> {
+        return this.mtimes.entries();
+    }
+
     mtimeFor(path: string): number | undefined {
         return this.mtimes.get(path);
     }
