@@ -206,7 +206,10 @@
 	height: 6px;
 	margin-left: var(--size-2-2);
 	border-radius: 50%;
-	background-color: currentColor;
+
+	/* Never currentColor: that is the tab header's own text colour, muted on
+	   an inactive tab, so every dot but the active one came out the same. */
+	background-color: var(--text-normal);
 	pointer-events: none;
 }
 
