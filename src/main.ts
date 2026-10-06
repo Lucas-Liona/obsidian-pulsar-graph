@@ -114,6 +114,18 @@ export default class PulsarGraphPlugin extends Plugin {
         }
     }
 
+    /**
+     * Shows ranges without committing to them, across every open graph. Used
+     * while a handle is being dragged, from the settings dialog as much as from
+     * the graph's own panel, since the graph is usually visible behind it.
+     */
+    previewRanges(ranges: OpacityRange[] | null): void {
+        for (const [renderer, graph] of this.attached) {
+            graph.preview.ranges = this.settings.filterEnabled ? ranges : null;
+            repaint(renderer);
+        }
+    }
+
     /** Whether a note is inside the kept ranges, or exempt from them. */
     private survives(path: string, ranges: OpacityRange[]): boolean {
         const strength = this.store.opacityFor(path);

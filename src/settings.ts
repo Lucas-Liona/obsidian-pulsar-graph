@@ -651,7 +651,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
-        section('Filter');
+        section('Age filter');
 
         new Setting(containerEl)
             .setName('Hide notes outside a range')
@@ -674,7 +674,9 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             const rangeBar = new RangeBar(holder, {
                 histogram: this.plugin.measureVault().spread,
+                onPreview: (ranges) => this.plugin.previewRanges(ranges),
                 onChange: (ranges) => {
+                    this.plugin.previewRanges(null);
                     settings.filterRanges = ranges;
                     this.save();
                 }
