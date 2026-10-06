@@ -1,5 +1,9 @@
 # Pulsar
 
+<p align="center">
+  <img src="docs/assets/banner.png" width="880" alt="Pulsar. Your graph, graded by time. Recent work lights up, old notes sink back. Beside the words, part of a note graph where a scattering of nodes is bright and most are dim.">
+</p>
+
 Fades the nodes in Obsidian's graph by how recently you touched each note, so the
 part of your vault you're actually working in lights up and the rest sinks back.
 
@@ -11,16 +15,16 @@ part of your vault you're actually working in lights up and the rest sinks back.
 </p>
 
 <p align="center">
-  <img src="docs/graph-dark.png" width="880" alt="A graph of about 1200 notes. A scattering of nodes is bright white, most are dim, and the dimmest are barely visible against the background.">
+  <img src="docs/assets/graph-dark.png" width="880" alt="A graph of about 1200 notes. A scattering of nodes is bright white, most are dim, and the dimmest are barely visible against the background.">
 </p>
 
 <p align="center"><i>My own vault, 1200 notes. Every bright dot is something I touched this week.</i></p>
 
 <p align="center">
-  <img src="docs/fade-sweep.gif" width="420" alt="Animation of the same graph as the fade is swept from strongest to weakest. Nodes light up in waves, newest first, until the whole vault is visible.">
+  <img src="docs/assets/fade-sweep.gif" width="520" alt="Animation of a note graph as the fade is swept from hardest to softest. It begins almost empty, with one bright green node, and fills in until the whole vault is visible.">
 </p>
 
-<p align="center"><i>The same vault, sweeping the fade from hardest to softest. The newest notes come up first.</i></p>
+<p align="center"><i>Sweeping the fade from hardest to softest. The green dot is the note I touched last.</i></p>
 
 ## Why I made it
 

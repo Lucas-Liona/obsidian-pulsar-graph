@@ -19,6 +19,18 @@ master toggle at the top of the settings, and off means nothing runs at all.
 
 ## Images
 
-`graph-dark.png`, `fade-sweep.gif` and `hover.png` live here and are used by the
-README. Anything captured from a real vault is checked for legible note titles
-before it goes in — see the capture rules in [AGENTS.md](../AGENTS.md).
+Everything these pages and the README use lives in [`assets/`](assets).
+
+| | |
+|---|---|
+| `banner.png` | The README banner |
+| `graph-demo.png` · `graph-dark.png` | A graph at rest |
+| `fade-sweep.gif` | The fade swept from hardest to softest |
+| `age-filter.gif` | The age filter opened from newest-only to everything |
+| `fresh-writing.gif` | Text typed, cooling, and reset |
+| `hover.png` | A node's age on hover |
+| `icon.svg` · `icon-mark.svg` | The mark: one bright point, and the same point further into the past |
+
+Everything new is captured from the demo vault, never from a real one, and
+anything wide is checked for legible note titles before it goes in — see the
+capture rules in [AGENTS.md](../AGENTS.md).

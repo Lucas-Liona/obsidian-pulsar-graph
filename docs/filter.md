@@ -3,6 +3,10 @@
 Taking notes out of the graph entirely rather than dimming them, and the
 scrubber that does it from inside the graph.
 
+<p align="center">
+  <img src="assets/age-filter.gif" width="520" alt="Animation of a note graph as the age filter is opened from newest-only to everything. It begins with a single green node and fills in to the whole vault.">
+</p>
+
 Fading a note is not hiding it. Obsidian draws a title, its links and its physics
 regardless of how transparent the node is, so a note at minimum opacity is still
 sitting there taking up room. **Hide notes outside a range** takes them out of

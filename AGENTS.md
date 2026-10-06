@@ -166,6 +166,24 @@ titles in it plainly readable. Check every frame at full size before it goes
 anywhere, including the file explorer, the recent-files pane and any open note in
 the background. The settings tab is never in a published frame.
 
+Published images live in `docs/assets/`. The pipeline that made the current ones,
+which is worth reusing rather than reinventing:
+
+- **The graph exports itself.** `renderer.getTransparentScreenshot()` returns a
+  canvas of the graph alone at full resolution, with no app chrome to crop
+  around. `getBackgroundScreenshot()` composites it onto white, which is wrong on
+  a dark theme — take the transparent one and composite onto
+  `--background-primary` yourself.
+- **`fs` works inside `eval`**, so a capture loop can write its own PNGs straight
+  to disk instead of returning megabytes of base64 through the CLI.
+- **Framing is `zoomTo`, not `setScale`.** `setScale` assigns a value the render
+  loop immediately eases away from; `zoomTo` sets the target it eases toward.
+- **A settings change needs `store.markStale()`** before `syncRenderers()`, or
+  the cached opacities are never recomputed. A whole fade-sweep animation was
+  shot this way before anyone noticed it was animating nothing.
+- Anything in the editor has to be `dev:screenshot` and cropped, since only the
+  graph can export itself.
+
 Capture notes, learned the hard way:
 
 - `dev:screenshot` takes the whole workspace, not the focused leaf, so the
