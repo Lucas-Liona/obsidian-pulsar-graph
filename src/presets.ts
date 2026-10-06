@@ -11,7 +11,7 @@ import type { PulsarGraphSettings } from './settings';
  */
 export type FadeSettings = Pick<
     PulsarGraphSettings,
-    'normalizeBy' | 'windowDays' | 'ageScale' | 'fadeType' | 'steepness' | 'numSteps' | 'minOpacity' | 'maxOpacity'
+    'normalizeBy' | 'windowDays' | 'ageScale' | 'halfLifeDays' | 'fadeType' | 'steepness' | 'numSteps' | 'minOpacity' | 'maxOpacity'
 >;
 
 export interface Preset {
@@ -66,7 +66,7 @@ export function parseSharedPresets(text: string, repair: (stored: unknown) => Pr
     return presets;
 }
 
-const SHARED = { steepness: 2, numSteps: 5, windowDays: 30 };
+const SHARED = { steepness: 2, numSteps: 5, windowDays: 30, halfLifeDays: 14 };
 
 export const PRESETS: Preset[] = [
     {
@@ -98,5 +98,11 @@ export const PRESETS: Preset[] = [
         name: 'This week',
         description: 'Seven days on a log scale, so today separates sharply from Tuesday',
         settings: { ...SHARED, windowDays: 7, normalizeBy: 'window', ageScale: 'log', fadeType: 'linear', minOpacity: 0.03, maxOpacity: 1 }
+    },
+    {
+        id: 'steady-decay',
+        name: 'Steady decay',
+        description: 'A note halves in brightness every two weeks, measured against the calendar. The only preset where adding or deleting notes changes nothing else',
+        settings: { ...SHARED, normalizeBy: 'vault', ageScale: 'halflife', fadeType: 'linear', minOpacity: 0.04, maxOpacity: 1 }
     }
 ];

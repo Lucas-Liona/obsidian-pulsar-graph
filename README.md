@@ -86,6 +86,7 @@ because it's anchored to the clock rather than to your newest note.
 | Even | Opacity follows the calendar | A vault edited at a steady rate |
 | By rank | A note's place in the running order, not its date | Any vault — a lopsided history can't flatten it |
 | Logarithmic | Recent gaps count for more, old ones for less | Picking the last few days out of a long history |
+| By half-life | Halves every so many days, against the calendar | A vault that keeps growing, or one with ancient notes in it |
 
 **By rank** is the one that can't be defeated by your editing history. Half your
 notes are above the halfway mark by construction, whatever the dates look like.
@@ -102,6 +103,27 @@ fifth of the opacity range:
 The trade is that rank hides *how much* older something is. Two notes a year
 apart look as different as two notes a day apart, if nothing else sits between
 them. Even and logarithmic keep that information; rank spends it on contrast.
+
+**By half-life** is the only one of the four that is *absolute*. The other three
+measure each note against the rest of your vault, so what a note is worth depends
+on what else is in there — one note from 2019 stretches the range and darkens
+everything else, and deleting it brightens your whole graph for no reason you'd
+ever guess. A half-life measures against the clock instead: set it to 14 days and
+a note from a fortnight ago is at half brightness, one from a month ago at a
+quarter, whatever else you do to the vault.
+
+Measured on a real 1085 note vault, dropping one ancient note in and reading the
+same six notes before and after:
+
+| Scale | Notes whose brightness moved | Largest change |
+| --- | ---: | ---: |
+| Even | 6 of 6 | 1.62 |
+| Logarithmic | 6 of 6 | 0.10 |
+| By rank | 3 of 6 | 0.001 |
+| By half-life | 0 of 6 | 0 |
+
+It's also the scale that needs no **Measure age against** setting, because there
+is no range to measure against — so that row disappears when you pick it.
 
 ### Fade curves
 

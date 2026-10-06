@@ -214,6 +214,15 @@ export class OpacityStore {
             return this.rankOf(mtime);
         }
 
+        // Measured against the calendar rather than against the other notes,
+        // which is the one scale nothing else in the vault can move. Every
+        // other scale is relative: a single note from years ago stretches the
+        // range and darkens everything, and deleting it brightens the whole
+        // vault for no reason anyone would guess.
+        if (ageScale === 'halflife') {
+            return Math.pow(2, -days(this.anchor - mtime) / this.getSettings().halfLifeDays);
+        }
+
         const { oldest, newest } = this.normalizingRange();
         const span = newest - oldest;
 
@@ -281,7 +290,14 @@ export class OpacityStore {
 
     /** The two ends of the range opacity is currently measured against. */
     private normalizingRange(): { oldest: number; newest: number } {
-        const { normalizeBy, windowDays } = this.getSettings();
+        const { normalizeBy, windowDays, ageScale } = this.getSettings();
+
+        // A half-life needs no range at all. The vault's own is still what the
+        // settings preview should walk, so a leftover window setting does not
+        // quietly narrow the ages it shows.
+        if (ageScale === 'halflife') {
+            return { oldest: this.oldestMtime, newest: this.newestMtime };
+        }
 
         if (normalizeBy === 'window') {
             return { oldest: this.anchor - windowDays * MS_PER_DAY, newest: this.anchor };
@@ -291,17 +307,19 @@ export class OpacityStore {
     }
 
     /**
-     * True when a window-anchored cache has aged enough to be worth redoing.
-     * The vault range does not move with the clock, so it never drifts.
+     * True when a clock-anchored cache has aged enough to be worth redoing. The
+     * vault range does not move with the clock, so the scales measured against
+     * it never drift; a window and a half-life both do.
      */
     private anchorHasDrifted(): boolean {
-        const { normalizeBy, windowDays } = this.getSettings();
+        const { normalizeBy, windowDays, ageScale, halfLifeDays } = this.getSettings();
+        const span = ageScale === 'halflife' ? halfLifeDays : normalizeBy === 'window' ? windowDays : 0;
 
-        if (normalizeBy !== 'window') {
+        if (span <= 0) {
             return false;
         }
 
-        return Date.now() - this.anchor > windowDays * MS_PER_DAY * ANCHOR_DRIFT_FRACTION;
+        return Date.now() - this.anchor > span * MS_PER_DAY * ANCHOR_DRIFT_FRACTION;
     }
 
     private recalculateRange(): void {
