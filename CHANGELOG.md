@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.16.0] - 2026-10-05
+
+### Added
+
+- Save the current settings under a name of your own. Saved presets sit in the
+  same dropdown as the built-in ones. Unlike a built-in, which is a curated fade
+  shape, one you save keeps every setting, because a setup tuned to a vault is
+  the whole look rather than a chosen slice of it. Closes #59.
+- Copy a preset to the clipboard as plain JSON, and paste one back, so a setup
+  can be kept somewhere or handed to someone else. It is the clipboard rather
+  than a server; nothing leaves the machine.
+
+  Anything arriving that way goes through the same repair the plugin's own
+  settings get, so a pasted preset can be wrong, half written or hand edited
+  without being dangerous. Verified against deliberately hostile input: a string
+  where a number belongs falls back, an out-of-range number is clamped, an
+  unknown fade type returns to the default, a preset containing presets has them
+  stripped, and an entry with no name is dropped entirely.
+
+### Fixed
+
+- **Reset** no longer throws away saved presets along with the settings.
+
 ## [1.15.0] - 2026-10-05
 
 ### Changed

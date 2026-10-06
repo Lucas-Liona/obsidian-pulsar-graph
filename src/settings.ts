@@ -1,8 +1,8 @@
-import { App, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent } from 'obsidian';
 import { formatAge } from './age';
 import { AgeMode } from './age-label';
 import { LinkRecency } from './links';
-import { PRESETS } from './presets';
+import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 
@@ -48,6 +48,7 @@ export interface PulsarGraphSettings {
     sessionGapMinutes: number;
     trailColor: string;
     trailStrength: number;
+    saved: SavedPreset[];
 }
 
 export type ClusterBy = 'folder' | 'component';
@@ -97,7 +98,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     sessionTrails: false,
     sessionGapMinutes: 30,
     trailColor: '#5ac8fa',
-    trailStrength: 0.55
+    trailStrength: 0.55,
+    saved: []
 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
@@ -237,8 +239,41 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         sessionTrails: parseBoolean(data.sessionTrails, DEFAULT_SETTINGS.sessionTrails),
         sessionGapMinutes: Math.round(clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_RANGE.lowest, SESSION_RANGE.highest)),
         trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
-        trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest)
+        trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
+        saved: parseSaved(data.saved)
     };
+}
+
+/**
+ * Saved presets arrive from a file someone may have hand-edited or pasted from
+ * elsewhere, so every one is put back through the same repair the live settings
+ * get. A preset can be incomplete or wrong; it cannot be dangerous.
+ */
+function parseSaved(value: unknown): SavedPreset[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const presets: SavedPreset[] = [];
+
+    for (const entry of value) {
+        if (typeof entry !== 'object' || entry === null) {
+            continue;
+        }
+
+        const { name, settings } = entry as { name?: unknown; settings?: unknown };
+
+        if (typeof name === 'string' && name.trim().length > 0) {
+            presets.push({ name: name.trim().slice(0, 60), settings: repairPreset(settings) });
+        }
+    }
+
+    return presets;
+}
+
+/** Repairs a stored snapshot the same way live settings are repaired. */
+export function repairPreset(stored: unknown): PresetSettings {
+    return snapshot(parseSettings(stored));
 }
 
 function parseAgeScale(value: unknown): AgeScale {
@@ -653,6 +688,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         // Presets move only the settings that shape the fade. What you have
         // chosen to show — labels, status bar, spotlight colour — is left alone.
+        // One you save yourself keeps the lot, because that is what saving means.
         const presets = new Setting(containerEl)
             .setName('Presets')
             .setDesc(PRESETS.map((preset) => `${preset.name}: ${preset.description.toLowerCase()}`).join('. ') + '.')
@@ -660,16 +696,30 @@ export class PulsarSettingTab extends PluginSettingTab {
                 dropdown.addOption('', 'Choose a preset\u2026');
 
                 for (const preset of PRESETS) {
-                    dropdown.addOption(preset.id, preset.name);
+                    dropdown.addOption(`built-in:${preset.id}`, preset.name);
                 }
 
+                settings.saved.forEach((preset, index) => {
+                    dropdown.addOption(`saved:${index}`, `${preset.name} (yours)`);
+                });
+
                 dropdown.setValue('').onChange(async (value) => {
-                    const preset = PRESETS.find((candidate) => candidate.id === value);
-                    if (!preset) {
+                    const [kind, key] = value.split(':');
+
+                    if (kind === 'built-in') {
+                        const preset = PRESETS.find((candidate) => candidate.id === key);
+                        if (preset) {
+                            Object.assign(settings, preset.settings);
+                        }
+                    } else if (kind === 'saved') {
+                        const preset = settings.saved[Number(key)];
+                        if (preset) {
+                            Object.assign(settings, preset.settings);
+                        }
+                    } else {
                         return;
                     }
 
-                    Object.assign(settings, preset.settings);
                     await this.plugin.saveSettings();
                     this.display();
                 });
@@ -679,11 +729,92 @@ export class PulsarSettingTab extends PluginSettingTab {
             .setButtonText('Reset')
             .setTooltip('Put every setting back to its original value')
             .onClick(async () => {
-                Object.assign(settings, DEFAULT_SETTINGS);
+                // Reset is about the settings, not about throwing away work.
+                const saved = settings.saved;
+                Object.assign(settings, DEFAULT_SETTINGS, { saved });
                 await this.plugin.saveSettings();
                 this.display();
             })
         );
+
+        let name = '';
+
+        new Setting(containerEl)
+            .setName('Save these settings')
+            .setDesc('Keeps everything above under a name of your own, so a setup you have tuned to your vault can be come back to')
+            .addText((text) => text
+                .setPlaceholder('Name')
+                .onChange((value) => {
+                    name = value;
+                })
+            )
+            .addButton((button) => button
+                .setButtonText('Save')
+                .setCta()
+                .onClick(async () => {
+                    const trimmed = name.trim();
+                    if (trimmed.length === 0) {
+                        new Notice('Give the preset a name first.');
+                        return;
+                    }
+
+                    const kept: SavedPreset = { name: trimmed.slice(0, 60), settings: snapshot(settings) };
+                    const existing = settings.saved.findIndex((preset) => preset.name === kept.name);
+
+                    if (existing >= 0) {
+                        settings.saved[existing] = kept;
+                    } else {
+                        settings.saved.push(kept);
+                    }
+
+                    await this.plugin.saveSettings();
+                    new Notice(`Saved "${kept.name}".`);
+                    this.display();
+                })
+            );
+
+        for (const [index, preset] of settings.saved.entries()) {
+            new Setting(containerEl)
+                .setName(preset.name)
+                .setDesc('Saved by you')
+                .addExtraButton((button) => button
+                    .setIcon('clipboard-copy')
+                    .setTooltip('Copy this preset, to keep or to pass on')
+                    .onClick(() => {
+                        void this.copy([preset], `Copied "${preset.name}".`);
+                    })
+                )
+                .addExtraButton((button) => button
+                    .setIcon('trash-2')
+                    .setTooltip('Delete')
+                    .onClick(async () => {
+                        settings.saved.splice(index, 1);
+                        await this.plugin.saveSettings();
+                        this.display();
+                    })
+                );
+        }
+
+        new Setting(containerEl)
+            .setName('Share presets')
+            .setDesc('Copies every preset you have saved to the clipboard, or reads presets from whatever is on it')
+            .addButton((button) => button
+                .setButtonText('Copy all')
+                .onClick(() => {
+                    if (settings.saved.length === 0) {
+                        new Notice('Nothing saved yet.');
+                        return;
+                    }
+
+                    void this.copy(settings.saved, `Copied ${settings.saved.length} preset(s).`);
+                })
+            )
+            .addButton((button) => button
+                .setButtonText('Paste')
+                .onClick(() => {
+                    void this.paste();
+                })
+            );
 
         section('What this is doing to your vault');
 
@@ -696,6 +827,45 @@ export class PulsarSettingTab extends PluginSettingTab {
     hide(): void {
         this.previewEl = null;
         this.statsEl = null;
+    }
+
+    /** Presets travel as plain JSON, through the clipboard rather than a server. */
+    private async copy(presets: SavedPreset[], message: string): Promise<void> {
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(presets, null, 2));
+            new Notice(message);
+        } catch {
+            new Notice('Could not reach the clipboard.');
+        }
+    }
+
+    private async paste(): Promise<void> {
+        const { settings } = this.plugin;
+
+        try {
+            const arriving = parseSharedPresets(await navigator.clipboard.readText(), repairPreset);
+
+            if (arriving.length === 0) {
+                new Notice('No presets found on the clipboard.');
+                return;
+            }
+
+            for (const preset of arriving) {
+                const existing = settings.saved.findIndex((candidate) => candidate.name === preset.name);
+
+                if (existing >= 0) {
+                    settings.saved[existing] = preset;
+                } else {
+                    settings.saved.push(preset);
+                }
+            }
+
+            await this.plugin.saveSettings();
+            new Notice(`Added ${arriving.length} preset(s).`);
+            this.display();
+        } catch {
+            new Notice('That did not look like a saved preset.');
+        }
     }
 
     private save(): void {
