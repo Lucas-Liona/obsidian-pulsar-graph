@@ -1,5 +1,6 @@
+import { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { debounce, MarkdownView, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
+import { Component, debounce, MarkdownView, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
@@ -59,6 +60,12 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly tabs = new TabFading(this.app, this.attention);
     private readonly history = new EditHistory(this.app, this);
 
+    /** Everything that only exists while the plugin is switched on. */
+    private running: Component | null = null;
+
+    /** Emptied when the plugin is off, so no editor carries anything of ours. */
+    private readonly editorExtensions: Extension[] = [];
+
     /**
      * The tab bar repaints with the graph. Both read the same brightness, and
      * the dot and the spotlight were only redrawn on a tab switch or on the
@@ -71,59 +78,16 @@ export default class PulsarGraphPlugin extends Plugin {
 
     async onload(): Promise<void> {
         await this.loadSettings();
-        await this.history.load();
-        this.store.setSittingSource((path) => (this.settings.history ? this.history.sittings(path) : 0));
         this.addSettingTab(new PulsarSettingTab(this.app, this));
 
-        this.store.build(this.app.vault.getMarkdownFiles());
+        // A mutable array, because an editor extension registered once can
+        // still be emptied: Obsidian re-reads it on updateOptions(). Registering
+        // the extension itself would mean it could never be taken away.
+        this.registerEditorExtension(this.editorExtensions);
 
-        this.registerEvent(this.app.vault.on('create', (file) => this.onFileChanged(file)));
-        this.registerEvent(this.app.vault.on('modify', (file) => this.onFileChanged(file)));
-
-        this.registerEvent(this.app.vault.on('delete', (file) => {
-            if (isNote(file)) {
-                this.store.recordDelete(file);
-                this.history.forget(file.path);
-                this.updateSoon();
-            }
-        }));
-
-        this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-            this.store.forget(oldPath);
-            this.attention.forget(oldPath);
-            this.history.rename(oldPath, file.path);
-            this.onFileChanged(file);
-        }));
-
-        this.registerInterval(window.setInterval(() => {
-            this.paintTabs();
-
-            // Lets the next session tell idle time from time the app was shut.
-            if (this.settings.history) {
-                this.history.heartbeat();
-            }
-        }, TAB_REFRESH_MS));
-
-        this.registerEvent(this.app.workspace.on('file-open', (file) => {
-            if (file) {
-                this.attention.touch(file.path);
-                this.noteSeen(file.path);
-            }
-
-            this.paintTabs();
-            this.updateStatusBar();
-
-            // The open note is exempt from the filter, so which note that is
-            // changes what the graph should contain.
-            if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
-                this.refilter();
-            }
-        }));
-        this.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
-
-        this.registerEditorExtension(inkExtension());
-        this.syncInk();
-
+        // Commands stay registered either way. They are inert data in the
+        // palette until something invokes one, and a command that vanished
+        // would take any hotkey assigned to it with it.
         this.addCommand({
             id: 'cool-fresh-writing',
             name: 'Cool fresh writing',
@@ -136,7 +100,7 @@ export default class PulsarGraphPlugin extends Plugin {
             editorCallback: (_editor, view) => {
                 const editor = (view as { editor?: { cm?: EditorView } }).editor?.cm;
 
-                if (!this.settings.ink) {
+                if (!this.settings.enabled || !this.settings.ink) {
                     new Notice('Fresh writing is switched off.');
                     return;
                 }
@@ -155,12 +119,86 @@ export default class PulsarGraphPlugin extends Plugin {
             callback: () => this.closeStaleTabs()
         });
 
+        await this.syncRunning();
+    }
+
+    /**
+     * Starts or stops everything, from load and from the master switch.
+     *
+     * Off has to mean off. Everything that watches, caches, draws or ticks
+     * hangs off one child component, so stopping is a single unload rather than
+     * a list of things to remember — which is the only version of this that
+     * stays true as features are added.
+     */
+    private async syncRunning(): Promise<void> {
+        if (this.settings.enabled && !this.running) {
+            await this.begin();
+        } else if (!this.settings.enabled && this.running) {
+            this.end();
+        }
+    }
+
+    private async begin(): Promise<void> {
+        const running = new Component();
+        this.running = running;
+        this.addChild(running);
+
+        await this.history.load();
+        this.store.setSittingSource((path) => (this.settings.history ? this.history.sittings(path) : 0));
+        this.store.build(this.app.vault.getMarkdownFiles());
+
+        running.registerEvent(this.app.vault.on('create', (file) => this.onFileChanged(file)));
+        running.registerEvent(this.app.vault.on('modify', (file) => this.onFileChanged(file)));
+
+        running.registerEvent(this.app.vault.on('delete', (file) => {
+            if (isNote(file)) {
+                this.store.recordDelete(file);
+                this.history.forget(file.path);
+                this.updateSoon();
+            }
+        }));
+
+        running.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
+            this.store.forget(oldPath);
+            this.attention.forget(oldPath);
+            this.history.rename(oldPath, file.path);
+            this.onFileChanged(file);
+        }));
+
+        running.registerInterval(window.setInterval(() => {
+            this.paintTabs();
+
+            // Lets the next session tell idle time from time the app was shut.
+            if (this.settings.history) {
+                this.history.heartbeat();
+            }
+        }, TAB_REFRESH_MS));
+
+        running.registerEvent(this.app.workspace.on('file-open', (file) => {
+            if (file) {
+                this.attention.touch(file.path);
+                this.noteSeen(file.path);
+            }
+
+            this.paintTabs();
+            this.updateStatusBar();
+
+            // The open note is exempt from the filter, so which note that is
+            // changes what the graph should contain.
+            if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
+                this.refilter();
+            }
+        }));
+
+        running.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
+
         // Graph views come and go, and each brings its own renderer to hook.
-        this.registerEvent(this.app.workspace.on('layout-change', () => {
+        running.registerEvent(this.app.workspace.on('layout-change', () => {
             this.syncRenderers();
             this.paintTabs();
         }));
-        this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
+
+        running.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             const active = this.app.workspace.getActiveFile();
 
             if (active) {
@@ -173,32 +211,82 @@ export default class PulsarGraphPlugin extends Plugin {
             this.paintTabs();
         }));
 
+        // Best effort by Obsidian's own admission, so it is a backstop for the
+        // debounced write rather than the thing relied on.
+        running.registerEvent(this.app.workspace.on('quit', (tasks) => {
+            tasks.addPromise(this.history.flush());
+        }));
+
+        this.editorExtensions.length = 0;
+        this.editorExtensions.push(inkExtension());
+        this.app.workspace.updateOptions();
+        this.syncInk();
+
         this.app.workspace.onLayoutReady(() => {
+            if (!this.running) {
+                return;
+            }
+
             this.syncRenderers();
             this.syncStatusBar();
             this.attention.seed((path) => this.history.seenAt(path));
             this.paintTabs();
         });
+    }
 
-        // Best effort by Obsidian's own admission, so it is a backstop for the
-        // debounced write rather than the thing relied on.
-        this.registerEvent(this.app.workspace.on('quit', (tasks) => {
-            tasks.addPromise(this.history.flush());
-        }));
+    /** Hands the vault back everything this plugin was holding. */
+    private end(): void {
+        const running = this.running;
+        this.running = null;
+
+        if (running) {
+            this.removeChild(running);
+        }
+
+        this.releaseGraphs();
+        this.tabs.clear();
+
+        this.editorExtensions.length = 0;
+        this.app.workspace.updateOptions();
+
+        this.statusBarEl?.remove();
+        this.statusBarEl = null;
+
+        this.clearInkProperties();
+        this.store.clear();
+        void this.history.flush();
     }
 
     onunload(): void {
+        this.releaseGraphs();
+        this.tabs.clear();
+        this.clearInkProperties();
+        void this.history.flush();
+    }
+
+    private releaseGraphs(): void {
+        const had = this.attached.size > 0;
+
         for (const graph of this.attached.values()) {
             graph.release();
         }
 
         this.attached.clear();
-        this.tabs.clear();
 
+        // Releasing the hooks does not undo what they wrote. Node colour is the
+        // only place a graph group's colour lives, so the opacity written into
+        // it outlives the hook, and a graph left alone would stay faded until
+        // something else happened to rebuild it. Asking Obsidian to render its
+        // own data again is what hands the colours back.
+        if (had) {
+            rebuildGraphData(this.app);
+        }
+    }
+
+    private clearInkProperties(): void {
         for (const property of ['--pulsar-ink', '--pulsar-ink-pin', '--pulsar-ink-dim']) {
             document.body.style.removeProperty(property);
         }
-        void this.history.flush();
     }
 
     /** What has been recorded so far, for the settings tab and the statistics. */
@@ -363,6 +451,14 @@ export default class PulsarGraphPlugin extends Plugin {
 
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
+        await this.syncRunning();
+
+        // Nothing below this is reachable while the plugin is off, and all of
+        // it would quietly rebuild the caches that being off just emptied.
+        if (!this.running) {
+            return;
+        }
+
         this.syncInk();
         this.store.markStale();
         this.store.refresh();

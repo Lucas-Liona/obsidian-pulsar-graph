@@ -4,6 +4,9 @@
 
 Pulsar grades Obsidian by time. One page per surface.
 
+Everything here is switchable, including the graph fade itself — there is a
+master toggle at the top of the settings, and off means nothing runs at all.
+
 | | |
 |---|---|
 | **[Time](time.md)** | What counts as old, and how an age becomes a brightness. Read this one first if you read any. |

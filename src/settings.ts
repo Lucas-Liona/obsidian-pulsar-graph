@@ -47,6 +47,8 @@ const AGE_SCALE_LABELS: Record<AgeScale, string> = {
 };
 
 export interface PulsarGraphSettings {
+    /** The master switch. Off means nothing is watched, cached, drawn or ticked. */
+    enabled: boolean;
     normalizeBy: NormalizeBy;
     windowDays: number;
     ageScale: AgeScale;
@@ -148,6 +150,7 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
 };
 
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
+    enabled: true,
     normalizeBy: 'vault',
     windowDays: 30,
     ageScale: 'even',
@@ -360,6 +363,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
     const maxOpacity = clamp(parseNumber(data.maxOpacity, DEFAULT_SETTINGS.maxOpacity), 0, MAX_OPACITY_LIMIT);
 
     return {
+        enabled: parseBoolean(data.enabled, DEFAULT_SETTINGS.enabled),
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
@@ -539,14 +543,42 @@ export class PulsarSettingTab extends PluginSettingTab {
         const scroll = containerEl.scrollTop;
 
         containerEl.empty();
+        containerEl.addClass('pulsar-graph-settings');
+
+        new Setting(containerEl)
+            .setName('Pulsar')
+            .setDesc('Off means off. Nothing is watched, cached, drawn or recorded, no graph is touched, no editor carries anything of ours, and no timer runs. Every feature below it can also be switched off on its own')
+            .addToggle((toggle) => toggle
+                .setValue(settings.enabled)
+                .onChange(async (value) => {
+                    settings.enabled = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (!settings.enabled) {
+            containerEl.createDiv({
+                cls: 'pulsar-graph-asleep',
+                text: 'Pulsar is switched off. Nothing it can do is running.'
+            });
+
+            this.previewEl = null;
+            this.statsEl = null;
+            return;
+        }
+
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
 
-        const section = (name: string): void => {
-            new Setting(containerEl).setName(name).setHeading();
+        // A heading with a sentence under it. The sentence is the whole point:
+        // someone opening this for the first time should not have to work out
+        // what "Fade" fades.
+        const section = (name: string, about: string): void => {
+            new Setting(containerEl).setName(name).setDesc(about).setHeading();
         };
 
-        section('Time');
+        section('Time', 'What counts as old. Everything else on this page reads the number these settings produce');
 
         // The scale comes first because it decides what the rest of this
         // section is even for: a half-life is measured against the calendar,
@@ -626,7 +658,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             }
         }
 
-        section('Fade');
+        section('Graph fade', 'How strongly each node in the graph is drawn, which is the thing the plugin is for');
 
         new Setting(containerEl)
             .setName('Fade type')
@@ -713,7 +745,228 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
-        section('Clusters');
+        section('Size', 'How big each node and its name are drawn. Obsidian sizes a node by its link count and offers no control over the title at all');
+
+        new Setting(containerEl)
+            .setName('Size nodes by age')
+            .setDesc("Obsidian sizes a node by how many links it has and nothing else, and that formula does not leave its floor until a note has seven of them — in this vault most notes are all exactly the same size. This multiplies Obsidian's own number rather than replacing it, so a hub still reads as a hub")
+            .addToggle((toggle) => toggle
+                .setValue(settings.nodeSizeByAge)
+                .onChange(async (value) => {
+                    settings.nodeSizeByAge = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.nodeSizeByAge) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Oldest at')
+                    .setDesc('What the dimmest note is multiplied by'),
+                NODE_SIZE_RANGE,
+                settings.nodeSizeSmallest,
+                (value) => {
+                    settings.nodeSizeSmallest = value;
+                    this.save();
+                }
+            );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Newest at')
+                    .setDesc('What the brightest note is multiplied by. Below the oldest is allowed, which runs it the other way round'),
+                NODE_SIZE_RANGE,
+                settings.nodeSizeLargest,
+                (value) => {
+                    settings.nodeSizeLargest = value;
+                    this.save();
+                }
+            );
+        }
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Title size')
+                .setDesc('What every name on the graph is multiplied by. Obsidian offers no control over this at all, and its default is tied to the node size, so a small-node graph has titles to match whether or not you wanted that'),
+            TITLE_SCALE_RANGE,
+            settings.titleScale,
+            (value) => {
+                settings.titleScale = value;
+                this.save();
+            }
+        );
+
+        section('Labels', 'The age written above a node, in words');
+
+        new Setting(containerEl)
+            .setName('Show note age')
+            .setDesc('How long ago a note was modified, drawn above its node the way the title is drawn below it')
+            .addDropdown((dropdown) => {
+                for (const mode of AGE_MODES) {
+                    dropdown.addOption(mode, AGE_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.ageLabels).onChange(async (value) => {
+                    settings.ageLabels = value as AgeMode;
+                    await this.plugin.saveSettings();
+                });
+            });
+        new Setting(containerEl)
+            .setName('Show the open note\'s age in the status bar')
+            .setDesc('Reads the note you have open rather than the graph, so it works with no graph view in sight')
+            .addToggle((toggle) => toggle
+                .setValue(settings.statusBarAge)
+                .onChange(async (value) => {
+                    settings.statusBarAge = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        section('Spotlight', 'Picking the single newest note out of the graph so it is findable at a glance');
+
+        new Setting(containerEl)
+            .setName('Spotlight the newest note')
+            .setDesc('Paint the single most recently modified note a colour of your own, so the thing you touched last is findable at a glance')
+            .addToggle((toggle) => toggle
+                .setValue(settings.spotlightNewest)
+                .onChange(async (value) => {
+                    settings.spotlightNewest = value;
+                    await this.plugin.saveSettings();
+                    // The colour and strength below only apply when it is on.
+                    this.display();
+                })
+            );
+
+        if (settings.spotlightNewest) {
+            new Setting(containerEl)
+                .setName('Spotlight colour')
+                .setDesc('White reads well on a dark theme. Pick something darker if yours is light')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.spotlightColor)
+                    .onChange(async (value) => {
+                        settings.spotlightColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Spotlight strength')
+                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
+                STRENGTH_RANGE,
+                settings.spotlightStrength,
+                (value) => {
+                    settings.spotlightStrength = value;
+                    this.save();
+                }
+            );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Spotlight size')
+                    .setDesc('What the newest note\'s own circle is multiplied by. Obsidian sizes a node by its link count and nothing else, and the note you wrote last is almost always the least linked thing in the vault — so without this the one node you always want to find is reliably the smallest on screen. Multiplied on top of any other sizing, not instead of it'),
+                SPOTLIGHT_SIZE_RANGE,
+                settings.spotlightSize,
+                (value) => {
+                    settings.spotlightSize = value;
+                    this.save();
+                }
+            );
+        }
+
+        new Setting(containerEl)
+            .setName('Mark tabs you have left alone')
+            .setDesc('A quiet line down the edge of a tab once you have not looked at it for a while, and a command to close the marked ones all at once. Nothing closes on its own — a tab that shuts itself feels like data loss even when nothing is lost. Pinned tabs and the tab you are in are never marked')
+            .addToggle((toggle) => toggle
+                .setValue(settings.staleTabs)
+                .onChange(async (value) => {
+                    settings.staleTabs = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.staleTabs) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Marked after')
+                    .setDesc('Minutes of being ignored before a tab is marked. Time spent in a note does not count against it'),
+                STALE_AFTER_RANGE,
+                settings.staleTabAfter,
+                (value) => {
+                    settings.staleTabAfter = Math.round(value);
+                    this.save();
+                }
+            );
+        }
+
+        section('Links', 'What the lines between notes carry, beyond joining them up');
+
+        new Setting(containerEl)
+            .setName('Age the links too')
+            .setDesc('Links are drawn in one flat colour whatever their ends have been through. Give them the age of their livelier end, or fade each one along its length from the newer note to the older')
+            .addDropdown((dropdown) => {
+                for (const mode of LINK_MODES) {
+                    dropdown.addOption(mode, LINK_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.linkRecency).onChange(async (value) => {
+                    settings.linkRecency = value as LinkRecency;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(containerEl)
+            .setName('Trace what was written together')
+            .setDesc('Colour the link between two notes that were saved close enough together to have been open in the same sitting. It says nothing about how long ago, which the fade is already for')
+            .addToggle((toggle) => toggle
+                .setValue(settings.sessionTrails)
+                .onChange(async (value) => {
+                    settings.sessionTrails = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.sessionTrails) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Counts as one sitting')
+                    .setDesc('How many minutes apart two notes can be saved and still be treated as worked on together'),
+                SESSION_RANGE,
+                settings.sessionGapMinutes,
+                (value) => {
+                    settings.sessionGapMinutes = Math.round(value);
+                    this.save();
+                }
+            );
+
+            new Setting(containerEl)
+                .setName('Trail colour')
+                .setDesc('Kept clear of the spotlight colour by default, so the two mean different things on sight')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.trailColor)
+                    .onChange(async (value) => {
+                        settings.trailColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Trail strength')
+                    .setDesc('How far a trail goes toward that colour. Below full it is mixed with the colour links are normally drawn in, which keeps it off the eye'),
+                STRENGTH_RANGE,
+                settings.trailStrength,
+                (value) => {
+                    settings.trailStrength = value;
+                    this.save();
+                }
+            );
+        }
+
+        section('Clusters', 'Colouring a whole region of the graph by how alive it is, rather than each note on its own');
 
         new NumberControl(
             new Setting(containerEl)
@@ -781,72 +1034,161 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
         }
 
-        section('Links');
+        section('Age filter', 'Taking notes out of the graph entirely rather than dimming them');
 
         new Setting(containerEl)
-            .setName('Age the links too')
-            .setDesc('Links are drawn in one flat colour whatever their ends have been through. Give them the age of their livelier end, or fade each one along its length from the newer note to the older')
-            .addDropdown((dropdown) => {
-                for (const mode of LINK_MODES) {
-                    dropdown.addOption(mode, LINK_MODE_LABELS[mode]);
-                }
-
-                dropdown.setValue(settings.linkRecency).onChange(async (value) => {
-                    settings.linkRecency = value as LinkRecency;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        new Setting(containerEl)
-            .setName('Trace what was written together')
-            .setDesc('Colour the link between two notes that were saved close enough together to have been open in the same sitting. It says nothing about how long ago, which the fade is already for')
+            .setName('Hide notes outside a range')
+            .setDesc('Takes them out of the graph entirely rather than dimming them, so what is left re-packs. The note you have open is always kept')
             .addToggle((toggle) => toggle
-                .setValue(settings.sessionTrails)
+                .setValue(settings.filterEnabled)
                 .onChange(async (value) => {
-                    settings.sessionTrails = value;
+                    settings.filterEnabled = value;
                     await this.plugin.saveSettings();
                     this.display();
                 })
             );
 
-        if (settings.sessionTrails) {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Counts as one sitting')
-                    .setDesc('How many minutes apart two notes can be saved and still be treated as worked on together'),
-                SESSION_RANGE,
-                settings.sessionGapMinutes,
-                (value) => {
-                    settings.sessionGapMinutes = Math.round(value);
-                    this.save();
-                }
-            );
-
+        if (settings.filterEnabled) {
             new Setting(containerEl)
-                .setName('Trail colour')
-                .setDesc('Kept clear of the spotlight colour by default, so the two mean different things on sight')
-                .addColorPicker((picker) => picker
-                    .setValue(settings.trailColor)
+                .setName('Say so on the graph')
+                .setDesc('A line across the top of the graph naming what is left, since a graph with half its notes taken out looks exactly like a graph. It is only there while something is actually being hidden')
+                .addToggle((toggle) => toggle
+                    .setValue(settings.filterCaption)
                     .onChange(async (value) => {
-                        settings.trailColor = value;
+                        settings.filterCaption = value;
                         await this.plugin.saveSettings();
                     })
                 );
 
+            const bar = new Setting(containerEl)
+                .setName('Keep')
+                .setDesc('Drag a handle to move one edge, or the lit stretch between them to move the whole range without changing its width. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
+
+            const holder = containerEl.createDiv();
+
+            const rangeBar = new RangeBar(holder, {
+                histogram: this.plugin.measureVault().spread,
+                describe: (ranges) => this.plugin.describeRange(ranges),
+                onPreview: (ranges) => this.plugin.previewRanges(ranges),
+                onChange: (ranges) => {
+                    this.plugin.previewRanges(null);
+                    settings.filterRanges = ranges;
+                    this.save();
+                }
+            });
+
+            rangeBar.setRanges(settings.filterRanges);
+
+            bar.addExtraButton((button) => button
+                .setIcon('plus')
+                .setTooltip('Add another range')
+                .onClick(async () => {
+                    settings.filterRanges.push({ from: 0, to: 0.2 });
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+            if (settings.filterRanges.length > 1) {
+                bar.addExtraButton((button) => button
+                    .setIcon('minus')
+                    .setTooltip('Remove the last range')
+                    .onClick(async () => {
+                        settings.filterRanges.pop();
+                        await this.plugin.saveSettings();
+                        this.display();
+                    })
+                );
+            }
+        }
+
+        section('Tabs', 'The tab bar in the main editor area, read as attention rather than as a pile of things you opened once');
+
+        new Setting(containerEl)
+            .setName('Show a dot beside each tab')
+            .setDesc("A filled circle at that note's brightness in the graph, so its age reads at a glance without opening the graph at all. The newest note takes the spotlight colour when the spotlight is on")
+            .addToggle((toggle) => toggle
+                .setValue(settings.tabDot)
+                .onChange(async (value) => {
+                    settings.tabDot = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Fade tabs')
+            .setDesc('Dims a tab the longer it goes untouched, so the tab bar reads as attention rather than a pile of things you opened once. The close button keeps its strength, and the tab you are in never fades')
+            .addDropdown((dropdown) => {
+                for (const mode of TAB_MODES) {
+                    dropdown.addOption(mode, TAB_MODE_LABELS[mode]);
+                }
+
+                dropdown.setValue(settings.tabFade).onChange(async (value) => {
+                    settings.tabFade = value as TabFade;
+                    await this.plugin.saveSettings();
+                    this.display();
+                });
+            });
+
+        if (settings.tabFade !== 'off') {
+            new Setting(containerEl)
+                .setName('What fades')
+                .setDesc('Just the icon and title, or the whole tab with its background. Either way, hovering a faded tab brings it back to full strength, which is what keeps its close button reachable')
+                .addDropdown((dropdown) => {
+                    for (const scope of TAB_SCOPES) {
+                        dropdown.addOption(scope, TAB_SCOPE_LABELS[scope]);
+                    }
+
+                    dropdown.setValue(settings.tabFadeScope).onChange(async (value) => {
+                        settings.tabFadeScope = value as TabFadeScope;
+                        await this.plugin.saveSettings();
+                    });
+                });
+        }
+
+        if (settings.tabFade === 'attention') {
+            new Setting(containerEl)
+                .setName('How it fades')
+                .setDesc('Gradually reads as how long ago; all at once reads as past the line or not. A gradient over a short span saturates almost immediately, so if everything looks equally faint this is the setting to change — or the one below it')
+                .addDropdown((dropdown) => {
+                    for (const curve of TAB_CURVES) {
+                        dropdown.addOption(curve, TAB_CURVE_LABELS[curve]);
+                    }
+
+                    dropdown.setValue(settings.tabFadeCurve).onChange(async (value) => {
+                        settings.tabFadeCurve = value as TabFadeCurve;
+                        await this.plugin.saveSettings();
+                    });
+                });
+
             new NumberControl(
                 new Setting(containerEl)
-                    .setName('Trail strength')
-                    .setDesc('How far a trail goes toward that colour. Below full it is mixed with the colour links are normally drawn in, which keeps it off the eye'),
-                STRENGTH_RANGE,
-                settings.trailStrength,
+                    .setName('Faded after')
+                    .setDesc('Minutes of being ignored before a tab is as faint as it gets. Time spent in a note does not count against it'),
+                TAB_AFTER_RANGE,
+                settings.tabFadeAfter,
                 (value) => {
-                    settings.trailStrength = value;
+                    settings.tabFadeAfter = Math.round(value);
                     this.save();
                 }
             );
         }
 
-        section('Fresh writing');
+        if (settings.tabFade !== 'off') {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Faintest a tab gets')
+                    .setDesc('A tab you cannot read is a tab you cannot get back to, so this does not go to zero'),
+                TAB_FLOOR_RANGE,
+                settings.tabFadeFloor,
+                (value) => {
+                    settings.tabFadeFloor = value;
+                    this.save();
+                }
+            );
+        }
+
+        section('Fresh writing', 'The one part of Pulsar that works inside a note rather than around it');
 
         new Setting(containerEl)
             .setName('Light up what you just wrote')
@@ -933,317 +1275,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
         }
 
-        section('Size');
-
-        new Setting(containerEl)
-            .setName('Size nodes by age')
-            .setDesc("Obsidian sizes a node by how many links it has and nothing else, and that formula does not leave its floor until a note has seven of them — in this vault most notes are all exactly the same size. This multiplies Obsidian's own number rather than replacing it, so a hub still reads as a hub")
-            .addToggle((toggle) => toggle
-                .setValue(settings.nodeSizeByAge)
-                .onChange(async (value) => {
-                    settings.nodeSizeByAge = value;
-                    await this.plugin.saveSettings();
-                    this.display();
-                })
-            );
-
-        if (settings.nodeSizeByAge) {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Oldest at')
-                    .setDesc('What the dimmest note is multiplied by'),
-                NODE_SIZE_RANGE,
-                settings.nodeSizeSmallest,
-                (value) => {
-                    settings.nodeSizeSmallest = value;
-                    this.save();
-                }
-            );
-
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Newest at')
-                    .setDesc('What the brightest note is multiplied by. Below the oldest is allowed, which runs it the other way round'),
-                NODE_SIZE_RANGE,
-                settings.nodeSizeLargest,
-                (value) => {
-                    settings.nodeSizeLargest = value;
-                    this.save();
-                }
-            );
-        }
-
-        new NumberControl(
-            new Setting(containerEl)
-                .setName('Title size')
-                .setDesc('What every name on the graph is multiplied by. Obsidian offers no control over this at all, and its default is tied to the node size, so a small-node graph has titles to match whether or not you wanted that'),
-            TITLE_SCALE_RANGE,
-            settings.titleScale,
-            (value) => {
-                settings.titleScale = value;
-                this.save();
-            }
-        );
-
-        section('Age filter');
-
-        new Setting(containerEl)
-            .setName('Hide notes outside a range')
-            .setDesc('Takes them out of the graph entirely rather than dimming them, so what is left re-packs. The note you have open is always kept')
-            .addToggle((toggle) => toggle
-                .setValue(settings.filterEnabled)
-                .onChange(async (value) => {
-                    settings.filterEnabled = value;
-                    await this.plugin.saveSettings();
-                    this.display();
-                })
-            );
-
-        if (settings.filterEnabled) {
-            new Setting(containerEl)
-                .setName('Say so on the graph')
-                .setDesc('A line across the top of the graph naming what is left, since a graph with half its notes taken out looks exactly like a graph. It is only there while something is actually being hidden')
-                .addToggle((toggle) => toggle
-                    .setValue(settings.filterCaption)
-                    .onChange(async (value) => {
-                        settings.filterCaption = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
-
-            const bar = new Setting(containerEl)
-                .setName('Keep')
-                .setDesc('Drag a handle to move one edge, or the lit stretch between them to move the whole range without changing its width. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
-
-            const holder = containerEl.createDiv();
-
-            const rangeBar = new RangeBar(holder, {
-                histogram: this.plugin.measureVault().spread,
-                describe: (ranges) => this.plugin.describeRange(ranges),
-                onPreview: (ranges) => this.plugin.previewRanges(ranges),
-                onChange: (ranges) => {
-                    this.plugin.previewRanges(null);
-                    settings.filterRanges = ranges;
-                    this.save();
-                }
-            });
-
-            rangeBar.setRanges(settings.filterRanges);
-
-            bar.addExtraButton((button) => button
-                .setIcon('plus')
-                .setTooltip('Add another range')
-                .onClick(async () => {
-                    settings.filterRanges.push({ from: 0, to: 0.2 });
-                    await this.plugin.saveSettings();
-                    this.display();
-                })
-            );
-
-            if (settings.filterRanges.length > 1) {
-                bar.addExtraButton((button) => button
-                    .setIcon('minus')
-                    .setTooltip('Remove the last range')
-                    .onClick(async () => {
-                        settings.filterRanges.pop();
-                        await this.plugin.saveSettings();
-                        this.display();
-                    })
-                );
-            }
-        }
-
-        section('Labels');
-
-        new Setting(containerEl)
-            .setName('Show note age')
-            .setDesc('How long ago a note was modified, drawn above its node the way the title is drawn below it')
-            .addDropdown((dropdown) => {
-                for (const mode of AGE_MODES) {
-                    dropdown.addOption(mode, AGE_MODE_LABELS[mode]);
-                }
-
-                dropdown.setValue(settings.ageLabels).onChange(async (value) => {
-                    settings.ageLabels = value as AgeMode;
-                    await this.plugin.saveSettings();
-                });
-            });
-        new Setting(containerEl)
-            .setName('Show the open note\'s age in the status bar')
-            .setDesc('Reads the note you have open rather than the graph, so it works with no graph view in sight')
-            .addToggle((toggle) => toggle
-                .setValue(settings.statusBarAge)
-                .onChange(async (value) => {
-                    settings.statusBarAge = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        section('Tabs');
-
-        new Setting(containerEl)
-            .setName('Show a dot beside each tab')
-            .setDesc("A filled circle at that note's brightness in the graph, so its age reads at a glance without opening the graph at all. The newest note takes the spotlight colour when the spotlight is on")
-            .addToggle((toggle) => toggle
-                .setValue(settings.tabDot)
-                .onChange(async (value) => {
-                    settings.tabDot = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        new Setting(containerEl)
-            .setName('Fade tabs')
-            .setDesc('Dims a tab the longer it goes untouched, so the tab bar reads as attention rather than a pile of things you opened once. The close button keeps its strength, and the tab you are in never fades')
-            .addDropdown((dropdown) => {
-                for (const mode of TAB_MODES) {
-                    dropdown.addOption(mode, TAB_MODE_LABELS[mode]);
-                }
-
-                dropdown.setValue(settings.tabFade).onChange(async (value) => {
-                    settings.tabFade = value as TabFade;
-                    await this.plugin.saveSettings();
-                    this.display();
-                });
-            });
-
-        if (settings.tabFade !== 'off') {
-            new Setting(containerEl)
-                .setName('What fades')
-                .setDesc('Just the icon and title, or the whole tab with its background. Either way, hovering a faded tab brings it back to full strength, which is what keeps its close button reachable')
-                .addDropdown((dropdown) => {
-                    for (const scope of TAB_SCOPES) {
-                        dropdown.addOption(scope, TAB_SCOPE_LABELS[scope]);
-                    }
-
-                    dropdown.setValue(settings.tabFadeScope).onChange(async (value) => {
-                        settings.tabFadeScope = value as TabFadeScope;
-                        await this.plugin.saveSettings();
-                    });
-                });
-        }
-
-        if (settings.tabFade === 'attention') {
-            new Setting(containerEl)
-                .setName('How it fades')
-                .setDesc('Gradually reads as how long ago; all at once reads as past the line or not. A gradient over a short span saturates almost immediately, so if everything looks equally faint this is the setting to change — or the one below it')
-                .addDropdown((dropdown) => {
-                    for (const curve of TAB_CURVES) {
-                        dropdown.addOption(curve, TAB_CURVE_LABELS[curve]);
-                    }
-
-                    dropdown.setValue(settings.tabFadeCurve).onChange(async (value) => {
-                        settings.tabFadeCurve = value as TabFadeCurve;
-                        await this.plugin.saveSettings();
-                    });
-                });
-
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Faded after')
-                    .setDesc('Minutes of being ignored before a tab is as faint as it gets. Time spent in a note does not count against it'),
-                TAB_AFTER_RANGE,
-                settings.tabFadeAfter,
-                (value) => {
-                    settings.tabFadeAfter = Math.round(value);
-                    this.save();
-                }
-            );
-        }
-
-        if (settings.tabFade !== 'off') {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Faintest a tab gets')
-                    .setDesc('A tab you cannot read is a tab you cannot get back to, so this does not go to zero'),
-                TAB_FLOOR_RANGE,
-                settings.tabFadeFloor,
-                (value) => {
-                    settings.tabFadeFloor = value;
-                    this.save();
-                }
-            );
-        }
-
-        section('Spotlight');
-
-        new Setting(containerEl)
-            .setName('Spotlight the newest note')
-            .setDesc('Paint the single most recently modified note a colour of your own, so the thing you touched last is findable at a glance')
-            .addToggle((toggle) => toggle
-                .setValue(settings.spotlightNewest)
-                .onChange(async (value) => {
-                    settings.spotlightNewest = value;
-                    await this.plugin.saveSettings();
-                    // The colour and strength below only apply when it is on.
-                    this.display();
-                })
-            );
-
-        if (settings.spotlightNewest) {
-            new Setting(containerEl)
-                .setName('Spotlight colour')
-                .setDesc('White reads well on a dark theme. Pick something darker if yours is light')
-                .addColorPicker((picker) => picker
-                    .setValue(settings.spotlightColor)
-                    .onChange(async (value) => {
-                        settings.spotlightColor = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
-
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Spotlight strength')
-                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
-                STRENGTH_RANGE,
-                settings.spotlightStrength,
-                (value) => {
-                    settings.spotlightStrength = value;
-                    this.save();
-                }
-            );
-
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Spotlight size')
-                    .setDesc('What the newest note\'s own circle is multiplied by. Obsidian sizes a node by its link count and nothing else, and the note you wrote last is almost always the least linked thing in the vault — so without this the one node you always want to find is reliably the smallest on screen. Multiplied on top of any other sizing, not instead of it'),
-                SPOTLIGHT_SIZE_RANGE,
-                settings.spotlightSize,
-                (value) => {
-                    settings.spotlightSize = value;
-                    this.save();
-                }
-            );
-        }
-
-        new Setting(containerEl)
-            .setName('Mark tabs you have left alone')
-            .setDesc('A quiet line down the edge of a tab once you have not looked at it for a while, and a command to close the marked ones all at once. Nothing closes on its own — a tab that shuts itself feels like data loss even when nothing is lost. Pinned tabs and the tab you are in are never marked')
-            .addToggle((toggle) => toggle
-                .setValue(settings.staleTabs)
-                .onChange(async (value) => {
-                    settings.staleTabs = value;
-                    await this.plugin.saveSettings();
-                    this.display();
-                })
-            );
-
-        if (settings.staleTabs) {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Marked after')
-                    .setDesc('Minutes of being ignored before a tab is marked. Time spent in a note does not count against it'),
-                STALE_AFTER_RANGE,
-                settings.staleTabAfter,
-                (value) => {
-                    settings.staleTabAfter = Math.round(value);
-                    this.save();
-                }
-            );
-        }
-
-        section('History');
+        section('History', "Pulsar's own record of when each note was worked on. It is worth nothing until it has been running a while, which is why it is on");
 
         new Setting(containerEl)
             .setName('Keep a record of when notes were worked on')
@@ -1360,7 +1392,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
         }
 
-        section('Presets');
+        section('Presets', 'Named sets of everything above, to save, share and switch between');
 
         // Presets move only the settings that shape the fade. What you have
         // chosen to show — labels, status bar, spotlight colour — is left alone.
@@ -1492,7 +1524,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 })
             );
 
-        section('What this is doing to your vault');
+        section('What this is doing to your vault', 'Measured against your actual notes, not an example');
 
         this.statsEl = containerEl.createDiv({ cls: 'pulsar-graph-stats' });
         this.renderStats();

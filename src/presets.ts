@@ -32,7 +32,7 @@ export interface Preset {
  * not a look. Someone else's preset has no business switching off the record of
  * how you work, and a preset that silently emptied it would be worse still.
  */
-export type PresetSettings = Omit<PulsarGraphSettings, 'saved' | 'history' | 'historyCap'>;
+export type PresetSettings = Omit<PulsarGraphSettings, 'saved' | 'history' | 'historyCap' | 'enabled'>;
 
 export interface SavedPreset {
     name: string;
@@ -41,7 +41,7 @@ export interface SavedPreset {
 
 /** Strips out what a preset does not carry, leaving a snapshot to keep. */
 export function snapshot(settings: PulsarGraphSettings): PresetSettings {
-    const { saved: _saved, history: _history, historyCap: _cap, ...rest } = settings;
+    const { saved: _saved, history: _history, historyCap: _cap, enabled: _enabled, ...rest } = settings;
     return rest;
 }
 
