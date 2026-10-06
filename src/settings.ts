@@ -21,6 +21,20 @@ const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
 
 export type AgeScale = 'even' | 'rank' | 'log' | 'halflife';
 
+/**
+ * How a sitting count becomes a 0-1 figure. A half-life is missing on purpose:
+ * it measures elapsed days, and a count is not a date.
+ */
+export type IntensityScale = 'even' | 'rank' | 'log';
+
+const INTENSITY_SCALES = ['even', 'rank', 'log'] as const;
+
+const INTENSITY_LABELS: Record<IntensityScale, string> = {
+    even: 'Against the busiest note',
+    rank: 'By rank',
+    log: 'Logarithmic'
+};
+
 const AGE_SCALES = ['even', 'rank', 'log', 'halflife'] as const;
 
 const AGE_SCALE_LABELS: Record<AgeScale, string> = {
@@ -63,6 +77,8 @@ export interface PulsarGraphSettings {
     tabDot: boolean;
     history: boolean;
     historyCap: number;
+    intensityBlend: number;
+    intensityScale: IntensityScale;
 }
 
 const TAB_MODES = ['off', 'attention', 'modified'] as const;
@@ -135,7 +151,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     // a file of this plugin's own. It is also worth nothing until it has been
     // running a while, so starting it off would mean nobody ever has history.
     history: true,
-    historyCap: 100
+    historyCap: 100,
+    intensityBlend: 0,
+    intensityScale: 'rank'
 };
 
 /** A minute is twitchy; a day never arrives while you are looking. */
@@ -161,6 +179,8 @@ const WARMTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 const SESSION_RANGE = { lowest: 1, highest: 240, step: 1 };
 
 const HISTORY_CAP_RANGE = { lowest: 10, highest: 1000, step: 10 };
+
+const BLEND_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
@@ -294,7 +314,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
         tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
         history: parseBoolean(data.history, DEFAULT_SETTINGS.history),
-        historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest))
+        historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest)),
+        intensityBlend: clamp(parseNumber(data.intensityBlend, DEFAULT_SETTINGS.intensityBlend), BLEND_RANGE.lowest, BLEND_RANGE.highest),
+        intensityScale: INTENSITY_SCALES.find((scale) => scale === data.intensityScale) ?? DEFAULT_SETTINGS.intensityScale
     };
 }
 
@@ -921,6 +943,37 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.save();
                 }
             );
+
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Blend in edit intensity')
+                    .setDesc('How much of a node\'s brightness comes from how often you return to a note rather than from how recently you touched it. At 0 nothing changes at all. Added to recency rather than multiplied by it, so a note with nothing recorded yet keeps a share of what its date earns instead of vanishing. Worth little until the history has been running a while, and a steep fade curve will magnify it sharply. The curve preview above shows age alone'),
+                BLEND_RANGE,
+                settings.intensityBlend,
+                (value) => {
+                    settings.intensityBlend = value;
+                    this.save();
+                }
+            );
+
+            // Shown whatever the blend is, rather than appearing when it
+            // leaves zero. Revealing it would mean redrawing the tab from a
+            // slider's own change handler, which destroys the element being
+            // dragged — the bug that made the age filter handles move a step
+            // at a time.
+            new Setting(containerEl)
+                .setName('Measure intensity')
+                .setDesc('Sitting counts are far more lopsided than dates — most notes have one or two and a handful have dozens — so measuring against the busiest note leaves almost everything at the bottom. Rank is the one a lopsided spread cannot flatten')
+                .addDropdown((dropdown) => {
+                    for (const scale of INTENSITY_SCALES) {
+                        dropdown.addOption(scale, INTENSITY_LABELS[scale]);
+                    }
+
+                    dropdown.setValue(settings.intensityScale).onChange(async (value) => {
+                        settings.intensityScale = value as IntensityScale;
+                        await this.plugin.saveSettings();
+                    });
+                });
 
             // Core File Recovery holds the only local record of anything from
             // before this was switched on. Reading another plugin's private

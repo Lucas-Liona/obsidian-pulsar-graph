@@ -61,6 +61,7 @@ export default class PulsarGraphPlugin extends Plugin {
     async onload(): Promise<void> {
         await this.loadSettings();
         await this.history.load();
+        this.store.setSittingSource((path) => (this.settings.history ? this.history.sittings(path) : 0));
         this.addSettingTab(new PulsarSettingTab(this.app, this));
 
         this.store.build(this.app.vault.getMarkdownFiles());

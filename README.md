@@ -430,7 +430,28 @@ and the import never goes near it: the two indexes are walked with
 `openKeyCursor`, which hands back a cursor object that has no `value` property on
 it at all, so the text isn't merely left alone, it's unreachable from there.
 
-Nothing reads it yet beyond a count in the status bar. The view it's for —
+**Blend in edit intensity** is the first thing that reads it. Slide it up and a
+node's brightness stops being purely about *when* you last touched a note and
+starts being partly about *how often you come back to it* — the note you revisit
+every week outshines the one you opened once, even if both were touched this
+morning.
+
+It's added to recency rather than multiplied by it:
+
+```
+brightness = (1 − blend) · recency + blend · intensity
+```
+
+which is why 0 is a true no-op and why a note with nothing recorded yet keeps a
+share of what its date earns instead of vanishing. Intensity is a sitting count,
+ranked against the other notes by default — counts are far more lopsided than
+dates, most notes having one or two while a handful have dozens, so measuring
+against the busiest note would leave nearly everything at the bottom.
+
+It's worth little until the history has been running a while, and a steep fade
+curve magnifies it sharply.
+
+Nothing else reads it yet beyond a count in the status bar. The view it's for —
 a note's history drawn as beads down the sidebar — is
 [issue #26](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/26),
 and it's deliberately later: it's much easier to design against a history that

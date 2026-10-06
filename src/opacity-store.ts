@@ -41,7 +41,22 @@ export class OpacityStore {
     /** Every note's mtime in order, which is what rank reads positions out of. */
     private ranking: number[] = [];
 
+    /** Every note's sitting count in order, for ranking edit intensity. */
+    private intensityRanking: number[] = [];
+
+    /** How many sittings a note has on record. Zero until a history exists. */
+    private sittings: (path: string) => number = () => 0;
+
     constructor(private readonly getSettings: () => PulsarGraphSettings) {}
+
+    /**
+     * Where sitting counts come from. Kept as a callback so the store knows
+     * nothing about the history file, and so a vault with the history switched
+     * off reads zero everywhere rather than carrying a second empty structure.
+     */
+    setSittingSource(sittings: (path: string) => number): void {
+        this.sittings = sittings;
+    }
 
     build(files: TFile[]): void {
         this.mtimes.clear();
@@ -70,7 +85,7 @@ export class OpacityStore {
             return;
         }
 
-        this.opacities.set(file.path, this.calculateOpacity(mtime));
+        this.opacities.set(file.path, this.calculateOpacity(mtime, file.path));
     }
 
     recordDelete(file: TFile): void {
@@ -105,9 +120,10 @@ export class OpacityStore {
 
         this.anchor = Date.now();
         this.rebuildRanking();
+        this.rebuildIntensityRanking();
         this.opacities.clear();
         for (const [path, mtime] of this.mtimes) {
-            this.opacities.set(path, this.calculateOpacity(mtime));
+            this.opacities.set(path, this.calculateOpacity(mtime, path));
         }
 
         this.opacitiesStale = false;
@@ -184,17 +200,107 @@ export class OpacityStore {
     }
 
     cacheOpacityFor(path: string, mtime: number): number {
-        const opacity = this.calculateOpacity(mtime);
+        const opacity = this.calculateOpacity(mtime, path);
         this.opacities.set(path, opacity);
         return opacity;
     }
 
-    private calculateOpacity(mtime: number): number {
-        const { fadeType, minOpacity, maxOpacity, steepness, numSteps } = this.getSettings();
+    /**
+     * The path is optional because the settings preview walks invented ages
+     * that belong to no note. Without one there is no intensity to read, so the
+     * preview shows the age curve alone — which is what it is for.
+     */
+    private calculateOpacity(mtime: number, path?: string): number {
+        const { fadeType, minOpacity, maxOpacity, steepness, numSteps, intensityBlend } = this.getSettings();
 
-        const fade = shapeRecency(fadeType, this.recencyOf(mtime), { steepness, numSteps });
+        let shaped = this.recencyOf(mtime);
+
+        // Added to recency rather than multiplied by it. A product would make a
+        // note with nothing on record vanish however recently it was edited,
+        // which is every note for the first weeks after the history is switched
+        // on. At a blend of 0 this is exactly the old behaviour, so the feature
+        // being off by default falls out of the arithmetic.
+        if (intensityBlend > 0 && path !== undefined) {
+            shaped = (1 - intensityBlend) * shaped + intensityBlend * this.intensityOf(path);
+        }
+
+        const fade = shapeRecency(fadeType, shaped, { steepness, numSteps });
 
         return minOpacity + fade * (maxOpacity - minOpacity);
+    }
+
+    /**
+     * How heavily a note has been worked on, as a 0-1 figure.
+     *
+     * Sitting counts are far more lopsided than dates: most notes have one or
+     * two and a handful have dozens, so measuring against the busiest note
+     * leaves almost everything at the bottom. Rank is the default for the same
+     * reason it is the most useful age scale — it is the one a lopsided
+     * distribution cannot flatten.
+     */
+    private intensityOf(path: string): number {
+        const count = this.sittings(path);
+
+        if (count <= 0) {
+            return 0;
+        }
+
+        const { intensityScale } = this.getSettings();
+
+        if (intensityScale === 'rank') {
+            const places = this.intensityRanking.length;
+
+            if (places <= 1) {
+                return 1;
+            }
+
+            let low = 0;
+            let high = places;
+
+            while (low < high) {
+                const middle = (low + high) >> 1;
+
+                if (this.intensityRanking[middle] < count) {
+                    low = middle + 1;
+                } else {
+                    high = middle;
+                }
+            }
+
+            return low / (places - 1);
+        }
+
+        const busiest = this.intensityRanking.at(-1) ?? count;
+
+        if (busiest <= 0) {
+            return 0;
+        }
+
+        if (intensityScale === 'log') {
+            return clamp(Math.log1p(count) / Math.log1p(busiest), 0, 1);
+        }
+
+        return clamp(count / busiest, 0, 1);
+    }
+
+    /** The sitting counts in order, which is what rank reads positions out of. */
+    private rebuildIntensityRanking(): void {
+        if (this.getSettings().intensityBlend <= 0) {
+            this.intensityRanking = [];
+            return;
+        }
+
+        const counts: number[] = [];
+
+        for (const path of this.mtimes.keys()) {
+            const count = this.sittings(path);
+
+            if (count > 0) {
+                counts.push(count);
+            }
+        }
+
+        this.intensityRanking = counts.sort((a, b) => a - b);
     }
 
     /**
