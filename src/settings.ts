@@ -69,6 +69,9 @@ export interface PulsarGraphSettings {
     trailColor: string;
     trailStrength: number;
     saved: SavedPreset[];
+    ink: boolean;
+    inkMinutes: number;
+    inkColor: string;
     nodeSizeByAge: boolean;
     nodeSizeSmallest: number;
     nodeSizeLargest: number;
@@ -162,6 +165,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailColor: '#5ac8fa',
     trailStrength: 0.55,
     saved: [],
+    ink: false,
+    inkMinutes: 5,
+    inkColor: '#ff7a45',
     nodeSizeByAge: false,
     nodeSizeSmallest: 0.7,
     nodeSizeLargest: 1.8,
@@ -218,6 +224,9 @@ const BLEND_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** What a node's own size is multiplied by. Obsidian's own slider is separate. */
 const NODE_SIZE_RANGE = { lowest: 0.2, highest: 3, step: 0.1 };
+
+/** Minutes for fresh writing to cool back to ordinary text. */
+const INK_RANGE = { lowest: 1, highest: 240, step: 1 };
 
 /** What a title's font is multiplied by. Obsidian offers no control at all. */
 const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
@@ -347,6 +356,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
+        ink: parseBoolean(data.ink, DEFAULT_SETTINGS.ink),
+        inkMinutes: clamp(parseNumber(data.inkMinutes, DEFAULT_SETTINGS.inkMinutes), INK_RANGE.lowest, INK_RANGE.highest),
+        inkColor: parseColor(data.inkColor, DEFAULT_SETTINGS.inkColor),
         nodeSizeByAge: parseBoolean(data.nodeSizeByAge, DEFAULT_SETTINGS.nodeSizeByAge),
         nodeSizeSmallest: clamp(parseNumber(data.nodeSizeSmallest, DEFAULT_SETTINGS.nodeSizeSmallest), NODE_SIZE_RANGE.lowest, NODE_SIZE_RANGE.highest),
         nodeSizeLargest: clamp(parseNumber(data.nodeSizeLargest, DEFAULT_SETTINGS.nodeSizeLargest), NODE_SIZE_RANGE.lowest, NODE_SIZE_RANGE.highest),
@@ -785,6 +797,53 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.save();
                 }
             );
+        }
+
+        section('Fresh writing');
+
+        new Setting(containerEl)
+            .setName('Light up what you just wrote')
+            .setDesc('Text takes a colour as you type it and cools back to normal over the next few minutes, so a page you have been working in shows where the work was. Nothing is written to the note — it is a colour in the editor and the file on disk is untouched')
+            .addToggle((toggle) => toggle
+                .setValue(settings.ink)
+                .onChange(async (value) => {
+                    settings.ink = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.ink) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Cools over')
+                    .setDesc('Minutes for fresh writing to fade all the way back. Longer makes a whole session legible; shorter keeps it to what you are doing right now'),
+                INK_RANGE,
+                settings.inkMinutes,
+                (value) => {
+                    settings.inkMinutes = Math.round(value);
+                    this.save();
+                }
+            );
+
+            new Setting(containerEl)
+                .setName('Colour')
+                .setDesc('What the newest writing is drawn in, fading to your normal text colour from there')
+                .addColorPicker((picker) => picker
+                    .setValue(settings.inkColor)
+                    .onChange(async (value) => {
+                        settings.inkColor = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+
+            new Setting(containerEl)
+                .setName('Start again')
+                .setDesc('Cools everything at once, so what is on the page counts as old and the next thing you write stands on its own. Also a command')
+                .addButton((button) => button
+                    .setButtonText('Cool it all')
+                    .onClick(() => this.plugin.forgetInk())
+                );
         }
 
         section('Size');
