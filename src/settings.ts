@@ -18,20 +18,22 @@ const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
     window: 'A recent window'
 };
 
-export type AgeScale = 'even' | 'rank' | 'log';
+export type AgeScale = 'even' | 'rank' | 'log' | 'halflife';
 
-const AGE_SCALES = ['even', 'rank', 'log'] as const;
+const AGE_SCALES = ['even', 'rank', 'log', 'halflife'] as const;
 
 const AGE_SCALE_LABELS: Record<AgeScale, string> = {
     even: 'Even',
     rank: 'By rank',
-    log: 'Logarithmic'
+    log: 'Logarithmic',
+    halflife: 'By half-life'
 };
 
 export interface PulsarGraphSettings {
     normalizeBy: NormalizeBy;
     windowDays: number;
     ageScale: AgeScale;
+    halfLifeDays: number;
     fadeType: FadeType;
     minOpacity: number;
     maxOpacity: number;
@@ -99,6 +101,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     normalizeBy: 'vault',
     windowDays: 30,
     ageScale: 'even',
+    halfLifeDays: 14,
     fadeType: 'linear',
     minOpacity: 0.1,
     maxOpacity: 3.0,
@@ -143,6 +146,8 @@ const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
 /** A day at the short end, a year at the long one. */
 const WINDOW_RANGE = { lowest: 1, highest: 365, step: 1 };
+
+const HALF_LIFE_RANGE = { lowest: 1, highest: 365, step: 1 };
 
 /** Stops short of 1, where a single fresh note would light the whole graph. */
 const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
@@ -260,6 +265,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
+        halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
         fadeType: parseFadeType(data.fadeType),
         minOpacity: Math.min(minOpacity, maxOpacity),
         maxOpacity: Math.max(minOpacity, maxOpacity),
@@ -425,39 +431,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         section('Time');
 
-        new Setting(containerEl)
-            .setName('Measure age against')
-            .setDesc("What counts as old. The whole history lets one ancient note set the far end for everything else; a window spends the entire range on the last so many days")
-            .addDropdown((dropdown) => {
-                for (const mode of NORMALIZE_MODES) {
-                    dropdown.addOption(mode, NORMALIZE_LABELS[mode]);
-                }
-
-                dropdown.setValue(settings.normalizeBy).onChange(async (value) => {
-                    settings.normalizeBy = value as NormalizeBy;
-                    await this.plugin.saveSettings();
-                    // The window length below only applies in window mode.
-                    this.display();
-                });
-            });
-
-        if (settings.normalizeBy === 'window') {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Window')
-                    .setDesc('How many days back the range covers. Anything older sits at minimum opacity'),
-                WINDOW_RANGE,
-                settings.windowDays,
-                (value) => {
-                    settings.windowDays = Math.round(value);
-                    this.save();
-                }
-            );
-        }
-
+        // The scale comes first because it decides what the rest of this
+        // section is even for: a half-life is measured against the calendar,
+        // so the range every other scale needs does not apply to it.
         new Setting(containerEl)
             .setName('Age scale')
-            .setDesc('How a gap between two notes becomes a gap in opacity. Rank spreads them evenly however lopsided your editing has been; logarithmic magnifies recent differences and flattens old ones')
+            .setDesc('How a gap between two notes becomes a gap in opacity. Rank spreads them evenly however lopsided your editing has been; logarithmic magnifies recent differences and flattens old ones; a half-life measures each note against the clock instead of against the others')
             .addDropdown((dropdown) => {
                 for (const scale of AGE_SCALES) {
                     dropdown.addOption(scale, AGE_SCALE_LABELS[scale]);
@@ -466,9 +445,55 @@ export class PulsarSettingTab extends PluginSettingTab {
                 dropdown.setValue(settings.ageScale).onChange(async (value) => {
                     settings.ageScale = value as AgeScale;
                     await this.plugin.saveSettings();
-                    this.renderPreview();
+                    // A half-life replaces the range settings below rather than
+                    // adding to them.
+                    this.display();
                 });
             });
+
+        if (settings.ageScale === 'halflife') {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Half-life')
+                    .setDesc('Days for a note to fade halfway. Twice that and it is a quarter as bright, and so on. Nothing else in the vault changes what a note is worth, so adding or deleting notes leaves every other brightness exactly where it was'),
+                HALF_LIFE_RANGE,
+                settings.halfLifeDays,
+                (value) => {
+                    settings.halfLifeDays = Math.round(value);
+                    this.save();
+                }
+            );
+        } else {
+            new Setting(containerEl)
+                .setName('Measure age against')
+                .setDesc("What counts as old. The whole history lets one ancient note set the far end for everything else; a window spends the entire range on the last so many days")
+                .addDropdown((dropdown) => {
+                    for (const mode of NORMALIZE_MODES) {
+                        dropdown.addOption(mode, NORMALIZE_LABELS[mode]);
+                    }
+
+                    dropdown.setValue(settings.normalizeBy).onChange(async (value) => {
+                        settings.normalizeBy = value as NormalizeBy;
+                        await this.plugin.saveSettings();
+                        // The window length below only applies in window mode.
+                        this.display();
+                    });
+                });
+
+            if (settings.normalizeBy === 'window') {
+                new NumberControl(
+                    new Setting(containerEl)
+                        .setName('Window')
+                        .setDesc('How many days back the range covers. Anything older sits at minimum opacity'),
+                    WINDOW_RANGE,
+                    settings.windowDays,
+                    (value) => {
+                        settings.windowDays = Math.round(value);
+                        this.save();
+                    }
+                );
+            }
+        }
 
         section('Fade');
 

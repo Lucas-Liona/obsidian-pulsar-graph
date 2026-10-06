@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.24.0] - 2026-10-06
+
+### Added
+
+- **A fourth age scale, by half-life.** Set it to 14 days and a note from a
+  fortnight ago is drawn at half brightness, one from a month ago at a quarter,
+  and so on down.
+
+  It is the only scale that is absolute. The other three measure each note
+  against the rest of the vault, so what a note is worth depends on what else is
+  in there: a single note from years ago stretches the range and darkens
+  everything else, and deleting it brightens the whole graph for no reason anyone
+  would guess. Measured on a 1085 note vault, dropping one ancient note in moved
+  all six sampled notes under Even — the largest by 1.62 — and none at all under
+  a half-life.
+
+  This is also what a softmax over the notes reduces to. Rescaling it so the
+  brightest note is 1 cancels the denominator exactly, leaving an exponential
+  decay on the gap from the newest note, with the temperature as a time constant
+  in days. The sum normalisation contributes nothing, and keeping it would put
+  the average note of 1085 at 0.0009.
+
+- **A sixth preset, Steady decay**: a two-week half-life, the only preset where
+  adding or deleting notes changes nothing else.
+
+### Changed
+
+- **Age scale** now comes first in the Time settings, because it decides whether
+  the rest of that section applies at all. **Measure age against** and the window
+  length are hidden when a half-life is chosen, since a half-life has no range to
+  measure against. A leftover window setting no longer narrows the ages the
+  settings preview walks.
+
 ## [1.23.0] - 2026-10-06
 
 ### Added
