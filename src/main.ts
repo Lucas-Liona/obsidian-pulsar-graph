@@ -7,7 +7,7 @@ import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, getGraphRenderers, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -20,6 +20,10 @@ import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings 
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
+    /** Which of Obsidian's two graphs this is. Fixed for the view's lifetime. */
+    kind: GraphKind;
+    /** The note a local graph is built around, read fresh each pass. */
+    centre: () => string | null;
     release: Unhook;
     labels: AgeLabels;
     links: LinkShading;
@@ -699,6 +703,22 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
+     * The trailing half of the caption, saying what the brightnesses on screen
+     * were measured against when that is not simply the vault.
+     *
+     * Worth saying because re-spreading is invisible: a graph whose range has
+     * been re-measured across twelve notes looks exactly like a graph, and the
+     * gradient means something quite different.
+     */
+    private describeSpread(scoped: boolean): string {
+        if (scoped) {
+            return ' · spread across this panel';
+        }
+
+        return this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : '';
+    }
+
+    /**
      * The notes a filter is not allowed to take out: the one you have open, so
      * a local graph cannot go blank under you, the spotlit ones, since a
      * spotlight pointing at a node that is not there says nothing at all, and
@@ -910,25 +930,26 @@ export default class PulsarGraphPlugin extends Plugin {
      * closes.
      */
     private syncRenderers(): void {
-        const open = new Set(getGraphRenderers(this.app));
+        const open = openGraphs(this.app);
+        const live = new Set(open.map(({ renderer }) => renderer));
 
         for (const [renderer, graph] of this.attached) {
-            if (!open.has(renderer)) {
+            if (!live.has(renderer)) {
                 graph.release();
                 this.attached.delete(renderer);
             }
         }
 
-        for (const renderer of open) {
-            if (!this.attached.has(renderer)) {
-                this.attached.set(renderer, this.attach(renderer));
+        for (const graph of open) {
+            if (!this.attached.has(graph.renderer)) {
+                this.attached.set(graph.renderer, this.attach(graph));
             }
 
-            this.applyTo(renderer);
+            this.applyTo(graph.renderer);
         }
     }
 
-    private attach(renderer: GraphRenderer): AttachedGraph {
+    private attach({ renderer, kind, centre }: OpenGraph): AttachedGraph {
         // Labels, links and nodes all read the same number, so a node lifted by
         // a neighbour carries its date and its links up with it.
         const pooled: { byPath: Map<string, number> | null } = { byPath: null };
@@ -996,6 +1017,8 @@ export default class PulsarGraphPlugin extends Plugin {
         });
 
         return {
+            kind,
+            centre,
             labels,
             links,
             pooled,
@@ -1068,13 +1091,18 @@ export default class PulsarGraphPlugin extends Plugin {
             return;
         }
 
+        // What this graph's brightness is measured against. Only a local graph
+        // has the choice: the global graph is showing the vault, so measuring
+        // it against the vault and against itself are the same thing.
+        const scoped = graph.kind === 'local' && this.settings.localScope === 'graph';
+
         // Not only while something is hidden. The line answers "what am I
         // looking at", which is a question a graph raises whether or not a
         // filter is on.
         graph.caption?.set(
             this.settings.filterCaption
                 ? this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE])
-                    + (this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : '')
+                    + this.describeSpread(scoped)
                 : null
         );
 
@@ -1102,11 +1130,20 @@ export default class PulsarGraphPlugin extends Plugin {
             : null);
 
         this.store.refresh();
+
+        // Chosen once and read twice: the colour and the size bonus have to
+        // land on the same notes, and a local graph measured against itself
+        // picks a different set from the vault's newest.
+        const spotlit = this.settings.spotlightNewest
+            ? scoped
+                ? this.store.newestAmong(pathsIn(renderer), this.settings.spotlightCount)
+                : this.store.newestPaths(this.settings.spotlightCount)
+            : [];
+
         graph.pooled.byPath = applyOpacity(renderer, this.store, {
-            spotlightNewest: this.settings.spotlightNewest,
+            spotlit,
             spotlightRgb: parseHexColor(this.settings.spotlightColor),
             spotlightStrength: this.settings.spotlightStrength,
-            spotlightCount: this.settings.spotlightCount,
             pinned: this.pins.all(),
             pinOpacity: this.settings.maxOpacity,
             pinMark: this.settings.pinMark,
@@ -1117,12 +1154,12 @@ export default class PulsarGraphPlugin extends Plugin {
             neighbourHops: this.settings.neighbourHops,
             clusterWarmth: this.settings.clusterWarmth,
             clusterBy: this.settings.clusterBy,
-            adaptive: this.settings.normalizeBy === 'shown',
+            adaptive: this.settings.normalizeBy === 'shown' || scoped,
             spreadFloorHours: this.settings.spreadFloorHours
         });
 
         applySizes(renderer, {
-            spotlit: new Set(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : []),
+            spotlit: new Set(spotlit),
             spotlightSize: this.settings.spotlightSize,
             byAge: this.settings.nodeSizeByAge,
             smallest: this.settings.nodeSizeSmallest,

@@ -12,6 +12,7 @@ master toggle at the top of the settings, and off means nothing runs at all.
 | **[Time](time.md)** | What counts as old, and how an age becomes a brightness. Read this one first if you read any. |
 | **[The graph](graph.md)** | Size, the age above a node, the spotlight, neighbour glow, folder temperature, links. |
 | **[The age filter](filter.md)** | Hiding notes outside a stretch of time, and the scrubber in the graph's own panel. |
+| **[The local graph](local-graph.md)** | The panel around one note, and why it is not a smaller version of the whole graph. |
 | **[Pins](pins.md)** | Holding chosen notes bright whatever their dates say, and keeping them out of the filter's way. |
 | **[Tabs](tabs.md)** | Fading by attention, the brightness dot, marking tabs you have left alone. |
 | **[Fresh writing](writing.md)** | Text that lights up as you type it and cools back down. |

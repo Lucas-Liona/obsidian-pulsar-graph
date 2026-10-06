@@ -46,8 +46,9 @@ alone.
 
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
-| Measure age against | Whole history, Recent window | Whole history | all |
+| Measure age against | Whole history, Recent window, Whatever the graph is showing | Whole history | all |
 | Window | 1 – 365 days | 30 | Recent window |
+| Never spread across less than | 1 – 168 hours | 6 | anything that re-spreads |
 | Age scale | Even, By rank, Logarithmic | Even | all |
 | Fade type | Linear, Exponential, Step | Linear | all |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all |
@@ -74,6 +75,7 @@ alone.
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
+| Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph |
 | Give pins a colour | on / off | on | all |
 | Pin colour | any | purple | Pin colour on |
 | Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on |

@@ -76,6 +76,7 @@ being read in order.
 | **[Time](docs/time.md)** | What counts as old, measuring against your vault or a window, the age scales and the fade curves. The number everything else reads. |
 | **[The graph](docs/graph.md)** | Node size, the age drawn above a node, the newest-note spotlight, the glow between neighbours, folder temperature, and what the links carry. |
 | **[The age filter](docs/filter.md)** | Taking notes out of the graph entirely rather than dimming them, and the scrubber inside the graph's own panel. |
+| **[The local graph](docs/local-graph.md)** | The panel around one note. It asks a narrower question than the whole graph, and can be measured against itself rather than against the vault. |
 | **[Pins](docs/pins.md)** | Notes you choose to hold bright whatever their dates say, for the ones you mean to come back to. The one place you overrule the clock. |
 | **[Tabs](docs/tabs.md)** | The tab bar as a readout of attention: fading by how long since you looked, a brightness dot, and marking the ones you have left alone. |
 | **[Fresh writing](docs/writing.md)** | The part that works inside a note. Text takes a colour as you type it and cools back to normal. |
