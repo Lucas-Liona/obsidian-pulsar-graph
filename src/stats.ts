@@ -1,5 +1,6 @@
 import { formatAge } from './age';
 import { GraphRenderer } from './graph';
+import { Coverage } from './history';
 import { OpacityStore } from './opacity-store';
 import { PulsarGraphSettings } from './settings';
 
@@ -30,7 +31,8 @@ export function describeVault(
     store: OpacityStore,
     settings: PulsarGraphSettings,
     renderer: GraphRenderer | null,
-    strengthOf: (path: string) => number | undefined
+    strengthOf: (path: string) => number | undefined,
+    history: Coverage | null
 ): VaultStats {
     const spread = new Array<number>(BANDS).fill(0);
     const levels = new Set<string>();
@@ -66,11 +68,33 @@ export function describeVault(
 
     rows.push(...describeFolders(store));
 
+    if (history) {
+        rows.push(describeHistory(history, now));
+    }
+
     if (renderer) {
         rows.push(...describeGraph(store, settings, renderer));
     }
 
     return { spread, rows };
+}
+
+/**
+ * How much history has accumulated. Worth showing plainly, because this is the
+ * one feature whose whole value is that it has been running a while: someone
+ * who cannot see it filling has no way to tell it apart from doing nothing.
+ */
+function describeHistory(history: Coverage, now: number): Stat {
+    if (history.beads === 0 || history.oldest === undefined) {
+        return { label: 'Edit history', value: 'nothing recorded yet' };
+    }
+
+    const span = formatAge(history.oldest, now);
+
+    return {
+        label: 'Edit history',
+        value: `${history.beads} sittings across ${history.notes} notes, since ${span}`
+    };
 }
 
 /**

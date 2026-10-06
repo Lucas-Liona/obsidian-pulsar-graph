@@ -372,6 +372,35 @@ full strength you get exactly the colour you picked. Below that it mixes with
 whatever your graph groups gave the node, which is the only way a group colour
 should ever end up in there.
 
+### Edit history
+
+Obsidian keeps one modification time per note and throws the rest away. Edit a
+note ten times over a year and nine of those are gone — which is why the graph
+can tell you a note was touched this morning but never that it was touched every
+morning for a month and then abandoned.
+
+Pulsar can keep that record itself. It writes down each **sitting**: a run of
+writes with no gap in it longer than your session gap, so a morning's work is one
+entry rather than the several hundred autosaves it really was. Each one stores
+when it started, when it ended, and how long the note was at each end.
+
+It starts empty, and it is worth nothing on the day you install it and a lot a
+year later — which is the only reason it's on by default when everything else
+here is off. The statistics panel at the foot of the settings shows what it has
+collected so far, and **Forget everything recorded** throws the lot away.
+
+It's a record of how *you* worked on *this* machine, so it lives in a file of its
+own in the plugin's folder and is never synced between devices. An edit that
+arrives by sync is dated by the note's own timestamp, so work you did on your
+phone three days ago is recorded three days ago rather than as a fictional
+sitting now.
+
+Nothing reads it yet beyond a count in the status bar. The view it's for —
+a note's history drawn as beads down the sidebar — is
+[issue #26](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/26),
+and it's deliberately later: it's much easier to design against a history that
+already has months in it.
+
 ## Worth knowing
 
 - **Node names keep up with node size.** Obsidian sizes a title from its node
@@ -392,9 +421,13 @@ should ever end up in there.
   [a separate idea](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/23).
   Turning the text fade threshold up is the fix today, and it's the better way to
   use it anyway.
-- **Nothing runs on a timer.** Opacity is reapplied when a note changes, when a
-  graph rebuilds, and when you change a setting. While the vault is idle the plugin
-  does nothing at all.
+- **Opacity isn't polled.** It's reapplied when a note changes, when a graph
+  rebuilds, and when you change a setting — never on a timer. The only timers in
+  the plugin belong to the features that fade against the clock rather than against
+  the vault: the status bar re-reads it once a minute, and the tabs twice a minute.
+- **It reads timestamps and file sizes, never contents.** How recently a note was
+  modified, and how long it is. Not a word of what any note says, no network calls
+  of any kind, and nothing written anywhere except this plugin's own folder.
 
 ## Install
 

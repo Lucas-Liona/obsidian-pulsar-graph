@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.23.0] - 2026-10-06
+
+### Added
+
+- **Keep a record of when notes were worked on**, on by default. Obsidian keeps
+  one modification time per note and discards the rest, so a note touched every
+  morning for a month and then abandoned is indistinguishable from one touched
+  once. Pulsar now writes each *sitting* down itself — a run of writes with no gap
+  longer than your session gap — with when it started, when it ended, and the
+  note's length at each end. Settles #24.
+
+  It is on by default, unlike everything else past the core fade. The rule that
+  keeps extras off exists so nothing changes the look of someone's Obsidian
+  uninvited; this changes nothing on screen, writes only numbers, and into a file
+  of the plugin's own. It is also worth nothing until it has been running a while,
+  so starting it off would mean nobody ever has any history to show.
+
+  A bead's timestamp is the note's own mtime rather than the clock, which is what
+  makes a synced edit land on the day it was really made: Obsidian Sync writes a
+  pulled note with the remote's timestamp, so work done on another device three
+  days ago is recorded three days ago instead of as a fictional sitting now.
+
+  It lives in `history.json` beside the plugin, not in `data.json`. `saveData`
+  rewrites the whole of `data.json` on every settings change, and Obsidian Sync
+  merges config JSON by replacing each top-level key with the remote's copy — so
+  a log nested under a key there would lose every entry the other device had not
+  seen. The file is gitignored, and **Forget everything recorded** empties it.
+
+- **The statistics panel reports what has been collected**: how many sittings,
+  across how many notes, and how far back they reach. This is the one feature
+  whose entire value is that it has been running a while, so being able to watch
+  it fill matters more than usual.
+
+- **The status bar counts sittings** beside the age, once a note has more than one
+  on record.
+
+### Changed
+
+- **The attention clock survives a restart.** Tab fading measured how long since
+  you looked at a note from a table that emptied on every launch, so a tab ignored
+  for three days read as freshly visited after a reload. It is now written down —
+  but the time Obsidian spent closed does not count against a tab, because being
+  away from the app is not time spent ignoring anything. Gaps freeze while it is
+  shut and resume where they left off.
+
+- Saved and shared presets no longer carry the history settings. A preset is a
+  look, and someone else's has no business switching off the record of how you
+  work.
+
 ## [1.22.0] - 2026-10-05
 
 ### Added

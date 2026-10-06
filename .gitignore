@@ -20,3 +20,7 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# Pulsar's own edit history. Numbers about when notes were worked on,
+# kept per-machine and never synced, so it has no business in git either.
+history.json

@@ -5,6 +5,7 @@ import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './fil
 import { GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
 import { applyOpacity, clearSpotlight, controlsFor, DataHook, forgetSpotlightColor, FrameHook, getGraphRenderers, GraphRenderer, holdSpotlightTint, hookRendererData, hookRendererFrame, previewFilter, rebuildGraphData, repaint, SpotlightState, syncLabelFonts, Unhook } from './graph';
+import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
 import { OpacityStore, Sample } from './opacity-store';
 import { Attention, TabFading } from './tabs';
@@ -52,11 +53,13 @@ export default class PulsarGraphPlugin extends Plugin {
     private statusBarEl: HTMLElement | null = null;
     private readonly attention = new Attention(this.app);
     private readonly tabs = new TabFading(this.app, this.attention);
+    private readonly history = new EditHistory(this.app, this);
 
     private readonly updateSoon = debounce(() => this.syncRenderers(), UPDATE_DELAY_MS, true);
 
     async onload(): Promise<void> {
         await this.loadSettings();
+        await this.history.load();
         this.addSettingTab(new PulsarSettingTab(this.app, this));
 
         this.store.build(this.app.vault.getMarkdownFiles());
@@ -67,6 +70,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.registerEvent(this.app.vault.on('delete', (file) => {
             if (isNote(file)) {
                 this.store.recordDelete(file);
+                this.history.forget(file.path);
                 this.updateSoon();
             }
         }));
@@ -74,14 +78,23 @@ export default class PulsarGraphPlugin extends Plugin {
         this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
             this.store.forget(oldPath);
             this.attention.forget(oldPath);
+            this.history.rename(oldPath, file.path);
             this.onFileChanged(file);
         }));
 
-        this.registerInterval(window.setInterval(() => this.paintTabs(), TAB_REFRESH_MS));
+        this.registerInterval(window.setInterval(() => {
+            this.paintTabs();
+
+            // Lets the next session tell idle time from time the app was shut.
+            if (this.settings.history) {
+                this.history.heartbeat();
+            }
+        }, TAB_REFRESH_MS));
 
         this.registerEvent(this.app.workspace.on('file-open', (file) => {
             if (file) {
                 this.attention.touch(file.path);
+                this.noteSeen(file.path);
             }
 
             this.paintTabs();
@@ -102,6 +115,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
             if (active) {
                 this.attention.touch(active.path);
+                this.noteSeen(active.path);
             }
 
             this.syncRenderers();
@@ -114,9 +128,15 @@ export default class PulsarGraphPlugin extends Plugin {
         this.app.workspace.onLayoutReady(() => {
             this.syncRenderers();
             this.syncStatusBar();
-            this.attention.seed();
+            this.attention.seed((path) => this.history.seenAt(path));
             this.paintTabs();
         });
+
+        // Best effort by Obsidian's own admission, so it is a backstop for the
+        // debounced write rather than the thing relied on.
+        this.registerEvent(this.app.workspace.on('quit', (tasks) => {
+            tasks.addPromise(this.history.flush());
+        }));
     }
 
     onunload(): void {
@@ -126,6 +146,28 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.attached.clear();
         this.tabs.clear();
+        void this.history.flush();
+    }
+
+    /** What has been recorded so far, for the settings tab and the statistics. */
+    historyCoverage(): Coverage {
+        return this.history.coverage();
+    }
+
+    async forgetHistory(): Promise<void> {
+        await this.history.clear();
+    }
+
+    /**
+     * Notes that a file was looked at. Only the timestamp is kept, not a count:
+     * opens are far noisier than edits — a quick-switcher fly-by is an open —
+     * and mixing them into the sittings would turn the record of how a note was
+     * written into a record of navigation.
+     */
+    private noteSeen(path: string): void {
+        if (this.settings.history) {
+            this.history.markSeen(path, Date.now());
+        }
     }
 
     /** Dims the tabs that have gone untouched, if that is switched on. */
@@ -269,7 +311,15 @@ export default class PulsarGraphPlugin extends Plugin {
         const file = this.app.workspace.getActiveFile();
         const mtime = file && isNote(file) ? this.store.mtimeFor(file.path) ?? file.stat.mtime : undefined;
 
-        element.setText(mtime === undefined ? '' : `Edited ${formatAge(mtime, Date.now())}`);
+        if (mtime === undefined || !file) {
+            element.setText('');
+            return;
+        }
+
+        const sittings = this.settings.history ? this.history.sittings(file.path) : 0;
+        const worked = sittings > 1 ? ` · ${sittings} sittings` : '';
+
+        element.setText(`Edited ${formatAge(mtime, Date.now())}${worked}`);
     }
 
     /**
@@ -287,7 +337,8 @@ export default class PulsarGraphPlugin extends Plugin {
             this.store,
             this.settings,
             renderer,
-            (path) => graph?.pooled.byPath?.get(path) ?? this.store.opacityFor(path)
+            (path) => graph?.pooled.byPath?.get(path) ?? this.store.opacityFor(path),
+            this.settings.history ? this.history.coverage() : null
         );
     }
 
@@ -302,6 +353,17 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         this.store.recordChange(file);
+
+        if (this.settings.history) {
+            this.history.record(
+                file.path,
+                file.stat.mtime,
+                file.stat.size,
+                this.settings.sessionGapMinutes * 60 * 1000,
+                this.settings.historyCap
+            );
+        }
+
         this.updateSoon();
         this.updateStatusBar();
     }

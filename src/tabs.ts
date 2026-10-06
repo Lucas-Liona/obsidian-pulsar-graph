@@ -18,25 +18,28 @@ export type TabFade = 'off' | 'attention' | 'modified';
  * and an hour is a long time for something sitting open in front of you. Nothing
  * in Obsidian records that, so it is kept here.
  *
- * It is not persisted. "How long since you looked at this" is a fact about a
- * session, and carrying it across a restart would claim knowledge of time the
- * app was not running for. Everything open at load starts level and diverges as
- * you work.
+ * It survives a restart, but the time the app was shut does not count. Being
+ * away from Obsidian for a week is not a week of ignoring a note, so the stored
+ * gaps are frozen while it is closed and resume where they left off. A note
+ * with nothing on record starts level with the rest, which is now.
  */
 export class Attention {
     private readonly seen = new Map<string, number>();
 
     constructor(private readonly app: App) {}
 
-    /** Starts everything already open at the same point, which is now. */
-    seed(): void {
+    /**
+     * Starts everything already open from what was last written down, falling
+     * back to now for anything with no record.
+     */
+    seed(stored: (path: string) => number | undefined): void {
         const now = Date.now();
 
         this.app.workspace.iterateAllLeaves((leaf) => {
             const path = pathOf(leaf);
 
             if (path !== undefined && !this.seen.has(path)) {
-                this.seen.set(path, now);
+                this.seen.set(path, Math.min(now, stored(path) ?? now));
             }
         });
     }
