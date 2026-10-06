@@ -69,6 +69,9 @@ export class Attention {
 /** The class the dot carries, so it can be found again and taken away. */
 const DOT_CLASS = 'pulsar-graph-tab-dot';
 
+/** The class a tab wears once it has gone quiet long enough to be let go. */
+const STALE_CLASS = 'pulsar-graph-tab-stale';
+
 export interface TabFadeOptions {
     mode: TabFade;
     /** Shows a filled circle beside each title at that note's own brightness. */
@@ -81,6 +84,8 @@ export interface TabFadeOptions {
     floor: number;
     /** A note's brightness in the graph, for keeping the two in step. */
     graphStrength: (path: string) => number | undefined;
+    /** Minutes of being ignored before a tab is marked as closeable. */
+    stale: number | null;
 }
 
 /**
@@ -94,11 +99,12 @@ export interface TabFadeOptions {
 export class TabFading {
     private readonly touched = new Set<HTMLElement>();
     private readonly dots = new Set<HTMLElement>();
+    private readonly staled = new Set<HTMLElement>();
 
     constructor(private readonly app: App, private readonly attention: Attention) {}
 
     apply(options: TabFadeOptions): void {
-        if (options.mode === 'off' && !options.dot) {
+        if (options.mode === 'off' && !options.dot && options.stale === null) {
             this.clear();
             return;
         }
@@ -124,6 +130,14 @@ export class TabFading {
             }
 
             this.markDot(header, path, options);
+
+            // Sidebar panels are left out of this. The outline, backlinks and
+            // local graph all report a file of their own, so without this the
+            // command below would offer to close someone's sidebar.
+            const inMain = leaf.getRoot() === this.app.workspace.rootSplit;
+            const pinned = leaf.getViewState().pinned === true;
+
+            this.markStale(header, path, inMain && !pinned ? options.stale : null);
         });
     }
 
@@ -135,6 +149,42 @@ export class TabFading {
 
         this.touched.clear();
         this.clearDots();
+
+        for (const header of this.staled) {
+            header.removeClass(STALE_CLASS);
+        }
+
+        this.staled.clear();
+    }
+
+    /**
+     * Marks a tab that has gone quiet long enough to be worth closing. Marking
+     * only: a tab that shuts itself feels like data loss even when nothing is
+     * lost, and it is the plugin that gets blamed for losing someone's place.
+     * Closing them is a command the user runs.
+     *
+     * A pinned tab is never marked. Pinning is a deliberate statement that it
+     * should stay, and offering to close it argues with the user.
+     */
+    private markStale(header: HTMLElement, path: string, after: number | null): void {
+        if (after === null) {
+            if (this.staled.delete(header)) {
+                header.removeClass(STALE_CLASS);
+            }
+
+            return;
+        }
+
+        const minutes = this.attention.minutesSince(path);
+
+        if (minutes !== undefined && minutes >= after) {
+            header.addClass(STALE_CLASS);
+            this.staled.add(header);
+            return;
+        }
+
+        header.removeClass(STALE_CLASS);
+        this.staled.delete(header);
     }
 
     private clearDots(): void {

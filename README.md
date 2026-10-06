@@ -372,11 +372,24 @@ The close button keeps its full strength either way, because the point of
 noticing a stale tab is being able to do something about it. There's a floor on
 how faint a tab gets, since one you can't read is one you can't get back to.
 
-It isn't remembered across restarts. "How long since you looked at this" is a
-fact about a session, and claiming otherwise would mean counting hours Obsidian
-wasn't running for. Everything open at launch starts level.
+It survives a restart, but the time Obsidian spent closed doesn't count. Being
+away from the app for a week isn't a week of ignoring a note, so the gaps freeze
+while it's shut and resume where they left off. A tab with nothing on record
+starts level with the rest.
 
-Off by default.
+**Mark tabs you have left alone** goes a step further: once a tab has been
+ignored past a threshold you set, a quiet line appears down its edge, and a
+**Close stale tabs** command closes the marked ones.
+
+Nothing closes on its own, ever. A tab that shuts itself feels like data loss
+even when nothing is lost, and it's the plugin that gets blamed for losing your
+place. A pinned tab is never marked — pinning is a deliberate statement that it
+should stay — and neither is the tab you're in, which reports no idle time at
+all. Sidebar panels are left out too: the outline, backlinks and local graph each
+report a file of their own, so without that check the command would have offered
+to close your sidebar.
+
+Both off by default.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in

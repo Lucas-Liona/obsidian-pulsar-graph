@@ -1,4 +1,4 @@
-import { debounce, Plugin, TAbstractFile, TFile } from 'obsidian';
+import { debounce, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge } from './age';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, withinRanges } from './filter';
@@ -110,6 +110,12 @@ export default class PulsarGraphPlugin extends Plugin {
         }));
         this.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
 
+        this.addCommand({
+            id: 'close-stale-tabs',
+            name: 'Close stale tabs',
+            callback: () => this.closeStaleTabs()
+        });
+
         // Graph views come and go, and each brings its own renderer to hook.
         this.registerEvent(this.app.workspace.on('layout-change', () => this.syncRenderers()));
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
@@ -201,6 +207,54 @@ export default class PulsarGraphPlugin extends Plugin {
         }
     }
 
+    /**
+     * Closes the tabs that have been marked, and only when asked. Pinned tabs
+     * and the one in front of you are left alone: the note you are looking at
+     * reports no idle time at all, and a pinned tab is a deliberate statement
+     * that it should stay.
+     *
+     * Leaves are collected before any are detached, since closing one while
+     * walking the list would move the rest.
+     */
+    private closeStaleTabs(): void {
+        if (!this.settings.staleTabs) {
+            new Notice('Marking stale tabs is switched off.');
+            return;
+        }
+
+        const active = this.app.workspace.getActiveFile()?.path;
+        const stale: { leaf: WorkspaceLeaf; path: string }[] = [];
+
+        this.app.workspace.iterateAllLeaves((leaf) => {
+            const file = leaf.view.getState().file;
+
+            if (typeof file !== 'string' || file === active || leaf.getViewState().pinned === true) {
+                return;
+            }
+
+            // Only tabs in the main area. The outline, backlinks and local
+            // graph panels each report a file too, and closing someone's
+            // sidebar is not what this offered to do.
+            if (leaf.getRoot() !== this.app.workspace.rootSplit) {
+                return;
+            }
+
+            const minutes = this.attention.minutesSince(file);
+
+            if (minutes !== undefined && minutes >= this.settings.staleTabAfter) {
+                stale.push({ leaf, path: file });
+            }
+        });
+
+        for (const { leaf, path } of stale) {
+            this.attention.forget(path);
+            leaf.detach();
+        }
+
+        new Notice(stale.length === 0 ? 'No stale tabs to close.' : `Closed ${stale.length} stale ${stale.length === 1 ? 'tab' : 'tabs'}.`);
+        this.paintTabs();
+    }
+
     /** Dims the tabs that have gone untouched, if that is switched on. */
     private paintTabs(): void {
         this.store.refresh();
@@ -213,7 +267,8 @@ export default class PulsarGraphPlugin extends Plugin {
             spotlight: this.settings.spotlightNewest
                 ? { path: this.store.newestPath(), color: this.settings.spotlightColor }
                 : null,
-            graphStrength: (path) => this.store.opacityFor(path)
+            graphStrength: (path) => this.store.opacityFor(path),
+            stale: this.settings.staleTabs ? this.settings.staleTabAfter : null
         });
     }
 

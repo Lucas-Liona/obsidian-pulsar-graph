@@ -75,6 +75,8 @@ export interface PulsarGraphSettings {
     tabFadeAfter: number;
     tabFadeFloor: number;
     tabDot: boolean;
+    staleTabs: boolean;
+    staleTabAfter: number;
     history: boolean;
     historyCap: number;
     intensityBlend: number;
@@ -145,6 +147,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     tabFadeAfter: 60,
     tabFadeFloor: 0.35,
     tabDot: false,
+    staleTabs: false,
+    staleTabAfter: 240,
     // On by default, unlike everything else past the core fade. The rule that
     // keeps extras off exists so nothing changes the look of someone's Obsidian
     // uninvited; this changes nothing on screen, writes only numbers, and into
@@ -158,6 +162,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
 
 /** A minute is twitchy; a day never arrives while you are looking. */
 const TAB_AFTER_RANGE = { lowest: 1, highest: 480, step: 1 };
+
+const STALE_AFTER_RANGE = { lowest: 5, highest: 2880, step: 5 };
 
 const TAB_FLOOR_RANGE = { lowest: 0.1, highest: 1, step: 0.05 };
 
@@ -313,6 +319,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
         tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
+        staleTabs: parseBoolean(data.staleTabs, DEFAULT_SETTINGS.staleTabs),
+        staleTabAfter: Math.round(clamp(parseNumber(data.staleTabAfter, DEFAULT_SETTINGS.staleTabAfter), STALE_AFTER_RANGE.lowest, STALE_AFTER_RANGE.highest)),
         history: parseBoolean(data.history, DEFAULT_SETTINGS.history),
         historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest)),
         intensityBlend: clamp(parseNumber(data.intensityBlend, DEFAULT_SETTINGS.intensityBlend), BLEND_RANGE.lowest, BLEND_RANGE.highest),
@@ -911,6 +919,32 @@ export class PulsarSettingTab extends PluginSettingTab {
                 settings.spotlightStrength,
                 (value) => {
                     settings.spotlightStrength = value;
+                    this.save();
+                }
+            );
+        }
+
+        new Setting(containerEl)
+            .setName('Mark tabs you have left alone')
+            .setDesc('A quiet line down the edge of a tab once you have not looked at it for a while, and a command to close the marked ones all at once. Nothing closes on its own — a tab that shuts itself feels like data loss even when nothing is lost. Pinned tabs and the tab you are in are never marked')
+            .addToggle((toggle) => toggle
+                .setValue(settings.staleTabs)
+                .onChange(async (value) => {
+                    settings.staleTabs = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (settings.staleTabs) {
+            new NumberControl(
+                new Setting(containerEl)
+                    .setName('Marked after')
+                    .setDesc('Minutes of being ignored before a tab is marked. Time spent in a note does not count against it'),
+                STALE_AFTER_RANGE,
+                settings.staleTabAfter,
+                (value) => {
+                    settings.staleTabAfter = Math.round(value);
                     this.save();
                 }
             );
