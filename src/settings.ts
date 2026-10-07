@@ -93,6 +93,8 @@ export interface PulsarGraphSettings {
     ageLabels: AgeMode;
     linkRecency: LinkRecency;
     statusBarAge: boolean;
+    /** A dot after each link to a note, at that note's brightness. */
+    linkDots: boolean;
     spotlightNewest: boolean;
     spotlightColor: string;
     spotlightStrength: number;
@@ -235,6 +237,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     ageLabels: 'hover',
     linkRecency: 'off',
     statusBarAge: true,
+    linkDots: false,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
@@ -492,6 +495,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         ageLabels: parseAgeMode(data.ageLabels, data.showAgeOnHover),
         linkRecency: LINK_MODES.find((mode) => mode === data.linkRecency) ?? DEFAULT_SETTINGS.linkRecency,
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
+        linkDots: parseBoolean(data.linkDots, DEFAULT_SETTINGS.linkDots),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
         spotlightCount: Math.round(clamp(parseNumber(data.spotlightCount, DEFAULT_SETTINGS.spotlightCount), SPOTLIGHT_COUNT_RANGE.lowest, SPOTLIGHT_COUNT_RANGE.highest)),
@@ -1121,6 +1125,19 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.statusBarAge)
                 .onChange(async (value) => {
                     settings.statusBarAge = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        heading(containerEl, 'Links in notes', 'The links inside what you are reading or writing');
+
+        new Setting(containerEl)
+            .setName('A dot after each link')
+            .setDesc('At the brightness the linked note has in the graph, in the pin colour if it is pinned. Hovering it says when that note was edited. Only links to notes that exist get one: not links to notes not yet written, web links or embeds')
+            .addToggle((toggle) => toggle
+                .setValue(settings.linkDots)
+                .onChange(async (value) => {
+                    settings.linkDots = value;
                     await this.plugin.saveSettings();
                 })
             );

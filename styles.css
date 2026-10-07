@@ -499,6 +499,20 @@
 }
 
 /* The lit count in the status bar doubles as the reset. */
+/*
+ * After a link, at the linked note's brightness. Sized and coloured like the
+ * tab dot, so the same note reads the same wherever it is marked.
+ */
+.pulsar-graph-link-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	margin-left: 0.25em;
+	border-radius: 50%;
+	vertical-align: middle;
+	background-color: var(--text-normal);
+}
+
 .pulsar-graph-status-ink {
 	gap: var(--size-2-2);
 	color: var(--pulsar-ink);
