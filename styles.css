@@ -562,3 +562,84 @@
     font-weight: var(--font-semibold);
     margin-bottom: var(--size-2-2);
 }
+
+/*
+ * Settings containers.
+ *
+ * Obsidian's own heading is a bold line in a list: it marks a place rather than
+ * holding anything, so a page of fifteen of them is fifteen things of equal
+ * weight. These hold what belongs to them, and fold shut.
+ */
+.pulsar-graph-section {
+	margin: var(--size-4-4) 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary-alt);
+}
+
+.pulsar-graph-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-3);
+}
+
+.pulsar-graph-section-title {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	gap: var(--size-4-2);
+	cursor: pointer;
+	user-select: none;
+}
+
+.pulsar-graph-section-name {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+}
+
+/* Rotates rather than swaps, so folding reads as one movement. */
+.pulsar-graph-section-chevron {
+	width: 0;
+	height: 0;
+	border-top: 5px solid var(--text-muted);
+	border-right: 4px solid transparent;
+	border-left: 4px solid transparent;
+	transition: transform 120ms ease-in-out;
+}
+
+.pulsar-graph-section.is-collapsed .pulsar-graph-section-chevron {
+	transform: rotate(-90deg);
+}
+
+/* The header's switch is a Setting with its text taken away. */
+.pulsar-graph-section-power.setting-item {
+	padding: 0;
+	border: none;
+}
+
+.pulsar-graph-section-body {
+	padding: 0 var(--size-4-3) var(--size-4-2);
+}
+
+.pulsar-graph-section.is-collapsed .pulsar-graph-section-body {
+	display: none;
+}
+
+.pulsar-graph-section-about {
+	margin-bottom: var(--size-4-2);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.pulsar-graph-section-off {
+	padding: var(--size-4-2) 0;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+/* The first setting inside a container has the container's own line above it. */
+.pulsar-graph-section-body .setting-item:first-of-type {
+	border-top: none;
+}
