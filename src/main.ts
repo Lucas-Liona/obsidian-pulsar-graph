@@ -317,10 +317,7 @@ export default class PulsarGraphPlugin extends Plugin {
         }, TAB_REFRESH_MS));
 
         running.registerEvent(this.app.workspace.on('file-open', (file) => {
-            if (file) {
-                this.attention.touch(file.path);
-                this.noteSeen(file.path);
-            }
+            this.lookAt(file?.path ?? null);
 
             this.paintTabs();
             this.updateStatusBar();
@@ -355,12 +352,7 @@ export default class PulsarGraphPlugin extends Plugin {
         running.register(hookGraphCreation(this.app, (renderer, onClose) => this.hookEarly(renderer, onClose)));
 
         running.registerEvent(this.app.workspace.on('active-leaf-change', () => {
-            const active = this.app.workspace.getActiveFile();
-
-            if (active) {
-                this.attention.touch(active.path);
-                this.noteSeen(active.path);
-            }
+            this.lookAt(this.app.workspace.getActiveFile()?.path ?? null);
 
             this.syncRenderers();
             this.updateStatusBar();
@@ -371,6 +363,7 @@ export default class PulsarGraphPlugin extends Plugin {
         // Best effort by Obsidian's own admission, so it is a backstop for the
         // debounced write rather than the thing relied on.
         running.registerEvent(this.app.workspace.on('quit', (tasks) => {
+            this.lookAt(null);
             tasks.addPromise(this.history.flush());
         }));
 
@@ -387,6 +380,9 @@ export default class PulsarGraphPlugin extends Plugin {
             this.syncRenderers();
             this.syncStatusBar();
             this.attention.seed((path) => this.history.seenAt(path));
+            // Whatever was in front before this started listening, so that
+            // leaving it is noticed like leaving anything else.
+            this.lookAt(this.app.workspace.getActiveFile()?.path ?? null);
             this.paintTabs();
             this.refreshBeadViews();
         });
@@ -412,6 +408,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.clearInkProperties();
         this.store.clear();
+        this.lookAt(null);
         void this.history.flush();
 
         // Last, so an open history view says it is switched off rather than
@@ -428,6 +425,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.releaseGraphs();
         this.tabs.clear();
         this.clearInkProperties();
+        this.lookAt(null);
         void this.history.flush();
     }
 
@@ -509,6 +507,23 @@ export default class PulsarGraphPlugin extends Plugin {
     private noteSeen(path: string): void {
         if (this.settings.history) {
             this.history.markSeen(path, Date.now());
+        }
+    }
+
+    /**
+     * Moves the attention clock to the note in front, or to none. The note
+     * left behind is written down as seen too, since it was being looked at
+     * until now — including when the app quits with it open.
+     */
+    private lookAt(path: string | null): void {
+        const left = this.attention.focus(path);
+
+        if (left !== null) {
+            this.noteSeen(left);
+        }
+
+        if (path !== null) {
+            this.noteSeen(path);
         }
     }
 
