@@ -33,6 +33,8 @@ interface AttachedGraph {
     pooled: { byPath: Map<string, number> | null };
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
     frames: FrameHook | null;
+    /** What every frame does, installed once and again after each rebuild. */
+    onFrame: () => void;
     data: DataHook | null;
     scrubber: GraphScrubber | null;
     caption: FilterCaption | null;
@@ -81,6 +83,16 @@ export default class PulsarGraphPlugin extends Plugin {
 
     /** Everything that only exists while the plugin is switched on. */
     private running: Component | null = null;
+
+    /**
+     * Set once Obsidian has unloaded this instance, which is permanent: a
+     * reload builds a new instance and this one is garbage, except that
+     * anything already scheduled still holds it. A debounced update, a save
+     * still in flight, or a settings tab left open across a reload would each
+     * attach the dead instance to every open graph again, where it stayed —
+     * hooks and all — fighting the live one for the top of every renderer.
+     */
+    private unloaded = false;
 
     /** Emptied when the plugin is off, so no editor carries anything of ours. */
     private readonly editorExtensions: Extension[] = [];
@@ -201,6 +213,10 @@ export default class PulsarGraphPlugin extends Plugin {
      * stays true as features are added.
      */
     private async syncRunning(): Promise<void> {
+        if (this.unloaded) {
+            return;
+        }
+
         if (this.settings.enabled && !this.running) {
             await this.begin();
         } else if (!this.settings.enabled && this.running) {
@@ -214,6 +230,12 @@ export default class PulsarGraphPlugin extends Plugin {
         this.addChild(running);
 
         await this.history.load();
+
+        // Unloaded or switched off while the history was being read.
+        if (this.running !== running) {
+            return;
+        }
+
         this.store.setSittingSource((path) => (this.settings.history ? this.history.sittings(path) : 0));
         this.store.build(this.app.vault.getMarkdownFiles());
 
@@ -366,6 +388,10 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     onunload(): void {
+        this.unloaded = true;
+        this.running = null;
+        this.updateSoon.cancel();
+
         this.releaseGraphs();
         this.tabs.clear();
         this.clearInkProperties();
@@ -1101,6 +1127,13 @@ export default class PulsarGraphPlugin extends Plugin {
      * closes.
      */
     private syncRenderers(): void {
+        // Nothing attaches while the plugin is off or after it has unloaded.
+        // Every caller is a timer, an event or a save, and any of them can
+        // arrive late.
+        if (!this.running) {
+            return;
+        }
+
         // Switched off whole, every graph is handed back exactly as the plugin
         // being switched off hands it back. Through releaseGraphs rather than
         // by releasing each one here, because releasing a hook does not unwrite
@@ -1170,7 +1203,11 @@ export default class PulsarGraphPlugin extends Plugin {
         const preview: { ranges: OpacityRange[] | null } = { ranges: null };
         const fonts: { multiplier?: number } = {};
 
-        const frames = hookRendererFrame(renderer, () => {
+        // One body for the first install and every re-install after Obsidian
+        // rebuilds its graphics. It used to be written out twice, and the copy
+        // went stale: a re-installed graph stopped previewing drags and stopped
+        // following the node size slider.
+        const onFrame = (): void => {
             // The ages are drawn at the size the node implies, so they are
             // rebuilt alongside the titles rather than left behind with them.
             if (syncLabelFonts(renderer, fonts)) {
@@ -1185,7 +1222,7 @@ export default class PulsarGraphPlugin extends Plugin {
             if (preview.ranges) {
                 previewFilter(renderer, (path) => this.survives(path, preview.ranges ?? []));
             }
-        });
+        };
 
         const scrubber = this.buildScrubber(renderer, kind, preview);
         const controls = controlsFor(this.app, renderer);
@@ -1202,14 +1239,15 @@ export default class PulsarGraphPlugin extends Plugin {
             }
         });
 
-        return {
+        const graph: AttachedGraph = {
             kind,
             centre,
             replaying,
             labels,
             links,
             pooled,
-            frames,
+            frames: hookRendererFrame(renderer, onFrame),
+            onFrame,
             data,
             scrubber,
             preview,
@@ -1221,7 +1259,10 @@ export default class PulsarGraphPlugin extends Plugin {
                 clearSizes(renderer);
                 data?.release();
                 releaseHover();
-                frames?.release();
+                // Whichever hook is current, not the one installed here: after
+                // a graphics rebuild those differ, and releasing only the first
+                // left the second running for the life of the graph.
+                graph.frames?.release();
                 labels.destroy();
                 links.destroy();
                 scrubber?.destroy();
@@ -1229,6 +1270,8 @@ export default class PulsarGraphPlugin extends Plugin {
                 repaint(renderer);
             }
         };
+
+        return graph;
     }
 
     /**
@@ -1304,13 +1347,12 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // Obsidian assigns a new render callback whenever it rebuilds a
         // graph's graphics, which drops the wrapper the labels are driven by.
-        if (graph.frames && !graph.frames.isInstalled()) {
-            graph.frames = hookRendererFrame(renderer, () => {
-                graph.labels.sync();
-                graph.links.sync();
-                holdPaintTint(renderer, graph.paint);
-                settleReleases(renderer, graph.paint);
-            });
+        // The old hook is released first: if it was displaced by something
+        // wrapping on top rather than by a rebuild, it is still in the chain
+        // and would otherwise run every frame twice.
+        if (!graph.frames?.isInstalled()) {
+            graph.frames?.release();
+            graph.frames = hookRendererFrame(renderer, graph.onFrame);
         }
 
         if (graph.labels.setTitleScale(this.settings.titleScale)) {

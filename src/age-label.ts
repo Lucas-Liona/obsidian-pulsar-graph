@@ -82,7 +82,7 @@ export class AgeLabels {
 
         for (const [node, label] of this.labels) {
             if (!this.wants(node)) {
-                detach(node, label);
+                detach(label);
                 this.labels.delete(node);
             }
         }
@@ -103,8 +103,8 @@ export class AgeLabels {
     }
 
     clear(): void {
-        for (const [node, label] of this.labels) {
-            detach(node, label);
+        for (const label of this.labels.values()) {
+            detach(label);
         }
 
         this.labels.clear();
@@ -136,7 +136,19 @@ export class AgeLabels {
             return;
         }
 
-        const label = this.labels.get(node) ?? this.create(node, title, age.text);
+        let label = this.labels.get(node);
+
+        // Obsidian rebuilds a node's title whenever it rebuilds the graph's
+        // graphics, and destroying the old title drops the label with it. The
+        // map is keyed by node, which survives, so it would go on updating a
+        // label that nothing draws any more.
+        if (label && label.parent !== title) {
+            detach(label);
+            this.labels.delete(node);
+            label = undefined;
+        }
+
+        label ??= this.create(node, title, age.text) ?? undefined;
         if (!label) {
             return;
         }
@@ -202,7 +214,8 @@ export class AgeLabels {
     }
 }
 
-function detach(node: GraphNode, label: GraphText): void {
-    node.text?.removeChild(label);
+/** From whatever it is drawn in, which after a rebuild is not the node's title. */
+function detach(label: GraphText): void {
+    label.parent?.removeChild(label);
     label.destroy();
 }

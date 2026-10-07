@@ -28,6 +28,8 @@ export interface GraphText {
     style: { fontFamily?: unknown };
     anchor: { set: (x: number, y: number) => void };
     children: GraphText[];
+    /** What it is drawn inside. Null once removed, which destroying a parent does. */
+    parent?: GraphText | null;
     addChild: (child: GraphText) => void;
     removeChild: (child: GraphText) => void;
     destroy: () => void;
@@ -901,8 +903,15 @@ export function hookRendererData(
     // The engine's own data, kept whole. A filter is a view of it, so changing
     // one has to start from everything rather than from what last survived.
     let supplied: unknown = null;
+    let live = true;
 
     const patched = function (this: GraphRenderer, data: unknown): unknown {
+        // Released but still wrapped by something installed after it, so it
+        // can only step aside: an unloaded plugin must not keep filtering.
+        if (!live) {
+            return original.call(this, data);
+        }
+
         supplied = data;
 
         const result = original.call(this, transform(data));
@@ -923,6 +932,8 @@ export function hookRendererData(
             return true;
         },
         release: () => {
+            live = false;
+
             if (renderer.setData === patched) {
                 renderer.setData = original;
             }
@@ -944,6 +955,13 @@ export interface FrameHook {
  * only. It stops being called once the graph settles, which is exactly when
  * nothing needs repositioning. Obsidian assigns a fresh one whenever it rebuilds
  * graphics, so callers re-install when isInstalled stops holding.
+ *
+ * Releasing can only unlink a wrapper that is still on top. One that anything
+ * has wrapped since — another plugin, or this plugin loaded again — is that
+ * wrapper's original now, and stays in the chain for as long as the graph
+ * lives. So release also switches onFrame off. Without that, an unloaded
+ * plugin kept drawing age labels from its frozen copy of the vault, one more
+ * set per reload, stacked on the same titles.
  */
 export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void): FrameHook | null {
     const original = renderer.renderCallback;
@@ -951,9 +969,14 @@ export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void):
         return null;
     }
 
+    let live = true;
+
     const patched = function (this: GraphRenderer): void {
         original.call(this);
-        onFrame();
+
+        if (live) {
+            onFrame();
+        }
     };
 
     renderer.renderCallback = patched;
@@ -961,6 +984,8 @@ export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void):
     return {
         isInstalled: () => renderer.renderCallback === patched,
         release: () => {
+            live = false;
+
             if (renderer.renderCallback === patched) {
                 renderer.renderCallback = original;
             }

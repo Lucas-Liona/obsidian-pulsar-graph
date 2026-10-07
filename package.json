@@ -9,7 +9,8 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint . --max-warnings=0",
 		"lint:fix": "eslint . --fix",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsc --noEmit && tsc --noEmit -p test",
+		"test": "vitest run"
 	},
 	"keywords": [
 		"obsidian",
@@ -32,6 +33,7 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.71.0"
+		"typescript-eslint": "^8.71.0",
+		"vitest": "^3.2.7"
 	}
 }
