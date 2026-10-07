@@ -19,6 +19,19 @@ The page is in seven parts, and each one folds shut and stays that way:
 same thing the master switch means, for that part only: the hooks come off, the
 graphs are handed back their own colours, and nothing is left watching.
 
+A handful of these also live in the graph's own panel, in a **Pulsar** section
+beside Filters, Groups, Display and Forces — the ones worth reaching for while
+looking at a graph rather than from a dialog in front of it:
+
+| Heading | Controls |
+|---|---|
+| **Nodes** | Dimmest, Brightest, Curve |
+| **Text** | Title size, Ages |
+| **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
+
+They are the same settings, not copies: moving one moves the other. Sliders
+apply while you drag and are saved once you stop.
+
 Every slider has a number box beside it, and a preview at the top of the settings
 shows dots at real ages from your own vault at the opacity each would get, so you
 can see what a change does before you close the dialog.
@@ -98,7 +111,6 @@ alone.
 | Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph |
 | Measure from the note in the middle | on / off | off | local graph |
 | Write every age in a local graph | on / off | off | local graph |
-| Say what the panel holds | on / off | off | local graph |
 | What the spotlight covers | The newest few notes, Anything touched recently | The newest few | Spotlight on |
 | Touched within | 1 – 720 minutes | 30 | Window mode |
 | Give pins a colour | on / off | on | all |

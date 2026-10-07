@@ -123,3 +123,50 @@ render chain. It should be 1.
 is not re-rendered when the plugin reloads, so it keeps whatever data it last
 had — filtered or not. The same probe read 239 nodes one run and 1113 the next.
 Every per-frame number scales with it; print it alongside every timing.
+
+## Looking at what you built
+
+`dev:screenshot` takes the whole workspace — his notes included. To look at one
+component, capture only its box:
+
+```js
+const r = el.getBoundingClientRect();
+const img = await require('@electron/remote').getCurrentWebContents()
+  .capturePage({ x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height) });
+require('fs').writeFileSync('C:\\Users\\lucas\\AppData\\Local\\Temp\\pulsar-prof\\x.png', img.toPNG());
+```
+
+For a component that is not on screen, bundle it alone with esbuild as an IIFE
+that sets a `window.__…` global, `(0, eval)(fs.readFileSync(…))` it inside the
+app, mount it in a fixed-position div with real data from the plugin, capture
+the div, remove it. That only works for code that does not import `obsidian` at
+runtime — `require('obsidian')` does not resolve from `eval`. Anything built
+with `Setting` has to be captured where the plugin itself mounted it: bring the
+leaf forward, capture, and put the previous tab back with `parent.selectTab`.
+
+To see a stylesheet change in the real vault, **disable** the shipped plugin
+stylesheet (`style.disabled = true`) and inject the branch's for the length of
+the capture, then remove it and re-enable. Layering the new one over the old
+lets removed rules bleed through.
+
+**Clean up what you inject.** Eleven hand-injected copies of the stylesheet
+were found in `<head>` a day after they were added, one of them giving a class
+a background the shipped CSS never had. Five stale Age sections and six stacked
+captions were in the graph panels too. Count them at the end:
+`[...document.querySelectorAll('style')].filter(s => s.textContent.startsWith('.pulsar-graph-preview')).length`
+should be 1.
+
+## Watching data.json
+
+An md5 at the end catches a changed file, not a file that is being rewritten
+with the same bytes. Watch the mtime while idle as well:
+
+```bash
+for i in 1 2 3 4 5; do stat -c '%y' data.json; sleep 1; done
+```
+
+A panel control whose value was set during a refresh fired its change handler,
+which saved, which refreshed: data.json was rewritten every 0.9 s with nothing
+changing in it, and only the mtime showed it. If a probe has to exercise a real
+save, take the copy first, expect exactly one write per gesture, and put the
+copy back after.

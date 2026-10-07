@@ -5,7 +5,8 @@ import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
-import { FilterCaption, GraphScrubber } from './graph-controls';
+import { FilterCaption, PulsarPanel } from './graph-controls';
+import { FADE_TYPE_LABELS, FadeType } from './fade';
 import { LinkShading } from './links';
 import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
@@ -19,7 +20,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
-import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
+import { DEFAULT_SETTINGS, MIN_OPACITY_LIMIT, PulsarGraphSettings, PulsarSettingTab, parseSettings, TITLE_SCALE_RANGE } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
@@ -39,7 +40,7 @@ interface AttachedGraph {
     /** What every frame does, installed once and again after each rebuild. */
     onFrame: () => void;
     data: DataHook | null;
-    scrubber: GraphScrubber | null;
+    panel: PulsarPanel | null;
     caption: FilterCaption | null;
     /**
      * Which notes the ranges being dragged right now keep, shown by hiding
@@ -402,6 +403,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.unloaded = true;
         this.running = null;
         this.updateSoon.cancel();
+        this.saveSoon.cancel();
 
         this.releaseGraphs();
         this.tabs.clear();
@@ -701,7 +703,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.refreshBeadViews();
 
         for (const graph of this.attached.values()) {
-            graph.scrubber?.refresh();
+            graph.panel?.refresh();
         }
     }
 
@@ -804,20 +806,20 @@ export default class PulsarGraphPlugin extends Plugin {
     /**
      * The line across the top of a graph.
      *
-     * A local graph is offered one about the panel instead of one about the
-     * vault, because the vault line is answering a question nobody asked of a
-     * panel of twelve notes: "194 of 1092 notes" over a graph holding thirteen
-     * of them is true and useless.
+     * A local graph always gets one about the panel rather than the vault.
+     * The vault line answers a question nobody asks of a panel: "230 of 1100
+     * notes" over a local graph showing a single node is true and useless,
+     * and it used to be the default, behind a switch for the useful one.
      */
     private captionFor(renderer: GraphRenderer, graph: AttachedGraph, scoped: boolean, anchorPath: string | null): string | null {
-        const measured = this.describeSpread(renderer, scoped, anchorPath);
-
-        if (graph.kind === 'local' && this.settings.localSummary) {
-            return this.describePanel(renderer, graph.cut.dropped) + measured;
-        }
-
         if (!this.settings.filterCaption) {
             return null;
+        }
+
+        const measured = this.describeSpread(renderer, scoped, anchorPath);
+
+        if (graph.kind === 'local') {
+            return this.describePanel(renderer, graph.cut.dropped) + measured;
         }
 
         return this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE]) + measured;
@@ -986,14 +988,98 @@ export default class PulsarGraphPlugin extends Plugin {
         return spread;
     }
 
-    /** Adds the age section to a graph's own control panel, where it has one. */
-    private buildScrubber(renderer: GraphRenderer, kind: GraphKind, preview: Preview): GraphScrubber | null {
+    /**
+     * Applies a change made in a graph's own panel at once, and writes it down
+     * a moment after the last one. A slider reports every step of a drag; each
+     * step is a repaint of a millisecond or two, but saving each would be a
+     * file written per step.
+     */
+    private changeFromPanel(change: () => void): void {
+        const before = JSON.stringify(this.settings);
+        change();
+
+        // Nothing to apply and, more to the point, nothing to save.
+        if (JSON.stringify(this.settings) === before) {
+            return;
+        }
+
+        this.store.markStale();
+        this.store.refresh();
+        this.syncRenderers();
+        this.saveSoon();
+    }
+
+    private readonly saveSoon = debounce(() => void this.saveSettings(), 400, true);
+
+    /** Adds the plugin's section to a graph's own control panel, where it has one. */
+    private buildPanel(renderer: GraphRenderer, kind: GraphKind, preview: Preview): PulsarPanel | null {
         const controls = controlsFor(this.app, renderer);
         if (!controls) {
             return null;
         }
 
-        return new GraphScrubber(controls, {
+        return new PulsarPanel(controls, {
+            groups: [
+                {
+                    heading: 'Nodes',
+                    controls: [
+                        {
+                            kind: 'slider',
+                            name: 'Dimmest',
+                            limits: { lowest: 0, highest: MIN_OPACITY_LIMIT, step: 0.01 },
+                            value: () => this.settings.minOpacity,
+                            onChange: (value) => this.changeFromPanel(() => {
+                                this.settings.minOpacity = value;
+                                this.settings.maxOpacity = Math.max(this.settings.maxOpacity, value);
+                            })
+                        },
+                        {
+                            kind: 'slider',
+                            name: 'Brightest',
+                            limits: { lowest: 0.1, highest: 6, step: 0.01 },
+                            value: () => this.settings.maxOpacity,
+                            onChange: (value) => this.changeFromPanel(() => {
+                                this.settings.maxOpacity = value;
+                                this.settings.minOpacity = Math.min(this.settings.minOpacity, value);
+                            })
+                        },
+                        {
+                            kind: 'dropdown',
+                            name: 'Curve',
+                            options: FADE_TYPE_LABELS,
+                            value: () => this.settings.fadeType,
+                            onChange: (value) => this.changeFromPanel(() => {
+                                this.settings.fadeType = value as FadeType;
+                            })
+                        }
+                    ]
+                },
+                {
+                    heading: 'Text',
+                    controls: [
+                        {
+                            kind: 'slider',
+                            name: 'Title size',
+                            limits: TITLE_SCALE_RANGE,
+                            value: () => this.settings.titleScale,
+                            onChange: (value) => this.changeFromPanel(() => {
+                                this.settings.titleScale = value;
+                            })
+                        },
+                        {
+                            kind: 'dropdown',
+                            name: 'Ages',
+                            // Shorter than the settings' wording, which is a
+                            // sentence and pushed the name out of a narrow panel.
+                            options: { off: 'Never', hover: 'On hover', titles: 'With titles' } satisfies Record<AgeMode, string>,
+                            value: () => this.settings.ageLabels,
+                            onChange: (value) => this.changeFromPanel(() => {
+                                this.settings.ageLabels = value as AgeMode;
+                            })
+                        }
+                    ]
+                }
+            ],
             // Only where there is a note in the middle to measure from. The
             // global graph gets no row rather than a disabled one, because a
             // control that can never do anything is worse than its absence.
@@ -1281,7 +1367,7 @@ export default class PulsarGraphPlugin extends Plugin {
             }
         };
 
-        const scrubber = this.buildScrubber(renderer, kind, preview);
+        const panel = this.buildPanel(renderer, kind, preview);
         const controls = controlsFor(this.app, renderer);
         const caption = controls?.parentElement ? new FilterCaption(controls.parentElement) : null;
 
@@ -1306,7 +1392,7 @@ export default class PulsarGraphPlugin extends Plugin {
             frames: hookRendererFrame(renderer, onFrame),
             onFrame,
             data,
-            scrubber,
+            panel,
             preview,
             cut,
             paint,
@@ -1322,7 +1408,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 graph.frames?.release();
                 labels.destroy();
                 links.destroy();
-                scrubber?.destroy();
+                panel?.destroy();
                 clearPaint(renderer, paint);
                 repaint(renderer);
             }

@@ -90,8 +90,8 @@ spotlight picks is still that setting's business, since that is a question about
 what is newest and not about what is near.
 
 It is **off** by default, and it is a view rather than a preference — you reach
-for it, look, and put it back — so it has a toggle in the graph's own **Age**
-panel as well as in the settings. The global graph gets no such toggle: it has
+for it, look, and put it back — so it has a toggle in the graph's own panel, under **Pulsar › Age filter**, as
+well as in the settings. The global graph gets no such toggle: it has
 no note in the middle, and a control that can never do anything is worse than
 its absence.
 
@@ -126,22 +126,26 @@ actually read. Measured on a 13-node panel with the global setting on *on
 hover*: no ages at all before, and an age on each of the 5 nodes whose titles
 were visible after.
 
-### Say what the panel holds
+### What the panel holds
 
-The caption across the top of a graph counts your vault. Over a panel of thirteen
-notes, that is true and useless. Measured on the same panel, with the age filter
-on:
+The caption across the top of the global graph counts your vault. Over a panel
+of thirteen notes, that is true and useless, so a local graph's caption counts
+the panel instead. Measured on the same panel, with the age filter on:
 
 | | |
 |---|---|
 | The vault line | `194 of 1092 notes, 51 minutes ago back to 2 weeks ago` |
 | The panel line | `13 notes · 21 hours ago back to 5 days ago` |
 
+This used to be a switch, off by default, which left every local graph showing
+the vault line. A local graph showing one node under `230 of 1100 notes` is the
+case that ended the switch.
+
 Not one number in the first line is about anything on screen. The panel line says
 how many notes are in front of you, how recent the newest and the oldest of them
 are, and — when the age filter has taken some out — **how many are missing**:
 
-> 9 notes, 4 hidden · 2 hours ago back to 3 weeks ago
+> 9 notes · 4 hidden · 2 hours ago back to 3 weeks ago
 
 That last part is worth having because the filter is absolute. It reads a note's
 age against your whole vault, by design, so narrowing it hard enough will empty
