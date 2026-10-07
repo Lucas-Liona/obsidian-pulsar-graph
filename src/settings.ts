@@ -11,6 +11,7 @@ import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
+import { confirmTwice } from './confirm';
 
 export type NormalizeBy = 'vault' | 'window' | 'shown';
 
@@ -821,7 +822,87 @@ export class PulsarSettingTab extends PluginSettingTab {
             this.buildStats(stats, settings);
         }
 
+        // Last, and together, so nothing that cannot be taken back sits among
+        // settings that can be changed back with the same click.
+        const clear = page.container('Clear and reset', {
+            about: 'What cannot be taken back. Each one asks for a second click before it does anything'
+        });
+
+        if (clear) {
+            this.buildClear(clear, settings);
+        }
+
         containerEl.scrollTop = scroll;
+    }
+
+    private buildClear(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        const coverage = this.plugin.historyCoverage();
+
+        new Setting(containerEl)
+            .setName('Forget everything recorded')
+            .setDesc(coverage.beads === 0
+                ? 'Nothing has been recorded yet'
+                : `${coverage.beads} sittings across ${coverage.notes} notes. Nothing can bring the history back`)
+            .addButton((button) => {
+                button.setButtonText('Forget').setWarning().setDisabled(coverage.beads === 0);
+                button.onClick(confirmTwice(
+                    (armed) => {
+                        button.setButtonText(armed ? 'Click again to forget' : 'Forget');
+                    },
+                    () => {
+                        void this.plugin.forgetHistory().then(() => {
+                            new Notice('Pulsar has forgotten its edit history.');
+                            this.display();
+                        });
+                    },
+                    window
+                ));
+            });
+
+        new Setting(containerEl)
+            .setName('Reset all settings')
+            .setDesc('Puts every setting back to its original value. Your saved presets and pinned notes are kept')
+            .addButton((button) => {
+                button.setButtonText('Reset').setWarning();
+                button.onClick(confirmTwice(
+                    (armed) => {
+                        button.setButtonText(armed ? 'Click again to reset' : 'Reset');
+                    },
+                    () => {
+                        // Reset is about the settings, not about throwing away
+                        // work, and pins have a button of their own. Built
+                        // fresh rather than copied from the defaults, whose
+                        // lists would otherwise be shared and edited in place.
+                        Object.assign(settings, parseSettings({
+                            saved: settings.saved,
+                            pins: settings.pins,
+                            collapsed: settings.collapsed
+                        }));
+                        void this.plugin.saveSettings().then(() => this.display());
+                    },
+                    window
+                ));
+            });
+
+        const pinned = this.plugin.pinnedNotes().length;
+
+        new Setting(containerEl)
+            .setName('Unpin every note')
+            .setDesc(pinned === 0
+                ? 'Nothing is pinned'
+                : `${pinned} ${pinned === 1 ? 'note is' : 'notes are'} pinned in the graph. Pinned writing in a note is separate, and has a command of its own`)
+            .addButton((button) => {
+                button.setButtonText('Unpin all').setWarning().setDisabled(pinned === 0);
+                button.onClick(confirmTwice(
+                    (armed) => {
+                        button.setButtonText(armed ? 'Click again to unpin all' : 'Unpin all');
+                    },
+                    () => {
+                        void this.plugin.unpinAll().then(() => this.display());
+                    },
+                    window
+                ));
+            });
     }
 
     private buildTime(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
@@ -1793,22 +1874,6 @@ export class PulsarSettingTab extends PluginSettingTab {
                 recovery.setDesc(`Core file recovery holds ${found.records} snapshots across ${found.byPath.size} notes${skipped}. Only their timestamps are read — never any part of what a note says. Safe to run more than once`);
             });
 
-            const coverage = this.plugin.historyCoverage();
-
-            new Setting(containerEl)
-                .setName('Forget everything recorded')
-                .setDesc(coverage.beads === 0
-                    ? 'Nothing has been recorded yet'
-                    : `${coverage.beads} sittings across ${coverage.notes} notes. This cannot be undone, and nothing can bring the history back`)
-                .addButton((button) => button
-                    .setButtonText('Forget')
-                    .setWarning()
-                    .onClick(async () => {
-                        await this.plugin.forgetHistory();
-                        new Notice('Pulsar has forgotten its edit history.');
-                        this.display();
-                    })
-                );
         }
     }
 
@@ -1818,7 +1883,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         // Presets move only the settings that shape the fade. What you have
         // chosen to show — labels, status bar, spotlight colour — is left alone.
         // One you save yourself keeps the lot, because that is what saving means.
-        const presets = new Setting(containerEl)
+        new Setting(containerEl)
             .setName('Presets')
             .setDesc(PRESETS.map((preset) => `${preset.name}: ${preset.description.toLowerCase()}`).join('. ') + '.')
             .addDropdown((dropdown) => {
@@ -1853,18 +1918,6 @@ export class PulsarSettingTab extends PluginSettingTab {
                     this.display();
                 });
             });
-
-        presets.addButton((button) => button
-            .setButtonText('Reset')
-            .setTooltip('Put every setting back to its original value')
-            .onClick(async () => {
-                // Reset is about the settings, not about throwing away work.
-                const saved = settings.saved;
-                Object.assign(settings, DEFAULT_SETTINGS, { saved });
-                await this.plugin.saveSettings();
-                this.display();
-            })
-        );
 
         let name = '';
 
@@ -1913,15 +1966,20 @@ export class PulsarSettingTab extends PluginSettingTab {
                         void this.copy([preset], `Copied "${preset.name}".`);
                     })
                 )
-                .addExtraButton((button) => button
-                    .setIcon('trash-2')
-                    .setTooltip('Delete')
-                    .onClick(async () => {
-                        settings.saved.splice(index, 1);
-                        await this.plugin.saveSettings();
-                        this.display();
-                    })
-                );
+                .addExtraButton((button) => {
+                    button.setIcon('trash-2').setTooltip('Delete');
+                    button.onClick(confirmTwice(
+                        (armed) => {
+                            button.setTooltip(armed ? 'Click again to delete' : 'Delete');
+                            button.extraSettingsEl.toggleClass('mod-warning', armed);
+                        },
+                        () => {
+                            settings.saved.splice(index, 1);
+                            void this.plugin.saveSettings().then(() => this.display());
+                        },
+                        window
+                    ));
+                });
         }
 
         new Setting(containerEl)
@@ -2081,17 +2139,6 @@ export class PulsarSettingTab extends PluginSettingTab {
                 void this.plugin.unpin(path).then(() => this.display());
             });
         }
-
-        new Setting(containerEl)
-            .setName('Unpin everything')
-            .setDesc(`${pinned.length} ${pinned.length === 1 ? 'note is' : 'notes are'} pinned`)
-            .addButton((button) => button
-                .setButtonText('Unpin all')
-                .setWarning()
-                .onClick(() => {
-                    void this.plugin.unpinAll().then(() => this.display());
-                })
-            );
     }
 
     /**
