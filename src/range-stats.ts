@@ -23,6 +23,22 @@ export function keepsNote(path: string, strength: number | undefined, ranges: Op
 }
 
 /**
+ * Whether the open note changing from one note to another changes what a
+ * filter keeps.
+ *
+ * The open note is exempt from the filter, so it only matters when one of the
+ * two is a note the ranges would drop by themselves. A switch between two notes
+ * the filter keeps anyway, which is the usual case, changes nothing.
+ */
+export function openNoteMatters(left: string | null, opened: string | null, keptAnyway: (path: string) => boolean): boolean {
+    if (left === opened) {
+        return false;
+    }
+
+    return (left !== null && !keptAnyway(left)) || (opened !== null && !keptAnyway(opened));
+}
+
+/**
  * Counts what a set of ranges keeps.
  *
  * The exempt set is taken whole rather than asked for per note. Asking per

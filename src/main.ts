@@ -15,7 +15,7 @@ import { hookNodeHover } from './hover';
 import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
-import { describeSummary, keepsNote, summariseRanges } from './range-stats';
+import { describeSummary, keepsNote, openNoteMatters, summariseRanges } from './range-stats';
 import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
@@ -105,6 +105,8 @@ export default class PulsarGraphPlugin extends Plugin {
      * hooks and all — fighting the live one for the top of every renderer.
      */
     private unloaded = false;
+    /** The note that was open when the graphs were last filtered, and so exempt in them. */
+    private filteredOpen: string | null = null;
 
     /** Emptied when the plugin is off, so no editor carries anything of ours. */
     private readonly editorExtensions: Extension[] = [];
@@ -250,6 +252,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.store.setSittingSource((path) => (this.settings.history ? this.history.sittings(path) : 0));
         this.store.build(this.app.vault.getMarkdownFiles());
+        this.filteredOpen = this.app.workspace.getActiveFile()?.path ?? null;
 
         running.registerEvent(this.app.vault.on('create', (file) => this.onFileChanged(file)));
         running.registerEvent(this.app.vault.on('modify', (file) => this.onFileChanged(file)));
@@ -320,10 +323,19 @@ export default class PulsarGraphPlugin extends Plugin {
             this.refreshBeadViews();
 
             // The open note is exempt from the filter, so which note that is
-            // changes what the graph should contain.
-            if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
+            // can change what the graph should contain — but only when the
+            // note left or the one opened is one the ranges would drop by
+            // themselves. Refiltering on every switch regardless cost a 167 ms
+            // block per switch in a 20,000-note vault, for a graph that was
+            // almost always the same afterwards.
+            const opened = file?.path ?? null;
+
+            if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)
+                && openNoteMatters(this.filteredOpen, opened, this.keptWithoutOpen())) {
                 this.refilter();
             }
+
+            this.filteredOpen = opened;
         }));
 
         running.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
@@ -905,7 +917,7 @@ export default class PulsarGraphPlugin extends Plugin {
      * pin that vanishes the moment you narrow the range is not a pin.
      */
     private exemptFromFilter(): Set<string> {
-        const exempt = new Set<string>([...this.spotlitFrom(this.store.paths()), ...this.pins.list()]);
+        const exempt = this.exemptBesidesOpen();
         const open = this.app.workspace.getActiveFile()?.path;
 
         if (open !== undefined) {
@@ -913,6 +925,23 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         return exempt;
+    }
+
+    private exemptBesidesOpen(): Set<string> {
+        return new Set<string>([...this.spotlitFrom(this.store.paths()), ...this.pins.list()]);
+    }
+
+    /**
+     * Whether a note survives the filter without being the open note: inside
+     * the ranges, spotlit or pinned. Only a note that fails this is in the
+     * graph because it is open, so only opening or leaving one of those can
+     * change what the filter keeps.
+     */
+    private keptWithoutOpen(): (path: string) => boolean {
+        const exempt = this.exemptBesidesOpen();
+        const ranges = this.settings.filterRanges;
+
+        return (path) => keepsNote(path, this.filterPosition(path), ranges, exempt);
     }
 
     /**
@@ -1298,12 +1327,26 @@ export default class PulsarGraphPlugin extends Plugin {
             }
         }
 
+        let joined = false;
+
         for (const graph of open) {
             if (!this.attached.has(graph.renderer)) {
                 this.attached.set(graph.renderer, this.attach(graph));
+                joined = true;
             }
 
             this.applyTo(graph.renderer);
+        }
+
+        // A graph builds itself the moment it opens, before this plugin can
+        // reach it, so a new one holds every note whatever the filter says.
+        // Something used to put that right by accident: every note opened
+        // refiltered every graph. Now that a switch only refilters when it
+        // has to, a new graph is filtered here, as soon as it is attached —
+        // which also covers a graph that was already open when the plugin
+        // loaded, left unfiltered until something happened to refresh it.
+        if (joined && this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
+            this.refilter();
         }
     }
 

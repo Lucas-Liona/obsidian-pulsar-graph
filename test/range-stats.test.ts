@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { OpacityRange, withinRanges } from '../src/filter';
-import { describeSummary, keepsNote, summariseRanges } from '../src/range-stats';
+import { describeSummary, keepsNote, openNoteMatters, summariseRanges } from '../src/range-stats';
 import { fakeVault, newest, seeded } from './vault';
 
 const NOW = Date.UTC(2026, 9, 7, 12);
@@ -76,5 +76,34 @@ describe('describeSummary', () => {
 
     it('says one age when both ends are the same note', () => {
         expect(describeSummary({ kept: 1, total: 1100, newest: NOW - HOUR, oldest: NOW - HOUR }, NOW)).toBe('1 of 1100 notes · <1% · 1 hour ago');
+    });
+});
+
+// Every note open re-ran the filter over the whole vault, which cost a 167 ms
+// block per tab switch at 20,000 notes, for a result that almost never changed.
+describe('openNoteMatters', () => {
+    const inRange = new Set(['kept.md', 'also kept.md']);
+    const kept = (path: string): boolean => inRange.has(path);
+
+    it('changes nothing between two notes the filter keeps anyway', () => {
+        expect(openNoteMatters('kept.md', 'also kept.md', kept)).toBe(false);
+    });
+
+    it('matters when leaving a note that was only there because it was open', () => {
+        expect(openNoteMatters('old.md', 'kept.md', kept)).toBe(true);
+    });
+
+    it('matters when opening a note the filter would drop', () => {
+        expect(openNoteMatters('kept.md', 'old.md', kept)).toBe(true);
+    });
+
+    it('matters when nothing was open and an outside note opens, and not the other way round for a kept one', () => {
+        expect(openNoteMatters(null, 'old.md', kept)).toBe(true);
+        expect(openNoteMatters(null, 'kept.md', kept)).toBe(false);
+        expect(openNoteMatters('kept.md', null, kept)).toBe(false);
+    });
+
+    it('changes nothing when the same note opens again', () => {
+        expect(openNoteMatters('old.md', 'old.md', kept)).toBe(false);
     });
 });
