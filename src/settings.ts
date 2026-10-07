@@ -580,6 +580,15 @@ export function repairPreset(stored: unknown): PresetSettings {
     return snapshot(parseSettings(stored));
 }
 
+/**
+ * A heading with a sentence under it. The sentence is the whole point: someone
+ * opening this for the first time should not have to work out what "Fade"
+ * fades.
+ */
+function heading(containerEl: HTMLElement, name: string, about: string): void {
+    new Setting(containerEl).setName(name).setDesc(about).setHeading();
+}
+
 function parseAgeScale(value: unknown): AgeScale {
     return AGE_SCALES.find((scale) => scale === value) ?? DEFAULT_SETTINGS.ageScale;
 }
@@ -680,14 +689,27 @@ export class PulsarSettingTab extends PluginSettingTab {
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
 
-        // A heading with a sentence under it. The sentence is the whole point:
-        // someone opening this for the first time should not have to work out
-        // what "Fade" fades.
-        const section = (name: string, about: string): void => {
-            new Setting(containerEl).setName(name).setDesc(about).setHeading();
-        };
+        this.buildTime(containerEl, settings);
+        this.buildGraphFade(containerEl, settings);
+        this.buildSize(containerEl, settings);
+        this.buildLabels(containerEl, settings);
+        this.buildSpotlight(containerEl, settings);
+        this.buildPinSection(containerEl, settings);
+        this.buildLinks(containerEl, settings);
+        this.buildClusters(containerEl, settings);
+        this.buildFilter(containerEl, settings);
+        this.buildLocalGraph(containerEl, settings);
+        this.buildTabs(containerEl, settings);
+        this.buildWriting(containerEl, settings);
+        this.buildHistory(containerEl, settings);
+        this.buildPresets(containerEl, settings);
+        this.buildStats(containerEl, settings);
 
-        section('Time', 'What counts as old. Everything else on this page reads the number these settings produce');
+        containerEl.scrollTop = scroll;
+    }
+
+    private buildTime(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Time', 'What counts as old. Everything else on this page reads the number these settings produce');
 
         // The scale comes first because it decides what the rest of this
         // section is even for: a half-life is measured against the calendar,
@@ -766,8 +788,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
             }
         }
+    }
 
-        section('Graph fade', 'How strongly each node in the graph is drawn, which is the thing the plugin is for');
+    private buildGraphFade(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Graph fade', 'How strongly each node in the graph is drawn, which is the thing the plugin is for');
 
         new Setting(containerEl)
             .setName('Fade type')
@@ -853,8 +877,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Size', 'How big each node and its name are drawn. Obsidian sizes a node by its link count and offers no control over the title at all');
+    private buildSize(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Size', 'How big each node and its name are drawn. Obsidian sizes a node by its link count and offers no control over the title at all');
 
         new Setting(containerEl)
             .setName('Size nodes by age')
@@ -905,8 +931,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 this.save();
             }
         );
+    }
 
-        section('Labels', 'The age written above a node, in words');
+    private buildLabels(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Labels', 'The age written above a node, in words');
 
         new Setting(containerEl)
             .setName('Show note age')
@@ -931,8 +959,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             );
+    }
 
-        section('Spotlight', 'Picking the single newest note out of the graph so it is findable at a glance');
+    private buildSpotlight(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Spotlight', 'Picking the single newest note out of the graph so it is findable at a glance');
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
@@ -1024,8 +1054,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Pins', 'Notes held bright whatever their dates say, for the ones you mean to come back to');
+    private buildPinSection(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Pins', 'Notes held bright whatever their dates say, for the ones you mean to come back to');
 
         this.buildPins(containerEl, settings);
 
@@ -1068,8 +1100,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Links', 'What the lines between notes carry, beyond joining them up');
+    private buildLinks(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Links', 'What the lines between notes carry, beyond joining them up');
 
         new Setting(containerEl)
             .setName('Age the links too')
@@ -1133,8 +1167,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Clusters', 'Colouring a whole region of the graph by how alive it is, rather than each note on its own');
+    private buildClusters(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Clusters', 'Colouring a whole region of the graph by how alive it is, rather than each note on its own');
 
         new NumberControl(
             new Setting(containerEl)
@@ -1201,8 +1237,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Age filter', 'Taking notes out of the graph entirely rather than dimming them');
+    private buildFilter(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Age filter', 'Taking notes out of the graph entirely rather than dimming them');
 
         new Setting(containerEl)
             .setName('Hide notes outside a range')
@@ -1269,8 +1307,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
             }
         }
+    }
 
-        section('Local graph', 'The panel showing one note and what links to it. It asks a narrower question than the whole graph, and these answer it differently');
+    private buildLocalGraph(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Local graph', 'The panel showing one note and what links to it. It asks a narrower question than the whole graph, and these answer it differently');
 
         new Setting(containerEl)
             .setName('Measure a local graph against')
@@ -1321,8 +1361,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             );
+    }
 
-        section('Tabs', 'The tab bar in the main editor area, read as attention rather than as a pile of things you opened once');
+    private buildTabs(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Tabs', 'The tab bar in the main editor area, read as attention rather than as a pile of things you opened once');
 
         new Setting(containerEl)
             .setName('Show a dot beside each tab')
@@ -1407,8 +1449,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
 
-        section('Fresh writing', 'The one part of Pulsar that works inside a note rather than around it');
+    private buildWriting(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Fresh writing', 'The one part of Pulsar that works inside a note rather than around it');
 
         new Setting(containerEl)
             .setName('Light up what you just wrote')
@@ -1494,8 +1538,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .onClick(() => this.plugin.forgetInk())
                 );
         }
+    }
 
-        section('History', "Pulsar's own record of when each note was worked on. It is worth nothing until it has been running a while, which is why it is on");
+    private buildHistory(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'History', "Pulsar's own record of when each note was worked on. It is worth nothing until it has been running a while, which is why it is on");
 
         new Setting(containerEl)
             .setName('Keep a record of when notes were worked on')
@@ -1611,8 +1657,10 @@ export class PulsarSettingTab extends PluginSettingTab {
                     })
                 );
         }
+    }
 
-        section('Presets', 'Named sets of everything above, to save, share and switch between');
+    private buildPresets(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Presets', 'Named sets of everything above, to save, share and switch between');
 
         // Presets move only the settings that shape the fade. What you have
         // chosen to show — labels, status bar, spotlight colour — is left alone.
@@ -1743,13 +1791,13 @@ export class PulsarSettingTab extends PluginSettingTab {
                     void this.paste();
                 })
             );
+    }
 
-        section('What this is doing to your vault', 'Measured against your actual notes, not an example');
+    private buildStats(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'What this is doing to your vault', 'Measured against your actual notes, not an example');
 
         this.statsEl = containerEl.createDiv({ cls: 'pulsar-graph-stats' });
         this.renderStats();
-
-        containerEl.scrollTop = scroll;
     }
 
     hide(): void {
