@@ -17,20 +17,32 @@ export function hookNodeHover(renderer: GraphRenderer, handlers: HoverHandlers):
     const originalHover = renderer.onNodeHover;
     const originalUnhover = renderer.onNodeUnhover;
 
+    // Off once released, for the same reason as the frame hook: a wrapper
+    // something else has wrapped since cannot be taken out, only silenced.
+    let live = true;
+
     const hover = function (this: GraphRenderer, event: MouseEvent, id: string, type: string): void {
         originalHover?.call(this, event, id, type);
-        handlers.onHover(id);
+
+        if (live) {
+            handlers.onHover(id);
+        }
     };
 
     const unhover = function (this: GraphRenderer): void {
         originalUnhover?.call(this);
-        handlers.onUnhover();
+
+        if (live) {
+            handlers.onUnhover();
+        }
     };
 
     renderer.onNodeHover = hover;
     renderer.onNodeUnhover = unhover;
 
     return () => {
+        live = false;
+
         if (renderer.onNodeHover === hover) {
             renderer.onNodeHover = originalHover;
         }

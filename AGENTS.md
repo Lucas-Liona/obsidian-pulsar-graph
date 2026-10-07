@@ -44,13 +44,18 @@ stylesheet covers the settings tab's curve preview.
 - `npm run lint` / `npm run lint:fix` — eslint over the whole tree, zero warnings
   enforced. Uses `eslint-plugin-obsidianmd`, which mirrors the checks the
   community directory runs on every release, so keep it clean.
-- `npm run type-check` — `tsc --noEmit`
+- `npm run type-check` — `tsc --noEmit`, then the same over `test/`
+- `npm test` — vitest over `test/**/*.test.ts`. `obsidian` is declarations
+  only, so `test/obsidian-stub.ts` stands in for the few runtime values the
+  source imports; a renderer is faked with plain objects shaped like PIXI's.
 
 A vault checkout that has not been installed since the flat-config migration
 fails lint with `ERR_PACKAGE_PATH_NOT_EXPORTED` for `eslint/config` rather than
-with a lint error. `npm install` then `git checkout package-lock.json` — npm
-rewrites the lockfile wholesale on every install, and it has twice nearly gone
-into a commit.
+with a lint error; `npm install` fixes it. The lockfile used to be rewritten
+wholesale by every install, which was indentation and nothing else: npm writes
+it with `package.json`'s tabs, and it had been committed with two spaces. It is
+committed in npm's own format now, so an install that changes nothing leaves it
+alone.
 
 ## Conventions
 
@@ -76,6 +81,20 @@ checked against a running vault. They are the expensive part of this repo.
 `onNodeHover` and `onNodeUnhover` are plain instance properties the graph view
 assigns. Wrapping one reaches exactly one graph and is undone by putting the
 original back. Always call the original first.
+
+**A released hook may still be called.** Release can only unlink a wrapper
+that is still on top; one that anything has wrapped since — another plugin, or
+this plugin loaded again — is now that wrapper's original and stays in the
+chain for the life of the renderer. Every hook therefore switches itself off on
+release as well as unlinking where it can. Before that, an unloaded instance
+kept drawing age labels from its frozen copy of the vault, stacked on the live
+ones.
+
+**An unloaded instance must never attach again.** Timers, debounced updates
+and saves already in flight still hold the old instance after a reload, and
+`syncRenderers` from any of them re-attached it to every open graph — measured
+at 22 wrappers per frame after three reloads, from one. Unload sets a flag that
+everything which attaches checks first.
 
 **Repainting.** `renderCallback` returns early once `idleFrames > 60`, so calling
 it directly draws nothing on a settled graph. `renderer.changed()` wakes the loop.
