@@ -48,7 +48,6 @@ export class OpacityStore {
 
     private oldestMtime = Date.now();
     private newestMtime = 0;
-    private newestNotePath: string | undefined;
 
     /** The 'now' every cached opacity was measured against, in window mode. */
     private anchor = Date.now();
@@ -100,10 +99,7 @@ export class OpacityStore {
         if (mtime < this.oldestMtime || mtime > this.newestMtime) {
             this.oldestMtime = Math.min(this.oldestMtime, mtime);
 
-            if (mtime > this.newestMtime) {
-                this.newestMtime = mtime;
-                this.newestNotePath = file.path;
-            }
+            this.newestMtime = Math.max(this.newestMtime, mtime);
 
             this.opacitiesStale = true;
             return;
@@ -291,48 +287,33 @@ export class OpacityStore {
         return gaps.length < SPREAD_FLOOR_NOTES ? null : anchorSpan(gaps, floorHours);
     }
 
-    /** The most recently modified note, which the spotlight setting picks out. */
-    newestPath(): string | undefined {
-        return this.newestNotePath;
+    /** Every note with a date on record, for asking a question of the vault. */
+    paths(): IterableIterator<string> {
+        return this.mtimes.keys();
     }
 
     /**
-     * The most recently modified notes, newest first.
+     * Every note worked on since a moment, newest first.
      *
-     * Selected in one pass rather than by sorting the vault, because this is
-     * asked on every repaint and the answer is almost always a handful out of
-     * thousands.
+     * The other way to pick what the spotlight points at. A count asks which
+     * notes are newest, which is always answerable and so always answers —
+     * even when the newest thing you touched was in March. A window asks what
+     * is warm, and goes quiet when nothing is.
      */
-    newestPaths(count: number, skip?: ReadonlySet<string>): string[] {
-        const wanted = Math.max(0, Math.floor(count));
+    newestSince(paths: Iterable<string>, since: number, skip?: ReadonlySet<string>): string[] {
+        const recent: [string, number][] = [];
 
-        if (wanted <= 1) {
-            if (this.newestNotePath !== undefined && !skip?.has(this.newestNotePath)) {
-                return [this.newestNotePath];
-            }
+        for (const path of paths) {
+            const mtime = this.mtimes.get(path);
 
-            // The cached newest is the one note this can answer without a scan,
-            // so when that one is spoken for there is nothing for it but to look.
-            return skip === undefined ? [] : this.newestAmong(this.mtimes.keys(), 1, skip);
-        }
-
-        const best: [string, number][] = [];
-
-        for (const [path, mtime] of this.mtimes) {
-            if (skip?.has(path)) {
-                continue;
-            }
-
-            if (best.length < wanted) {
-                best.push([path, mtime]);
-                best.sort((a, b) => b[1] - a[1]);
-            } else if (mtime > best[best.length - 1][1]) {
-                best[best.length - 1] = [path, mtime];
-                best.sort((a, b) => b[1] - a[1]);
+            if (mtime !== undefined && mtime >= since && !skip?.has(path)) {
+                recent.push([path, mtime]);
             }
         }
 
-        return best.map(([path]) => path);
+        recent.sort((a, b) => b[1] - a[1]);
+
+        return recent.map(([path]) => path);
     }
 
     /**
@@ -692,25 +673,19 @@ export class OpacityStore {
         if (this.mtimes.size === 0) {
             this.oldestMtime = Date.now();
             this.newestMtime = 0;
-            this.newestNotePath = undefined;
             return;
         }
 
         let oldest = Date.now();
         let newest = 0;
-        let newestPath: string | undefined;
 
-        for (const [path, mtime] of this.mtimes) {
+        for (const mtime of this.mtimes.values()) {
             if (mtime < oldest) oldest = mtime;
-            if (mtime > newest) {
-                newest = mtime;
-                newestPath = path;
-            }
+            if (mtime > newest) newest = mtime;
         }
 
         this.oldestMtime = oldest;
         this.newestMtime = newest;
-        this.newestNotePath = newestPath;
     }
 }
 
