@@ -39,6 +39,8 @@ export type StaleMark = 'line' | 'zzz';
  */
 export class Attention {
     private readonly seen = new Map<string, number>();
+    /** The note in front, which is being looked at for as long as it stays there. */
+    private current: string | null = null;
 
     constructor(private readonly app: App) {}
 
@@ -58,12 +60,36 @@ export class Attention {
         });
     }
 
-    touch(path: string): void {
-        this.seen.set(path, Date.now());
+    /**
+     * Moves attention to a note, or away from every note, and returns the note
+     * left behind if there was one. Both are stamped: the one arrived at
+     * because it is being looked at, and the one left because it was being
+     * looked at until now. Stamping only on arrival read a note sat in for
+     * fifteen minutes as fifteen minutes ignored the moment it was left.
+     */
+    focus(path: string | null): string | null {
+        const now = Date.now();
+        const left = this.current !== null && this.current !== path ? this.current : null;
+
+        if (left !== null) {
+            this.seen.set(left, now);
+        }
+
+        if (path !== null) {
+            this.seen.set(path, now);
+        }
+
+        this.current = path;
+        return left;
     }
 
     forget(path: string): void {
         this.seen.delete(path);
+
+        // A deleted or renamed note is not one to stamp on the way out.
+        if (this.current === path) {
+            this.current = null;
+        }
     }
 
     /**
