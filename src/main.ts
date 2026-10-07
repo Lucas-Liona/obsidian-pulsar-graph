@@ -707,7 +707,10 @@ export default class PulsarGraphPlugin extends Plugin {
             return `Nothing in range, of ${total} notes.`;
         }
 
-        const count = `${kept} of ${total} notes`;
+        // The share, because "194 of 1092" is a ratio nobody computes while
+        // dragging and "18%" is the thing the handle is actually choosing.
+        const share = Math.round((kept / total) * 100);
+        const count = `${kept} of ${total} notes (${share < 1 ? '<1' : share}%)`;
 
         return oldest === newest
             ? `${count}, from ${formatAge(newest, now)}`
@@ -900,7 +903,7 @@ export default class PulsarGraphPlugin extends Plugin {
             unpinned: () => this.pins.size === 0,
             enabled: () => this.settings.filterEnabled,
             ranges: () => this.settings.filterRanges,
-            histogram: () => this.measureVault().spread,
+            histogram: (buckets) => this.measureVault(buckets).spread,
             describe: (ranges) => this.describeRange(ranges),
             onToggle: (enabled) => {
                 this.settings.filterEnabled = enabled;
@@ -1025,7 +1028,7 @@ export default class PulsarGraphPlugin extends Plugin {
      * What the current settings are doing to this vault, read from the graph
      * that is open if there is one.
      */
-    measureVault(): VaultStats {
+    measureVault(bands?: number): VaultStats {
         this.store.refresh();
 
         const [first] = this.attached.entries();
@@ -1037,7 +1040,8 @@ export default class PulsarGraphPlugin extends Plugin {
             this.settings,
             renderer,
             (path) => graph?.pooled.byPath?.get(path) ?? this.store.opacityFor(path),
-            this.settings.history ? this.history.coverage() : null
+            this.settings.history ? this.history.coverage() : null,
+            bands
         );
     }
 

@@ -1235,7 +1235,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             const holder = containerEl.createDiv();
 
             const rangeBar = new RangeBar(holder, {
-                histogram: this.plugin.measureVault().spread,
+                histogram: (buckets) => this.plugin.measureVault(buckets).spread,
                 describe: (ranges) => this.plugin.describeRange(ranges),
                 onPreview: (ranges) => this.plugin.previewRanges(ranges),
                 onChange: (ranges) => {
