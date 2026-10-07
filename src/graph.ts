@@ -123,6 +123,12 @@ export interface GraphRenderer {
 interface GraphEngine {
     render?: () => void;
     /**
+     * How far the graph's own timelapse has run. Zero while nothing is
+     * replaying. Not an index into anything — it climbs past the number of
+     * files in the vault — so it is only ever read as a yes or no.
+     */
+    progression?: number;
+    /**
      * The local graph's own settings. `localFile` is the note it was built
      * around and `localJumps` how many links out it reached.
      */
@@ -158,6 +164,8 @@ export interface OpenGraph {
      * Always null for the global graph, which has no centre.
      */
     centre: () => string | null;
+    /** Whether the graph's own timelapse is running right now. */
+    replaying: () => boolean;
 }
 
 /**
@@ -212,10 +220,13 @@ export function openGraphs(app: App): OpenGraph[] {
         const renderer = view.renderer;
 
         if (renderer?.nodeLookup) {
+            const engine = view.dataEngine ?? view.engine;
+
             open.push({
                 renderer,
                 kind,
-                centre: kind === 'local' ? () => centreOf(view) : () => null
+                centre: kind === 'local' ? () => centreOf(view) : () => null,
+                replaying: () => (engine?.progression ?? 0) > 0
             });
         }
     }
@@ -242,6 +253,15 @@ export function controlsFor(app: App, renderer: GraphRenderer): HTMLElement | nu
 export interface OpacityOptions {
     /** Spreads brightness across the notes the graph is drawing, not the vault. */
     adaptive: boolean;
+    /**
+     * The moment the graph's own replay has reached, or null when nothing is
+     * replaying. Replaces everything else that decides brightness: a replay is
+     * a question about one moment in the past, and a glow, a group average or a
+     * pin are all answers about the present.
+     */
+    replayAt: number | null;
+    /** How long a note stays lit behind the replay's wave, in vault days. */
+    replayTrailDays: number;
     /**
      * The note to measure time from instead of from now, which only a graph
      * with a centre has. Replaces the spread when set: both are a
@@ -523,28 +543,44 @@ function* neighboursOf(node: GraphNode): Generator<string> {
  */
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
-    const wanted = wantedPaint(renderer, options);
+    const replaying = options.replayAt !== null;
+
+    // Nothing of ours is painted during a replay. The spotlight points at the
+    // vault's newest note, which has not been written yet at the moment being
+    // shown, and a pin is a statement about today. Both would be the present
+    // intruding on a picture of the past.
+    const wanted = replaying ? new Map<string, WantedPaint>() : wantedPaint(renderer, options);
 
     releasePaint(renderer, options.paint, wanted);
 
     const own = new Map<string, number>();
 
-    for (const path of Object.keys(renderer.nodeLookup)) {
-        const mtime = store.mtimeFor(path);
+    if (options.replayAt !== null) {
+        for (const [path, opacity] of store.replayedAt(Object.keys(renderer.nodeLookup), options.replayAt, options.replayTrailDays)) {
+            own.set(path, opacity);
+        }
+    } else {
+        for (const path of Object.keys(renderer.nodeLookup)) {
+            const mtime = store.mtimeFor(path);
 
-        if (mtime !== undefined) {
-            own.set(path, store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime));
+            if (mtime !== undefined) {
+                own.set(path, store.opacityFor(path) ?? store.cacheOpacityFor(path, mtime));
+            }
         }
     }
 
     // Re-spread before anything pools. The glow and the folder warmth both
     // average over this number, so handing them the absolute one and then
     // re-spreading afterwards would spread a number that was already mixed.
-    const anchored = options.anchorPath !== null
+    //
+    // None of it runs during a replay. A replay is a question about one moment
+    // in the past; a glow, a group average and a pin are all answers about the
+    // present, and averaging across the wave is what would flatten it.
+    const anchored = !replaying && options.anchorPath !== null
         ? store.aroundAnchor(own.keys(), options.anchorPath, options.spreadFloorHours)
         : null;
 
-    const spread = anchored ?? (options.adaptive ? store.spreadAcross(own.keys(), options.spreadFloorHours) : null);
+    const spread = anchored ?? (!replaying && options.adaptive ? store.spreadAcross(own.keys(), options.spreadFloorHours) : null);
 
     if (spread) {
         for (const [path, opacity] of spread) {
@@ -557,11 +593,11 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     // would hand every node neighbours identical to itself and leave the glow
     // with nothing to lift. Spreading locally and then taking the regional view
     // keeps both settings meaning something together.
-    const glowed = options.neighbourBleed > 0
+    const glowed = !replaying && options.neighbourBleed > 0
         ? poolNeighbours(renderer, own, options.neighbourBleed, options.neighbourHops)
         : null;
 
-    const pooled = options.clusterWarmth > 0
+    const pooled = !replaying && options.clusterWarmth > 0
         ? warmByGroup(renderer, glowed ?? own, options.clusterWarmth, options.clusterBy)
         : glowed;
 
@@ -570,7 +606,7 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     // through the glow would have a pin brighten its neighbours, and letting it
     // through the spread would have one pin squash the curve every other note
     // is measured on.
-    const held = holdPins(pooled ?? own, options);
+    const held = replaying ? (pooled ?? own) : holdPins(pooled ?? own, options);
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
         const opacity = held.get(path);

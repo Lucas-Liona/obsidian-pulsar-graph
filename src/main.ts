@@ -22,6 +22,8 @@ import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings 
 interface AttachedGraph {
     /** Which of Obsidian's two graphs this is. Fixed for the view's lifetime. */
     kind: GraphKind;
+    /** Whether the graph's own timelapse is running. */
+    replaying: () => boolean;
     /** The note a local graph is built around, read fresh each pass. */
     centre: () => string | null;
     release: Unhook;
@@ -761,6 +763,23 @@ export default class PulsarGraphPlugin extends Plugin {
         return spotlit.has(path) ? this.settings.spotlightColor : null;
     }
 
+    /**
+     * How far back in the vault's own history a graph is currently showing.
+     *
+     * Read from the notes being drawn rather than from the animation's counter,
+     * which climbs past the number of files in the vault and so is an index
+     * into nothing. The newest note on screen is where the replay has reached,
+     * by construction: it shows what existed, so nothing newer is there yet.
+     *
+     * Null once the replay has caught up with the vault, which is both the
+     * honest answer and the thing that ends the wave.
+     */
+    private replayReach(renderer: GraphRenderer): number | null {
+        const reached = this.store.reachedBy(pathsIn(renderer));
+
+        return reached !== null && reached < this.store.newestCreated() ? reached : null;
+    }
+
     /** Whether a graph writes every age, which a small panel can afford to. */
     private labelMode(kind: GraphKind): AgeMode {
         return kind === 'local' && this.settings.localLabels ? 'titles' : this.settings.ageLabels;
@@ -1112,7 +1131,7 @@ export default class PulsarGraphPlugin extends Plugin {
         }
     }
 
-    private attach({ renderer, kind, centre }: OpenGraph): AttachedGraph {
+    private attach({ renderer, kind, centre, replaying }: OpenGraph): AttachedGraph {
         // Labels, links and nodes all read the same number, so a node lifted by
         // a neighbour carries its date and its links up with it.
         const pooled: { byPath: Map<string, number> | null } = { byPath: null };
@@ -1186,6 +1205,7 @@ export default class PulsarGraphPlugin extends Plugin {
         return {
             kind,
             centre,
+            replaying,
             labels,
             links,
             pooled,
@@ -1269,6 +1289,14 @@ export default class PulsarGraphPlugin extends Plugin {
         // middle is whichever one it is pointing at now.
         const anchorPath = graph.kind === 'local' && this.settings.localAnchor ? graph.centre() : null;
 
+        // Where the graph's own replay has got to, or null when it is not
+        // replaying. Two conditions, because the animation's counter never
+        // returns to zero once started: it has to have been started, and the
+        // notes on screen have to still be short of the vault's newest. The
+        // second is also what ends the wave — once everything is drawn there is
+        // nothing left to reach, and the graph goes back to reading today.
+        const replayAt = this.settings.replay && graph.replaying() ? this.replayReach(renderer) : null;
+
         // Not only while something is hidden. The line answers "what am I
         // looking at", which is a question a graph raises whether or not a
         // filter is on.
@@ -1320,6 +1348,8 @@ export default class PulsarGraphPlugin extends Plugin {
             clusterBy: this.settings.clusterBy,
             adaptive: this.settings.normalizeBy === 'shown' || scoped,
             anchorPath,
+            replayAt,
+            replayTrailDays: this.settings.replayTrailDays,
             spreadFloorHours: this.settings.spreadFloorHours
         });
 

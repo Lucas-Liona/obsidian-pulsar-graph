@@ -43,6 +43,17 @@ const ANCHOR_DRIFT_FRACTION = 0.01;
  */
 export class OpacityStore {
     private readonly mtimes = new Map<string, number>();
+
+    /**
+     * When each note first appeared, which is a different question from when it
+     * was last touched and the only one a replay of the vault can ask.
+     *
+     * The lower of the two timestamps, because sync and file copies push a
+     * note's creation time past its modification time, and the earlier of the
+     * two is the one that was not invented by a machine. Obsidian's own graph
+     * animation orders files the same way.
+     */
+    private readonly creations = new Map<string, number>();
     private readonly opacities = new Map<string, number>();
     private opacitiesStale = true;
 
@@ -74,9 +85,11 @@ export class OpacityStore {
 
     build(files: TFile[]): void {
         this.mtimes.clear();
+        this.creations.clear();
 
         for (const file of files) {
             this.mtimes.set(file.path, file.stat.mtime);
+            this.creations.set(file.path, createdAt(file));
         }
 
         this.recalculateRange();
@@ -86,6 +99,7 @@ export class OpacityStore {
     /** Drops every cache, for when the plugin is switched off. */
     clear(): void {
         this.mtimes.clear();
+        this.creations.clear();
         this.opacities.clear();
         this.ranking = [];
         this.intensityRanking = [];
@@ -95,6 +109,7 @@ export class OpacityStore {
     recordChange(file: TFile): void {
         const mtime = file.stat.mtime;
         this.mtimes.set(file.path, mtime);
+        this.creations.set(file.path, createdAt(file));
 
         if (mtime < this.oldestMtime || mtime > this.newestMtime) {
             this.oldestMtime = Math.min(this.oldestMtime, mtime);
@@ -121,6 +136,7 @@ export class OpacityStore {
     /** Drops a path the vault no longer has, such as the old side of a rename. */
     forget(path: string): void {
         this.mtimes.delete(path);
+        this.creations.delete(path);
         this.opacities.delete(path);
     }
 
@@ -285,6 +301,72 @@ export class OpacityStore {
         }
 
         return gaps.length < SPREAD_FLOOR_NOTES ? null : anchorSpan(gaps, floorHours);
+    }
+
+    /** The most recent moment any note in the vault first appeared. */
+    newestCreated(): number {
+        let newest = 0;
+
+        for (const created of this.creations.values()) {
+            if (created > newest) {
+                newest = created;
+            }
+        }
+
+        return newest;
+    }
+
+    /**
+     * The moment a replay has reached, read from the notes it is drawing.
+     *
+     * Taken from the graph rather than from the animation's own counter, which
+     * is an index into every file in the vault and not only the notes this
+     * grades. The newest note on screen is where the playhead is, by
+     * construction: a replay shows what existed, so nothing newer is there yet.
+     */
+    reachedBy(paths: Iterable<string>): number | null {
+        let reached = 0;
+
+        for (const path of paths) {
+            const created = this.creations.get(path);
+
+            if (created !== undefined && created > reached) {
+                reached = created;
+            }
+        }
+
+        return reached === 0 ? null : reached;
+    }
+
+    /**
+     * Brightness as it was at a moment in the vault's own past.
+     *
+     * Obsidian's replay shows which notes existed and nothing else, so every
+     * note it draws is drawn at the brightness it has *today* — and the notes
+     * that existed early are old, so most of a replay is a dark graph that
+     * lights up in its final seconds. Measured from the playhead instead, a
+     * note is brightest as it is written and cools behind the wave.
+     *
+     * Creation is what this reads, not modification. A note written two years
+     * ago and edited yesterday appears two years into the replay and should
+     * cool from there; reading its modification time would light it up at the
+     * start and never let it go, which is the thing being fixed.
+     */
+    replayedAt(paths: Iterable<string>, playhead: number, trailDays: number): Map<string, number> {
+        const trail = Math.max(1, trailDays) * MS_PER_DAY;
+        const lit = new Map<string, number>();
+
+        for (const path of paths) {
+            const created = this.creations.get(path);
+
+            if (created === undefined) {
+                continue;
+            }
+
+            lit.set(path, this.shapeInto(clamp(1 - (playhead - created) / trail, 0, 1)));
+        }
+
+        return lit;
     }
 
     /** Every note with a date on record, for asking a question of the vault. */
@@ -699,6 +781,15 @@ function clamp(value: number, lowest: number, highest: number): number {
  * couple of units of each other and undo the point of it; a day is also a fair
  * floor, since two edits an hour apart are equally fresh.
  */
+/**
+ * When a note first appeared. The lower of the two timestamps: sync and file
+ * copies push a creation time past a modification time, and the earlier of the
+ * two is the one no machine invented.
+ */
+function createdAt(file: TFile): number {
+    return Math.min(file.stat.ctime, file.stat.mtime);
+}
+
 function days(milliseconds: number): number {
     return Math.max(0, milliseconds) / MS_PER_DAY;
 }

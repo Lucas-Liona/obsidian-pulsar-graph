@@ -165,6 +165,56 @@ strength** mixes that colour with the one links are normally drawn in — at ful
 strength it is a stripe of neon, and a little under half way reads as a warmer
 line, which is much easier to sit with.
 
+## The replay
+
+Obsidian's graph has a timelapse of its own — the clock icon in its control
+panel, *Start timelapse animation*. It empties the graph and rebuilds it in the
+order the notes were created.
+
+Run it with Pulsar on and it is almost black. Every note it draws is drawn at the
+brightness it has **today**, and the notes that existed early are the old ones,
+so the replay spends most of its length showing a dark graph and lights up only
+in the final seconds.
+
+That is not a figure of speech. Measured in a vault of 1096 notes, taking the
+notes that existed at a given moment and grading them the way a replay does:
+
+| The moment | Notes that existed | At full brightness | At minimum |
+|---|---|---|---|
+| 360 days ago | 20 | **0** | 20 |
+| 180 days ago | 72 | **0** | 72 |
+| 90 days ago | 102 | **0** | 99 |
+
+Every note, at the bottom of the range, for the whole first half of the replay.
+
+**Light the timelapse as it plays** measures each note from the moment the replay
+has reached instead of from today. A note is at full brightness as the wave
+arrives and cools behind it, so the replay becomes what it is actually showing:
+the vault being written.
+
+It reads **when each note first appeared**, not when it was last touched — the
+lower of the two timestamps, since sync and file copies push a creation time past
+a modification time. That is also how Obsidian orders the replay itself. Reading
+modification times instead would light a note at the start of the replay because
+you edited it yesterday, which is the thing being fixed.
+
+**Stays lit for** is how long a note holds its brightness behind the wave, in
+days *of vault time* rather than of watching. A vault that has been going for
+years wants a longer trail than one that is months old; a dense patch of history
+lights more notes at once than a sparse one, because that is what was happening.
+
+While a replay is running, everything else that decides brightness stands aside:
+the glow, group temperature, the local-graph scale, pins and the spotlight. A
+replay is a question about one moment in the past, and all of those are answers
+about the present. The spotlight in particular would point at a note that has not
+been written yet.
+
+Nothing here is playback of ours. The button, the speed and the stepping are
+Obsidian's; this supplies the one thing the animation has no way to know, which
+is what the vault looked like at the moment it is showing. The wave ends by
+itself when the replay catches up with the vault, because at that point the
+newest note on screen *is* the newest note there is.
+
 ---
 
 [← All docs](README.md) · [Pulsar](../README.md)

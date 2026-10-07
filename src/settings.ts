@@ -108,6 +108,10 @@ export interface PulsarGraphSettings {
     pinColor: string;
     pinStrength: number;
     spreadFloorHours: number;
+    /** Lights the graph's own timelapse as it plays. */
+    replay: boolean;
+    /** How long a note stays lit behind the replay's wave, in vault days. */
+    replayTrailDays: number;
     /** Whether the plugin colours graph nodes at all. */
     graphFade: boolean;
     /** Whether the plugin touches the tab bar at all. */
@@ -246,6 +250,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     // On, unlike a new feature. These switch off behaviour that already
     // exists, so defaulting them off would quietly disable the plugin's main
     // job for everyone who upgrades.
+    replay: false,
+    replayTrailDays: 60,
     graphFade: true,
     tabBar: true,
     collapsed: [],
@@ -345,6 +351,9 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
 const SPOTLIGHT_COUNT_RANGE = { lowest: 1, highest: 25, step: 1 };
 
 const SPOTLIGHT_WINDOW_RANGE = { lowest: 1, highest: 720, step: 5 };
+
+const REPLAY_TRAIL_RANGE = { lowest: 1, highest: 365, step: 1 };
+
 
 /** What the newest note's own circle is multiplied by, on top of any sizing. */
 const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
@@ -460,6 +469,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         spotlightBy: SPOTLIGHT_BYS.find((by) => by === data.spotlightBy) ?? DEFAULT_SETTINGS.spotlightBy,
         spotlightMinutes: clamp(parseNumber(data.spotlightMinutes, DEFAULT_SETTINGS.spotlightMinutes), SPOTLIGHT_WINDOW_RANGE.lowest, SPOTLIGHT_WINDOW_RANGE.highest),
+        replay: parseBoolean(data.replay, DEFAULT_SETTINGS.replay),
+        replayTrailDays: Math.round(clamp(parseNumber(data.replayTrailDays, DEFAULT_SETTINGS.replayTrailDays), REPLAY_TRAIL_RANGE.lowest, REPLAY_TRAIL_RANGE.highest)),
         graphFade: parseBoolean(data.graphFade, DEFAULT_SETTINGS.graphFade),
         tabBar: parseBoolean(data.tabBar, DEFAULT_SETTINGS.tabBar),
         collapsed: parseStrings(data.collapsed),
@@ -745,6 +756,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             this.buildClusters(graph, settings);
             this.buildLocalGraph(graph, settings);
             this.buildFilter(graph, settings);
+            this.buildReplay(graph, settings);
         }
 
         // Three ways of lighting one thing up on purpose, against a background
@@ -970,6 +982,47 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
+    }
+
+    /**
+     * Obsidian's own timelapse, lit.
+     *
+     * Not a playback of ours: the graph already has one, and its button, its
+     * speed and its stepping are all its own. This supplies the one thing it
+     * has no way to know, which is what the vault looked like at the moment it
+     * is showing.
+     */
+    private buildReplay(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Replay', "The graph's own timelapse, in the graph's control panel, lit as it plays");
+
+        new Setting(containerEl)
+            .setName('Light the timelapse as it plays')
+            .setDesc('Obsidian draws every note in a replay at the brightness it has today, and the notes that existed early are old — so most of a replay is a dark graph that lights up at the end. This measures each note from the moment the replay has reached instead, so a note is brightest as it is written and cools behind the wave')
+            .addToggle((toggle) => toggle
+                .setValue(settings.replay)
+                .onChange(async (value) => {
+                    settings.replay = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+
+        if (!settings.replay) {
+            return;
+        }
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Stays lit for')
+                .setDesc('Days of vault time, not of watching. A note is at full brightness as the wave reaches it and has faded to nothing this long behind it'),
+            REPLAY_TRAIL_RANGE,
+            settings.replayTrailDays,
+            (value) => {
+                settings.replayTrailDays = Math.round(value);
+                this.save();
+            }
+        );
+
     }
 
     private buildSize(containerEl: HTMLElement, settings: PulsarGraphSettings): void {

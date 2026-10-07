@@ -130,14 +130,18 @@ settings change, all of them before the rebuild those changes trigger, so the
 tint looks settled while the circle that will actually be drawn does not exist
 yet.
 
-**The graph's timelapse has a readable playhead.** The engine carries
-`progression` (an integer index into the files in creation order, not a
-timestamp), `progressionSpeed`, and `renderProgression()`; the *Start timelapse
-animation* button in the graph's own controls drives them. Each step rebuilds the
-node set, so a `setData` wrapper already fires on every step of it — anything
-that wants to colour along with the animation can ride it rather than own
-playback. The index advances only while the view actually renders, so a collapsed
-sidebar freezes it at 1 and measuring there reads nothing.
+**The graph's timelapse can be ridden, but its counter is not a playhead.** The
+engine carries `progression`, `progressionSpeed` and `renderProgression()`, and
+the *Start timelapse animation* button in the graph's own controls drives them.
+Each step rebuilds the node set, so a `setData` wrapper already fires on every
+step and anything colouring along with it rides the animation rather than owning
+playback. What `progression` is *not* is an index: it climbed past 2500 in a
+vault of 1473 files, kept climbing for minutes after the node count had settled,
+and never returned to zero. It advances only while the view renders, so a
+collapsed sidebar freezes it. Read it as a yes/no — has a replay been started in
+this view — and take the moment being shown from the notes on screen instead: the
+newest creation time among them is where the replay has reached, which also stops
+being behind the vault the instant the replay catches up.
 
 **Mid-rebuild a node has no colour.** Inside the `setData` wrapper,
 `node.color` reads back `undefined` for every node at once, so code that

@@ -91,6 +91,8 @@ alone.
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
+| Light the timelapse as it plays | on / off | off | all |
+| Stays lit for | 1 – 365 days | 60 | Replay on |
 | Fade the graph at all | on / off | on | all |
 | Touch the tab bar at all | on / off | on | all |
 | Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph |
