@@ -3,7 +3,7 @@ import { EditorView } from '@codemirror/view';
 import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
-import { AgeLabels, AgeText } from './age-label';
+import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
@@ -36,6 +36,8 @@ interface AttachedGraph {
     caption: FilterCaption | null;
     /** Ranges being dragged right now, shown by hiding rather than rebuilding. */
     preview: { ranges: OpacityRange[] | null };
+    /** How many notes the filter took out of this graph on its last rebuild. */
+    cut: { dropped: number };
     paint: PaintState;
 }
 
@@ -702,6 +704,73 @@ export default class PulsarGraphPlugin extends Plugin {
             : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
     }
 
+    /** Whether a graph writes every age, which a small panel can afford to. */
+    private labelMode(kind: GraphKind): AgeMode {
+        return kind === 'local' && this.settings.localLabels ? 'titles' : this.settings.ageLabels;
+    }
+
+    /**
+     * The line across the top of a graph.
+     *
+     * A local graph is offered one about the panel instead of one about the
+     * vault, because the vault line is answering a question nobody asked of a
+     * panel of twelve notes: "194 of 1092 notes" over a graph holding thirteen
+     * of them is true and useless.
+     */
+    private captionFor(renderer: GraphRenderer, graph: AttachedGraph, scoped: boolean, anchorPath: string | null): string | null {
+        const measured = this.describeSpread(renderer, scoped, anchorPath);
+
+        if (graph.kind === 'local' && this.settings.localSummary) {
+            return this.describePanel(renderer, graph.cut.dropped) + measured;
+        }
+
+        if (!this.settings.filterCaption) {
+            return null;
+        }
+
+        return this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE]) + measured;
+    }
+
+    /**
+     * What one graph is holding, as against what the vault holds.
+     *
+     * The count of what the filter took out comes from the filter itself: the
+     * nodes are gone before the renderer sees them, so by the time anything can
+     * look at the graph there is no way to tell a panel of nine from a panel of
+     * thirteen with four hidden.
+     */
+    private describePanel(renderer: GraphRenderer, dropped: number): string {
+        const now = Date.now();
+        let notes = 0;
+        let newest = 0;
+        let oldest = Number.POSITIVE_INFINITY;
+
+        for (const path of pathsIn(renderer)) {
+            const mtime = this.store.mtimeFor(path);
+
+            if (mtime === undefined) {
+                continue;
+            }
+
+            notes++;
+            newest = Math.max(newest, mtime);
+            oldest = Math.min(oldest, mtime);
+        }
+
+        const hidden = dropped > 0 ? `, ${dropped} hidden` : '';
+
+        if (notes === 0) {
+            return dropped > 0 ? `Nothing left in range, ${dropped} hidden` : 'Nothing here with a date';
+        }
+
+        const count = notes === 1 ? 'Just this note' : `${notes} notes`;
+        const ages = oldest === newest
+            ? formatAge(newest, now)
+            : `${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
+
+        return `${count}${hidden} · ${ages}`;
+    }
+
     /**
      * The trailing half of the caption, saying what the brightnesses on screen
      * were measured against when that is not simply the vault.
@@ -980,9 +1049,10 @@ export default class PulsarGraphPlugin extends Plugin {
         const strengthOf = (path: string): number | undefined => pooled.byPath?.get(path) ?? this.store.opacityFor(path);
 
         const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
-        labels.setMode(this.settings.ageLabels);
+        labels.setMode(this.labelMode(kind));
 
         const paint = newPaint();
+        const cut = { dropped: 0 };
         const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
@@ -1002,7 +1072,10 @@ export default class PulsarGraphPlugin extends Plugin {
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
                 strengthOf: (path) => (this.settings.filterEnabled ? this.store.opacityFor(path) : undefined),
-                keep: this.keptFromFilter()
+                keep: this.keptFromFilter(),
+                counted: (dropped) => {
+                    cut.dropped = dropped;
+                }
             })
         );
         const preview: { ranges: OpacityRange[] | null } = { ranges: null };
@@ -1050,6 +1123,7 @@ export default class PulsarGraphPlugin extends Plugin {
             data,
             scrubber,
             preview,
+            cut,
             paint,
             caption,
             release: () => {
@@ -1128,12 +1202,7 @@ export default class PulsarGraphPlugin extends Plugin {
         // Not only while something is hidden. The line answers "what am I
         // looking at", which is a question a graph raises whether or not a
         // filter is on.
-        graph.caption?.set(
-            this.settings.filterCaption
-                ? this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE])
-                    + this.describeSpread(renderer, scoped, anchorPath)
-                : null
-        );
+        graph.caption?.set(this.captionFor(renderer, graph, scoped, anchorPath));
 
         // Obsidian assigns a new render callback whenever it rebuilds a
         // graph's graphics, which drops the wrapper the labels are driven by.
@@ -1152,7 +1221,7 @@ export default class PulsarGraphPlugin extends Plugin {
             graph.labels.clear();
         }
 
-        graph.labels.setMode(this.settings.ageLabels);
+        graph.labels.setMode(this.labelMode(graph.kind));
         graph.links.setMode(this.settings.linkRecency);
         graph.links.setTrails(this.settings.sessionTrails
             ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }

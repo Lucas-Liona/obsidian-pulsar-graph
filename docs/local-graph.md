@@ -83,7 +83,7 @@ The spread floor applies here too, as how far either side the panel reaches at
 minimum. The median panel in a real vault came out at **5.8 days either side**,
 and the caption says which it is:
 
-> … · around Weeknotes, 4 days either side
+> 13 notes · around Weeknotes, 4 days either side
 
 While it is on it replaces the choice above for brightness. Which note the
 spotlight picks is still that setting's business, since that is a question about
@@ -109,6 +109,51 @@ follows the same choice, so the colour and the size land on the same note.
 The two are one setting on purpose. Both are asking *compared to what*, and
 answering that question twice, differently, in one panel is how a graph ends up
 disagreeing with itself.
+
+## What a small panel can afford
+
+Two things the whole graph cannot, both off by default.
+
+### Write every age
+
+The ages above node titles are one setting for both graphs, and *with titles* on
+a two-thousand-node graph is noise. On a panel of twelve it is free information,
+so a local graph can be told to write them whatever the big graph is doing.
+
+They ride along with the titles, which Obsidian hides below a zoom you control —
+in a sidebar-width panel that usually means the handful of names you can
+actually read. Measured on a 13-node panel with the global setting on *on
+hover*: no ages at all before, and an age on each of the 5 nodes whose titles
+were visible after.
+
+### Say what the panel holds
+
+The caption across the top of a graph counts your vault. Over a panel of thirteen
+notes, that is true and useless. Measured on the same panel, with the age filter
+on:
+
+| | |
+|---|---|
+| The vault line | `194 of 1092 notes, 51 minutes ago back to 2 weeks ago` |
+| The panel line | `13 notes · 21 hours ago back to 5 days ago` |
+
+Not one number in the first line is about anything on screen. The panel line says
+how many notes are in front of you, how recent the newest and the oldest of them
+are, and — when the age filter has taken some out — **how many are missing**:
+
+> 9 notes, 4 hidden · 2 hours ago back to 3 weeks ago
+
+That last part is worth having because the filter is absolute. It reads a note's
+age against your whole vault, by design, so narrowing it hard enough will empty
+a local graph down to the one note the panel is about. It cannot go fully blank —
+the note you have open is one of the notes the filter is never allowed to remove
+— but *nearly* blank looks exactly like a note with no links, and those are
+different facts. The count is the difference.
+
+It is the filter's own count, because by the time anything can look at the graph
+the hidden nodes are gone: they are removed from the data before the renderer
+ever sees them, so afterwards there is no way to tell a panel of nine from a
+panel of thirteen with four taken out.
 
 ---
 

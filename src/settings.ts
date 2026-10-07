@@ -93,6 +93,10 @@ export interface PulsarGraphSettings {
     localScope: LocalScope;
     /** Measures a local graph's time from the note in the middle, not from now. */
     localAnchor: boolean;
+    /** Writes every age in a local graph, however the global graph is set. */
+    localLabels: boolean;
+    /** A line across the top of a local graph saying what the panel holds. */
+    localSummary: boolean;
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -216,6 +220,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     // this setting existed and nothing should change under anyone on upgrade.
     localScope: 'vault',
     localAnchor: false,
+    localLabels: false,
+    localSummary: false,
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -419,6 +425,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         localScope: parseLocalScope(data.localScope),
         localAnchor: parseBoolean(data.localAnchor, DEFAULT_SETTINGS.localAnchor),
+        localLabels: parseBoolean(data.localLabels, DEFAULT_SETTINGS.localLabels),
+        localSummary: parseBoolean(data.localSummary, DEFAULT_SETTINGS.localSummary),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
         halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
@@ -1235,6 +1243,28 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.localAnchor)
                 .onChange(async (value) => {
                     settings.localAnchor = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Write every age in a local graph')
+            .setDesc('A panel of a dozen nodes has room for a dozen dates, where the whole graph does not. Independent of the labels setting above, which stays in charge of the big graph')
+            .addToggle((toggle) => toggle
+                .setValue(settings.localLabels)
+                .onChange(async (value) => {
+                    settings.localLabels = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Say what the panel holds')
+            .setDesc('A line across the top of a local graph: how many notes are in it, how recent the newest and oldest are, and how many the age filter has taken out. The caption on the whole graph counts your vault, which in a panel of twelve notes is answering a question nobody asked')
+            .addToggle((toggle) => toggle
+                .setValue(settings.localSummary)
+                .onChange(async (value) => {
+                    settings.localSummary = value;
                     await this.plugin.saveSettings();
                 })
             );

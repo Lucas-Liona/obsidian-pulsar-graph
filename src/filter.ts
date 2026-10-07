@@ -22,6 +22,13 @@ export interface FilterOptions {
      * one node the graph is pointing at is the graph disagreeing with itself.
      */
     keep: (string | undefined)[];
+    /**
+     * How many notes this pass took out, reported because this is the only
+     * place that knows. The nodes are gone before the renderer sees them, so
+     * afterwards nothing can tell a panel of nine from a panel of thirteen with
+     * four hidden.
+     */
+    counted?: (dropped: number) => void;
 }
 
 export function isWholeRange(ranges: OpacityRange[]): boolean {
@@ -52,18 +59,24 @@ export function withinRanges(value: number, ranges: OpacityRange[]): boolean {
  */
 export function filterGraphData(data: unknown, options: FilterOptions): unknown {
     if (isWholeRange(options.ranges) || !isGraphData(data)) {
+        options.counted?.(0);
         return data;
     }
 
     const kept: Record<string, unknown> = {};
+    let dropped = 0;
 
     for (const [path, node] of Object.entries(data.nodes)) {
         const strength = options.strengthOf(path);
 
         if (strength === undefined || options.keep.includes(path) || withinRanges(Math.min(1, Math.max(0, strength)), options.ranges)) {
             kept[path] = node;
+        } else {
+            dropped++;
         }
     }
+
+    options.counted?.(dropped);
 
     return { ...data, nodes: kept };
 }
