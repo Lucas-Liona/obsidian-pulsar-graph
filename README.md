@@ -20,8 +20,6 @@ part of your vault you're actually working in lights up and the rest sinks back.
 
 <p align="center"><i>My own vault, 1200 notes. Every bright dot is something I touched this week.</i></p>
 
-<p align="center"><i>The line across the top says what you are looking at. The green are the last five notes I touched.</i></p>
-
 <p align="center">
   <img src="docs/assets/fade-sweep.gif" width="520" alt="Animation of a note graph as the fade is swept from hardest to softest. It begins almost empty, with one bright green node, and fills in until the whole vault is visible.">
 </p>
@@ -70,10 +68,10 @@ being read in order.
 | | |
 |---|---|
 | **[Time](docs/time.md)** | What counts as old, measuring against your vault or a window, the age scales and the fade curves. The number everything else reads. |
-| **[The graph](docs/graph.md)** | Node size, the age drawn above a node, the newest-note spotlight, the glow between neighbours, folder temperature, and what the links carry. |
-| **[The age filter](docs/filter.md)** | Taking notes out of the graph entirely rather than dimming them, and the scrubber inside the graph's own panel. |
-| **[The local graph](docs/local-graph.md)** | The panel around one note. It asks a narrower question than the whole graph, and can be measured against itself rather than against the vault. |
-| **[Pins](docs/pins.md)** | Notes you choose to hold bright whatever their dates say, for the ones you mean to come back to. The one place you overrule the clock. |
+| **[The graph](docs/graph.md)** | Node size, the age drawn above a node, the spotlight — on the newest few notes or on anything touched in the last so many minutes — the glow between neighbours, folder temperature, and what the links carry. |
+| **[The age filter](docs/filter.md)** | Taking notes out of the graph entirely rather than dimming them, the scrubber inside the graph's own panel, and how to read the bar. |
+| **[The local graph](docs/local-graph.md)** | The panel around one note. It can be measured against its own notes rather than against the vault, or from the note in the middle — how close in time each neighbour is, rather than how recent. |
+| **[Pins](docs/pins.md)** | Notes you choose to hold bright whatever their dates say, in the graph and in the tab bar. The one place you overrule the clock. |
 | **[Tabs](docs/tabs.md)** | The tab bar as a readout of attention: fading by how long since you looked, a brightness dot, and marking the ones you have left alone. |
 | **[Fresh writing](docs/writing.md)** | The part that works inside a note. Text takes a colour as you type it and cools back to normal. |
 | **[Edit history](docs/history.md)** | Pulsar's own record of when each note was worked on, and why it is worth nothing until it has been running a while. |
@@ -102,8 +100,9 @@ them already are until you ask.
   actually working on something.
 - **Your group colours survive.** The plugin changes how transparent a node is and
   leaves its colour alone, so anything you've set up with graph groups still works.
-  The one exception is the newest-note spotlight, which is off unless you turn it
-  on and restores the colour it replaced.
+  Two things paint a node — the spotlight and a pin — and both hand the colour
+  back when they move on. The spotlight is off until you turn it on; a pin paints
+  nothing until you pin something.
 - **A faded node is still there.** Obsidian draws labels, links and physics with
   their own opacity, so a note at minimum opacity still has a visible title and
   stays clickable. This is a fade, not a filter — that's
@@ -146,11 +145,16 @@ change, but a graph update can still mean it needs a fix here.
 ## Where it's going
 
 I made this to do one thing well, and I'd rather keep it that way than bolt on
-everything. That said, time is a bigger idea than opacity, and the direction I'm
-interested in is making time easier to see throughout the graph: a note's age on
-hover, a spotlight on whatever you edited last, a preview of the curve while
-you're setting it, and anchoring opacity to real dates instead of to your vault's
-own range. Further out, playing nicely with other ways of exploring a graph.
+everything. That said, time is a bigger idea than opacity, and the direction is
+making time easier to see throughout the graph.
+
+Most of what used to be listed here is now in: the age on hover, the spotlight on
+what you edited last, the curve preview, and a half-life that measures each note
+against the calendar instead of against your vault's own range. What's next is
+less about adding surfaces than about what the graph is *measured against* — a
+local graph that answers for its own panel, a replay of the vault's history where
+notes flare as you wrote them, and playing nicely with other ways of exploring a
+graph.
 
 It's all in the [issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues)
 and grouped into [milestones](https://github.com/Lucas-Liona/obsidian-pulsar-graph/milestones).

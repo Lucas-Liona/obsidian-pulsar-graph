@@ -26,8 +26,8 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `tabs.ts` | Attention time, and fading the tab bar by it |
 | `stats.ts` | What the settings are doing to this vault |
 | `filter.ts` | Which notes survive, applied before the renderer sees them |
-| `range-bar.ts` | The unit line with a handle at each end |
-| `graph-controls.ts` | The Age section inside the graph's own panel |
+| `range-bar.ts` | The unit line with a handle at each end, over the vault's own spread |
+| `graph-controls.ts` | The Age section inside the graph's own panel, and the caption across the top |
 
 Works on the global and local graph views. Local and offline only.
 
@@ -121,6 +121,15 @@ Counting anything other than frames does not work — several passes run inside 
 settings change, all of them before the rebuild those changes trigger, so the
 tint looks settled while the circle that will actually be drawn does not exist
 yet.
+
+**The graph's timelapse has a readable playhead.** The engine carries
+`progression` (an integer index into the files in creation order, not a
+timestamp), `progressionSpeed`, and `renderProgression()`; the *Start timelapse
+animation* button in the graph's own controls drives them. Each step rebuilds the
+node set, so a `setData` wrapper already fires on every step of it — anything
+that wants to colour along with the animation can ride it rather than own
+playback. The index advances only while the view actually renders, so a collapsed
+sidebar freezes it at 1 and measuring there reads nothing.
 
 **Mid-rebuild a node has no colour.** Inside the `setData` wrapper,
 `node.color` reads back `undefined` for every node at once, so code that
