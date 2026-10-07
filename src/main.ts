@@ -15,6 +15,8 @@ import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeSummary, keepsNote, summariseRanges } from './range-stats';
+import { Spread } from './range-bar';
+import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
@@ -847,10 +849,10 @@ export default class PulsarGraphPlugin extends Plugin {
             oldest = Math.min(oldest, mtime);
         }
 
-        const hidden = dropped > 0 ? `, ${dropped} hidden` : '';
+        const hidden = dropped > 0 && `${dropped} hidden`;
 
         if (notes === 0) {
-            return dropped > 0 ? `Nothing left in range, ${dropped} hidden` : 'Nothing here with a date';
+            return dropped > 0 ? joinStats('Nothing left in range', hidden) : 'Nothing here with a date';
         }
 
         const count = notes === 1 ? 'Just this note' : `${notes} notes`;
@@ -858,7 +860,7 @@ export default class PulsarGraphPlugin extends Plugin {
             ? formatAge(newest, now)
             : `${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
 
-        return `${count}${hidden} · ${ages}`;
+        return joinStats(count, hidden, ages);
     }
 
     /**
@@ -878,15 +880,15 @@ export default class PulsarGraphPlugin extends Plugin {
             if (span !== null) {
                 const name = anchorPath.split('/').pop()?.replace(/\.md$/, '') ?? anchorPath;
 
-                return ` · around ${name}, ${formatSpan(span)} either side`;
+                return SEPARATOR + joinStats(`around ${name}`, `${formatSpan(span)} either side`);
             }
         }
 
         if (scoped) {
-            return ' · spread across this panel';
+            return `${SEPARATOR}spread across this panel`;
         }
 
-        return this.settings.normalizeBy === 'shown' ? ' · spread across what is shown' : '';
+        return this.settings.normalizeBy === 'shown' ? `${SEPARATOR}spread across what is shown` : '';
     }
 
     /**
@@ -955,21 +957,33 @@ export default class PulsarGraphPlugin extends Plugin {
      * the statistics' spread is the pooled brightness, which cluster warmth
      * had folded into a spike of 310 notes that the filter never saw.
      */
-    filterSpread(buckets: number): number[] {
+    filterSpread(buckets: number): Spread {
         this.store.refresh();
 
         const columns = Math.max(1, Math.floor(buckets));
-        const counts = new Array<number>(columns).fill(0);
+        const spread: Spread = { counts: new Array<number>(columns).fill(0), floor: 0, ceiling: 0 };
 
         for (const [path] of this.store.entries()) {
             const position = this.filterPosition(path);
 
-            if (position !== undefined) {
-                counts[Math.min(columns - 1, Math.floor(Math.min(1, Math.max(0, position)) * columns))]++;
+            if (position === undefined) {
+                continue;
+            }
+
+            const clamped = Math.min(1, Math.max(0, position));
+            spread.counts[Math.min(columns - 1, Math.floor(clamped * columns))]++;
+
+            // Within a hair of either end counts as held there: the curve
+            // flattens into its ends, so a note can sit at the floor without
+            // being bit-for-bit equal to it.
+            if (clamped <= 1e-6) {
+                spread.floor++;
+            } else if (clamped >= 1 - 1e-6) {
+                spread.ceiling++;
             }
         }
 
-        return counts;
+        return spread;
     }
 
     /** Adds the age section to a graph's own control panel, where it has one. */
@@ -1077,7 +1091,7 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         const sittings = this.settings.history ? this.history.sittings(file.path) : 0;
-        const worked = sittings > 1 ? ` · ${sittings} sittings` : '';
+        const worked = sittings > 1 ? `${SEPARATOR}${sittings} sittings` : '';
 
         element.empty();
         element.createSpan({ text: `Edited ${formatAge(mtime, Date.now())}${worked}` });
@@ -1111,7 +1125,7 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         const parts = [lit > 0 ? `${lit} lit` : null, pinned > 0 ? `${pinned} pinned` : null].filter(Boolean);
-        const button = element.createSpan({ cls: 'pulsar-graph-status-ink', text: ` · ${parts.join(' · ')}` });
+        const button = element.createSpan({ cls: 'pulsar-graph-status-ink', text: SEPARATOR + joinStats(...parts) });
 
         button.setAttr('aria-label', 'Cool fresh writing');
         button.addEventListener('click', () => this.forgetInk());

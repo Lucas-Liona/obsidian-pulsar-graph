@@ -71,10 +71,10 @@ describe('describeSummary', () => {
     it('gives the count, the share and both ends', () => {
         const text = describeSummary({ kept: 230, total: 1100, newest: NOW - 12 * 60 * 1000, oldest: NOW - 40 * 24 * HOUR }, NOW);
 
-        expect(text).toBe('230 of 1100 notes (21%), 12 minutes ago back to 1 month ago');
+        expect(text).toBe('230 of 1100 notes · 21% · 12 minutes ago back to 1 month ago');
     });
 
     it('says one age when both ends are the same note', () => {
-        expect(describeSummary({ kept: 1, total: 1100, newest: NOW - HOUR, oldest: NOW - HOUR }, NOW)).toBe('1 of 1100 notes (<1%), from 1 hour ago');
+        expect(describeSummary({ kept: 1, total: 1100, newest: NOW - HOUR, oldest: NOW - HOUR }, NOW)).toBe('1 of 1100 notes · <1% · 1 hour ago');
     });
 });

@@ -3,6 +3,7 @@ import { GraphRenderer } from './graph';
 import { Coverage } from './history';
 import { OpacityStore } from './opacity-store';
 import { PulsarGraphSettings } from './settings';
+import { joinStats } from './stats-text';
 
 /**
  * How many columns the brightness spread is counted into by default.
@@ -102,7 +103,7 @@ function describeHistory(history: Coverage, now: number): Stat {
 
     return {
         label: 'Edit history',
-        value: `${history.beads} sittings across ${history.notes} notes, since ${span}`
+        value: joinStats(`${history.beads} sittings across ${history.notes} notes`, `since ${span}`)
     };
 }
 
@@ -122,7 +123,7 @@ function describeFolders(store: OpacityStore): Stat[] {
 
     const largest = Math.max(0, ...sizes.values());
 
-    return [{ label: 'Folders', value: sizes.size === 0 ? '—' : `${sizes.size}, largest holds ${largest}` }];
+    return [{ label: 'Folders', value: sizes.size === 0 ? '—' : joinStats(`${sizes.size}`, `largest holds ${largest}`) }];
 }
 
 /**
@@ -148,8 +149,8 @@ function describeGraph(store: OpacityStore, settings: PulsarGraphSettings, rende
     }
 
     return [
-        { label: 'In the open graph', value: `${nodes.length} nodes, ${links.length} links` },
-        { label: 'Islands of linked notes', value: `${islands.count}, largest holds ${islands.largest}` },
+        { label: 'In the open graph', value: joinStats(`${nodes.length} nodes`, `${links.length} links`) },
+        { label: 'Islands of linked notes', value: joinStats(`${islands.count}`, `largest holds ${islands.largest}`) },
         { label: `Written together, within ${settings.sessionGapMinutes}m`, value: `${together} of ${links.length} links` }
     ];
 }

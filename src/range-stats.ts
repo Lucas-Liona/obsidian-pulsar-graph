@@ -1,5 +1,6 @@
 import { formatAge } from './age';
 import { OpacityRange, withinRanges } from './filter';
+import { joinStats } from './stats-text';
 
 /** What a set of ranges keeps of the vault, counted in one pass. */
 export interface RangeSummary {
@@ -69,9 +70,9 @@ export function describeSummary(summary: RangeSummary, now: number): string {
     // The share, because "194 of 1092" is a ratio nobody computes while
     // dragging and "18%" is the thing the handle is actually choosing.
     const share = Math.round((kept / total) * 100);
-    const count = `${kept} of ${total} notes (${share < 1 ? '<1' : share}%)`;
+    const ages = oldest === newest
+        ? formatAge(newest, now)
+        : `${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
 
-    return oldest === newest
-        ? `${count}, from ${formatAge(newest, now)}`
-        : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
+    return joinStats(`${kept} of ${total} notes`, `${share < 1 ? '<1' : share}%`, ages);
 }

@@ -102,59 +102,118 @@
 	margin: 0 0 var(--size-4-4) 0;
 }
 
+/* The y axis sits beside the track, so its labels never cover a bar. */
+.pulsar-graph-range-plot {
+	display: flex;
+	align-items: stretch;
+	gap: var(--size-2-2);
+}
+
+.pulsar-graph-range-axis {
+	position: relative;
+	flex: 0 0 auto;
+	min-width: 2em;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+	text-align: right;
+}
+
+.pulsar-graph-range-tick {
+	position: absolute;
+	right: 0;
+}
+
+.pulsar-graph-range-tick-top {
+	top: 0;
+}
+
+.pulsar-graph-range-tick-half {
+	top: 50%;
+	transform: translateY(-50%);
+}
+
 .pulsar-graph-range-track {
 	position: relative;
-	height: 42px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	background-color: var(--background-secondary);
+	flex: 1 1 auto;
+	height: 64px;
+	border-bottom: 1px solid var(--background-modifier-border);
 }
 
 /*
- * One column every few pixels, drawn as an area rather than as bars: at that
- * resolution bars are noise, and the resolution is what makes a handle aimable.
+ * Above the selection tint and under the handles, and never in the way of a
+ * press: everything that can be grabbed is a sibling drawn after it.
  */
-.pulsar-graph-range-histogram {
+.pulsar-graph-range-chart {
 	position: absolute;
-	inset: 2px;
-	width: calc(100% - 4px);
-	height: calc(100% - 4px);
-	opacity: 0.35;
-}
-
-.pulsar-graph-range-area {
-	fill: var(--text-muted);
-}
-
-/* The one number a shape cannot carry: how many notes the tallest column holds. */
-.pulsar-graph-range-peak {
-	position: absolute;
-	top: 2px;
-	left: 4px;
-	color: var(--text-faint);
-	font-size: var(--font-ui-smaller);
-	line-height: 1;
+	inset: 0;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
 	pointer-events: none;
 }
 
-/* Draggable as a whole, which is what moves a slice without resizing it. */
+.pulsar-graph-range-bar {
+	fill: var(--text-faint);
+	opacity: 0.3;
+}
+
+.pulsar-graph-range-bar.is-kept {
+	fill: var(--text-muted);
+	opacity: 0.55;
+}
+
+.pulsar-graph-range-bar.is-hovered {
+	fill: var(--text-normal);
+	opacity: 0.8;
+}
+
+/* A bar taller than the axis: drawn to the top, with a cap to say so. */
+.pulsar-graph-range-cap {
+	fill: var(--color-red);
+	opacity: 0.8;
+}
+
+.pulsar-graph-range-grid {
+	stroke: var(--text-faint);
+	stroke-width: 1;
+	stroke-dasharray: 2 3;
+	vector-effect: non-scaling-stroke;
+	opacity: 0.8;
+}
+
+.pulsar-graph-range-curve {
+	fill: none;
+	stroke: var(--color-red);
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+
+/*
+ * Draggable as a whole, which is what moves a slice without resizing it. A
+ * light tint: the bars inside it brighten as well, so it need not shout.
+ */
 .pulsar-graph-range-span {
 	position: absolute;
 	top: 0;
 	bottom: 0;
 	background-color: var(--text-accent);
-	opacity: 0.22;
+	opacity: 0.12;
 	cursor: grab;
 	touch-action: none;
 }
 
 .pulsar-graph-range-span:hover {
-	opacity: 0.3;
+	opacity: 0.18;
 }
 
 .pulsar-graph-range-span.is-held {
 	cursor: grabbing;
-	opacity: 0.36;
+	opacity: 0.24;
 }
 
 .pulsar-graph-range-span:focus-visible {
@@ -170,6 +229,7 @@
  */
 .pulsar-graph-range-handle {
 	position: absolute;
+	z-index: 2;
 	top: -3px;
 	bottom: -3px;
 	width: 4px;
@@ -188,7 +248,7 @@
 
 /* The one being dragged goes over its neighbour rather than under it. */
 .pulsar-graph-range-handle.is-held {
-	z-index: 1;
+	z-index: 3;
 }
 
 .pulsar-graph-range-handle:focus-visible {
@@ -196,8 +256,10 @@
 	outline-offset: 1px;
 }
 
+/* Indented by the axis, so the words sit under the ends of the track. */
 .pulsar-graph-range-scale {
 	display: flex;
+	padding-left: calc(2em + var(--size-2-2));
 	justify-content: space-between;
 	margin-top: var(--size-2-1);
 	color: var(--text-faint);
@@ -237,7 +299,7 @@
 }
 
 .graph-control-section.mod-pulsar .pulsar-graph-range-track {
-	height: 32px;
+	height: 56px;
 }
 
 .pulsar-graph-range-handle:hover,
@@ -254,6 +316,11 @@
 	margin-top: var(--size-2-1);
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
+}
+
+/* One figure per span, so a narrow panel wraps between figures, not inside one. */
+.pulsar-graph-stat-part {
+	white-space: nowrap;
 }
 
 .pulsar-graph-tab-dot {
