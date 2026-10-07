@@ -45,6 +45,46 @@ export function formatAge(mtime: number, now: number): string {
     return plural(Math.floor(elapsed / YEAR), 'year');
 }
 
+/**
+ * A length of time rather than a point in the past: "3 days", not "3 days ago".
+ *
+ * Same ladder, no special cases. "Yesterday" and "just now" are answers to when
+ * something happened and say nothing at all about how long something lasted.
+ */
+export function formatSpan(milliseconds: number): string {
+    const span = Math.max(0, milliseconds);
+
+    if (span < MINUTE) {
+        return 'under a minute';
+    }
+
+    if (span < HOUR) {
+        return units(Math.floor(span / MINUTE), 'minute');
+    }
+
+    if (span < DAY) {
+        return units(Math.floor(span / HOUR), 'hour');
+    }
+
+    if (span < WEEK) {
+        return units(Math.floor(span / DAY), 'day');
+    }
+
+    if (span < MONTH) {
+        return units(Math.floor(span / WEEK), 'week');
+    }
+
+    if (span < YEAR) {
+        return units(Math.floor(span / MONTH), 'month');
+    }
+
+    return units(Math.floor(span / YEAR), 'year');
+}
+
 function plural(count: number, unit: string): string {
-    return `${count} ${unit}${count === 1 ? '' : 's'} ago`;
+    return `${units(count, unit)} ago`;
+}
+
+function units(count: number, unit: string): string {
+    return `${count} ${unit}${count === 1 ? '' : 's'}`;
 }

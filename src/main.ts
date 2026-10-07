@@ -1,7 +1,7 @@
 import { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
-import { formatAge } from './age';
+import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
@@ -710,7 +710,19 @@ export default class PulsarGraphPlugin extends Plugin {
      * been re-measured across twelve notes looks exactly like a graph, and the
      * gradient means something quite different.
      */
-    private describeSpread(scoped: boolean): string {
+    private describeSpread(renderer: GraphRenderer, scoped: boolean, anchorPath: string | null): string {
+        if (anchorPath !== null) {
+            const span = this.store.anchorSpan(pathsIn(renderer), anchorPath, this.settings.spreadFloorHours);
+
+            // Null means the panel was too small to measure across and the
+            // absolute numbers were kept, so saying otherwise would be wrong.
+            if (span !== null) {
+                const name = anchorPath.split('/').pop()?.replace(/\.md$/, '') ?? anchorPath;
+
+                return ` · around ${name}, ${formatSpan(span)} either side`;
+            }
+        }
+
         if (scoped) {
             return ' · spread across this panel';
         }
@@ -748,13 +760,25 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /** Adds the age section to a graph's own control panel, where it has one. */
-    private buildScrubber(renderer: GraphRenderer, preview: { ranges: OpacityRange[] | null }): GraphScrubber | null {
+    private buildScrubber(renderer: GraphRenderer, kind: GraphKind, preview: { ranges: OpacityRange[] | null }): GraphScrubber | null {
         const controls = controlsFor(this.app, renderer);
         if (!controls) {
             return null;
         }
 
         return new GraphScrubber(controls, {
+            // Only where there is a note in the middle to measure from. The
+            // global graph gets no row rather than a disabled one, because a
+            // control that can never do anything is worse than its absence.
+            anchor: kind === 'local'
+                ? {
+                    enabled: () => this.settings.localAnchor,
+                    onToggle: (on) => {
+                        this.settings.localAnchor = on;
+                        void this.saveSettings();
+                    }
+                }
+                : null,
             enabled: () => this.settings.filterEnabled,
             ranges: () => this.settings.filterRanges,
             histogram: () => this.measureVault().spread,
@@ -1001,7 +1025,7 @@ export default class PulsarGraphPlugin extends Plugin {
             }
         });
 
-        const scrubber = this.buildScrubber(renderer, preview);
+        const scrubber = this.buildScrubber(renderer, kind, preview);
         const controls = controlsFor(this.app, renderer);
         const caption = controls?.parentElement ? new FilterCaption(controls.parentElement) : null;
 
@@ -1096,13 +1120,18 @@ export default class PulsarGraphPlugin extends Plugin {
         // it against the vault and against itself are the same thing.
         const scoped = graph.kind === 'local' && this.settings.localScope === 'graph';
 
+        // Only a graph with a centre can be measured from one. Read fresh,
+        // because a local graph follows the active note and the note in the
+        // middle is whichever one it is pointing at now.
+        const anchorPath = graph.kind === 'local' && this.settings.localAnchor ? graph.centre() : null;
+
         // Not only while something is hidden. The line answers "what am I
         // looking at", which is a question a graph raises whether or not a
         // filter is on.
         graph.caption?.set(
             this.settings.filterCaption
                 ? this.describeRange(this.settings.filterEnabled ? this.settings.filterRanges : [WHOLE_RANGE])
-                    + this.describeSpread(scoped)
+                    + this.describeSpread(renderer, scoped, anchorPath)
                 : null
         );
 
@@ -1155,6 +1184,7 @@ export default class PulsarGraphPlugin extends Plugin {
             clusterWarmth: this.settings.clusterWarmth,
             clusterBy: this.settings.clusterBy,
             adaptive: this.settings.normalizeBy === 'shown' || scoped,
+            anchorPath,
             spreadFloorHours: this.settings.spreadFloorHours
         });
 

@@ -76,6 +76,7 @@ alone.
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
 | Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph |
+| Measure from the note in the middle | on / off | off | local graph |
 | Give pins a colour | on / off | on | all |
 | Pin colour | any | purple | Pin colour on |
 | Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on |

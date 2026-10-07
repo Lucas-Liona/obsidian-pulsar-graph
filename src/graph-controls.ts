@@ -3,6 +3,11 @@ import { OpacityRange } from './filter';
 import { RangeBar } from './range-bar';
 
 export interface ScrubberOptions {
+    /**
+     * The anchored-brightness toggle, for a graph that has a note in the
+     * middle. Null for the global graph, which has no centre to measure from.
+     */
+    anchor: { enabled: () => boolean; onToggle: (on: boolean) => void } | null;
     enabled: () => boolean;
     ranges: () => OpacityRange[];
     histogram: () => number[];
@@ -48,7 +53,7 @@ export class GraphScrubber {
         const chevron = header.createDiv({ cls: 'tree-item-icon collapse-icon' });
         setIcon(chevron, 'chevron-down');
 
-        header.createDiv({ cls: 'tree-item-inner', text: 'Age filter' });
+        header.createDiv({ cls: 'tree-item-inner', text: 'Age' });
 
         header.addEventListener('click', () => {
             this.section.toggleClass('is-collapsed', !this.section.hasClass('is-collapsed'));
@@ -56,6 +61,21 @@ export class GraphScrubber {
 
         const body = this.section.createDiv({ cls: 'tree-item-children' });
         this.body = body;
+
+        // Above the filter, because it changes what the brightnesses on screen
+        // mean and the filter only changes which of them are there.
+        if (this.options.anchor) {
+            const anchorRow = body.createDiv({ cls: 'pulsar-graph-control-row' });
+            anchorRow.createSpan({ text: 'Measure from this note' });
+
+            const anchorToggle = anchorRow.createDiv({ cls: 'checkbox-container' });
+            anchorToggle.toggleClass('is-enabled', this.options.anchor.enabled());
+
+            anchorToggle.addEventListener('click', () => {
+                this.options.anchor?.onToggle(!this.options.anchor.enabled());
+                this.render();
+            });
+        }
 
         const toggleRow = body.createDiv({ cls: 'pulsar-graph-control-row' });
         toggleRow.createSpan({ text: 'Hide notes outside a range' });
