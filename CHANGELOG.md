@@ -1,5 +1,437 @@
 # Changelog
 
+## [1.38.0] - 2026-10-07
+
+### Added
+
+- **Measure a local graph against itself**, off by default. Notes that link to
+  each other tend to have been written together, so graded against the whole
+  vault a panel's notes come out nearly alike: across 123 panels in a real
+  vault, the median spread was 11% of the brightness range, against 100% when
+  each panel was measured on its own. The spotlight follows the same setting and
+  picks the newest notes in the panel.
+
+- **Measure a local graph from the note in the middle**, off by default, with a
+  toggle in the graph's own panel. Brightness becomes how close in time each
+  note is to the centre, in either direction, which answers *what else was being
+  worked on at the time*. In 66 of 123 panels there were notes on both sides of
+  the centre, and a one-sided age scale discards one side.
+
+- **Write every age in a local graph**, off by default. The ages above titles
+  are one setting for both graphs, and writing one on every title is noise
+  across a whole graph; a local graph can now be told to write them regardless.
+  They follow the titles, so they appear on the nodes whose names Obsidian is
+  drawing at that zoom: 5 of 13 in one panel.
+
+- **A spotlight by time window**: everything touched in the last so many
+  minutes, however many that is, including none. A count always answers: at an
+  idle moment in a real vault the newest three notes were 21, 34 and 124 minutes
+  old, so a note left two hours ago was marked as where you are. The spotlight
+  itself is still off by default, and a count is still what it does when
+  switched on.
+
+- **Pins show in the tab bar.** Where the brightness dot is on, a pinned note's
+  dot takes the pin colour, so a note held bright no longer looks like one
+  edited this morning. While nothing is pinned, the graph's own panel says
+  *Right-click a node to pin it.*
+
+- **The graph's own timelapse is lit as it plays**, off by default. Obsidian's
+  *Start timelapse animation* replays the vault in creation order, but each note
+  was drawn at today's brightness, so the first half of a replay was nearly
+  black: at 180 days back, all 72 notes that existed sat at minimum. Each note
+  is now graded from the moment being shown, and the graph goes back to reading
+  today once the replay catches up.
+
+- **A Pulsar section in the graph's own panel**, beside Filters, Groups, Display
+  and Forces. Dimmest, brightest, the curve, title size and ages sit there with
+  the age filter, and they are the same settings the dialog holds. Sliders apply
+  while you drag and save 400 ms after the last step; a measured five-step drag
+  saved once.
+
+### Changed
+
+- **Settings in seven parts instead of fifteen headings**: Time, The graph,
+  Highlights, Tabs, Elsewhere, Setup and Measurements, each of which folds shut
+  and remembers it. The graph and Tabs carry a switch of their own, on by
+  default, that releases what that part draws rather than dimming it: switching
+  the graph off took attached renderers from 1 to 0. All 58 settings are still
+  there, with one renamed to *Show the open note's age* now that it sits under a
+  status bar heading.
+
+- **A pin outranks the spotlight.** The spotlight skips pinned notes and takes
+  the next newest instead, so you see both the note you chose and the one you
+  were last in. Where the two still land on one node the pin's colour wins,
+  reversing the order 1.37.0 shipped.
+
+- **A local graph's caption describes the panel, not the vault**: how many notes
+  it holds, how many the age filter has hidden, and how old they are. Over a
+  panel the vault line was true and useless, and without the hidden count a
+  panel the filter has nearly emptied looks just like a note with no links.
+
+- **The age filter's handles go where you aim.** A press goes to the nearest
+  handle by distance; at the narrowest range the handles sit four pixels apart,
+  and before this the one drawn later took presses aimed at the other. Hovering
+  the histogram describes that stretch alone, and the caption gives the share as
+  a percentage.
+
+- **The age filter's histogram is a smooth curve over 40 bars**, on a
+  square-root scale with a labelled axis, and the bars inside the selection
+  brighten. It used to be scaled to its tallest column, which held 300 notes
+  against 5–15 in the rest, so everything else was drawn flat. Notes piled at
+  the floor or ceiling of the fade are left out of the curve, and their bar is
+  capped in red.
+
+- **Figures are separated by a centred dot rather than commas** wherever the
+  plugin reports numbers: the range caption, the caption over a graph, the panel
+  summary, the statistics and the status bar.
+
+- **Docs**: the README is caught up with what has shipped, and the loop behind
+  this repo's measurements is written down.
+
+### Fixed
+
+- **An unloaded plugin no longer keeps drawing on the graph.** Instances left
+  behind by a reload kept their hooks and put them back on every graph refresh,
+  which is how one node's title came to carry seven age labels. After three
+  reloads with an update pending and three graph refreshes, the render chain
+  held 22 wrappers; it now holds 1. A title Obsidian rebuilds also gets its age
+  label back.
+
+- **The age filter no longer sorts the vault once per note.** Dragging it,
+  hovering its histogram and every graph pass were quadratic in vault size, and
+  a pass runs after every note save while a graph is open. On a 1104-note vault
+  a full pass over both graphs went from 276.8 ms to 2.94 ms.
+
+- **The age filter measures along the curve, and draws what it selects.** The
+  histogram drew pooled brightness while the handles selected on opacity clamped
+  at 1, so at the default settings the top 69% of the curve was a single point
+  on the line. Both now read a note's own position along the curve, and saved
+  ranges, presets included, are converted on load so they keep selecting the
+  same notes.
+
+- **Two settings were filed in the wrong place.** The stale-tab settings were
+  drawn under Pins, so they looked missing to anyone reading the Tabs section,
+  and the status bar age sat under Labels.
+
+## [1.37.0] - 2026-10-06
+
+Two features, one idea: a note is more than the single moment Obsidian records
+against it.
+
+Until now Pulsar read exactly one number per note — its modification time — and
+everything followed from that. That answers *what have I been working on* and
+nothing else. This release adds the two things it could never say: **this one
+matters regardless of its date**, and **here is everything you did to it, not
+just the last thing**.
+
+### Pins
+
+The note you are heading back to is, by definition, one you have not touched
+lately. The longer you leave it the fainter Pulsar draws it, and under the age
+filter it eventually leaves the graph altogether — the thing you most need to
+remember is the thing the plugin is busy forgetting.
+
+A pin overrules the clock. Pinned notes are held at full brightness, given a
+colour of their own, and **cannot be removed by the age filter**.
+
+Right-click a node in the graph, or a note in the file explorer, and choose *Pin
+in the graph* — or use the command for the note you have open, which takes a
+hotkey. The settings tab lists what is pinned with an *Unpin* beside each.
+
+Pins write nothing into your notes and leave your modification times alone,
+which matters because this plugin reads them. They follow a rename, and they are
+deliberately left out of saved presets — a preset is a look, and a pin is a path
+in *your* vault.
+
+→ [Pins](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/pins.md)
+
+### A note's history, drawn as beads
+
+Obsidian keeps one modification time per note and throws the rest away, so the
+graph can tell you a note was touched this morning and never that it was touched
+every morning for a month and then abandoned. Pulsar has kept the rest since
+1.22.0; this is the view it was collected for.
+
+One bead per sitting, down a rail in the sidebar. Position is when, size is how
+long it ran, brightness is the vault's own fade curve, and hovering gives the
+date, the duration and how much the note grew. Open it with **Show this note's
+history**.
+
+Positioned rather than listed, because the shape is the point: it is what tells
+"edited three times today" from "appended to once a month" without reading a
+number, and the gaps say as much as the beads.
+
+The rail is scaled to that note's own history, not the vault's — against the
+vault a note with two sittings three hours apart put both beads in the same
+pixel, because three hours is nothing beside eleven months.
+
+→ [A note's history](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/beads.md)
+· closes #26
+
+### Also
+
+- **Fixed a colour the plugin could leave behind.** Releasing a node's colour
+  put `node.color` back correctly and still left it *drawn* in the old one,
+  frozen a few units short. Two causes: mid-rebuild a node's colour reads back
+  `undefined`, so the code preserving it preserved nothing; and the renderer
+  eases a tint a tenth of the gap per frame and truncates, so a channel climbing
+  the last few units moves by zero and stalls permanently. Easing down
+  converges, easing up does not. After the fix, 0 of 111 nodes disagree between
+  drawn tint and colour; before, 1 did. This affected the spotlight every time
+  it moved on.
+- The spotlight and pins now share one record of what each node was painted. Two
+  of those, each saving and restoring the same node's colour, is how a graph
+  group's colour gets lost for good.
+
+## [1.36.0] - 2026-10-06
+
+Three small things, all about making what matters easier to see.
+
+### The line across the top of the graph
+
+It used to appear only while the age filter was narrowing something. It is now
+on whenever you want it, and it reads:
+
+> 110 of 110 notes, 2 hours ago back to 11 months ago
+
+The `Age filter` prefix went with it, because it is no longer only about the
+filter. While you are filtering, it is necessary — a graph with half its notes
+taken out looks exactly like a graph. While you are not, it still answers the
+question a graph raises on its own: *what am I looking at*.
+
+### The spotlight can cover more than one note
+
+At 1 it marks the thing you touched last. At 5 it marks the last five, which
+reads as *where you have been* rather than *where you are* — a short trail
+through the graph instead of a single point.
+
+Every spotlit node keeps the colour it had underneath, so turning the count back
+down hands them all back exactly as they were.
+
+### Sleeping tabs
+
+A tab you have left alone can now wear a 💤 instead of the quiet line down its
+edge. It takes the brightness dot's place rather than sitting beside it: a
+narrow tab has room for one or the other, and a tab you are being invited to
+close has nothing useful to say about how bright it is.
+
+Nothing closes on its own, as before. **Close stale tabs** is still a command
+you run.
+
+---
+
+📖 [The graph](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/graph.md)
+· [The age filter](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/filter.md)
+· [Tabs](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/tabs.md)
+
+## [1.35.0] - 2026-10-06
+
+One toggle at the top of the settings, and off means off.
+
+### Switching it off actually switches it off
+
+Not "stops drawing" — nothing is watched, nothing is cached, no timer runs, no
+editor carries anything of ours, and every graph is handed back its own colours.
+Measured across the switch:
+
+| | on | off |
+|---|---|---|
+| graphs hooked | 3 | **0** |
+| notes cached | 1,090 | **0** |
+| editor extensions | 1 | **0** |
+| nodes carrying a Pulsar colour | 1,090 | **0** |
+| status bar item | yes | **no** |
+
+Every feature below it can still be switched off on its own, and almost all of
+them already are until you ask.
+
+Commands stay in the palette either way, so a hotkey you assigned survives being
+switched off. They say so if you press one.
+
+### The settings page is readable now
+
+It had grown to thirteen sections in the order they were built, with no
+explanation of what any of them were for.
+
+- **Every section says what it is for.** You should not have to work out what
+  "Fade" fades — which is also why it is now called **Graph fade**.
+- **A rule between sections**, so the page has a shape.
+- **Ordered by surface**, not by build history: time, then the graph in drawing
+  order, then the places that are not the graph, then the data underneath. If
+  you only want the graph, you never scroll past *Age filter*. *Fresh writing*
+  used to sit between *Links* and *Size* for no reason at all.
+- **Switched off, it collapses to the one switch** — 61 controls become 1.
+
+---
+
+📖 [All the documentation](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/README.md)
+
+## [1.34.0] - 2026-10-06
+
+Three changes about one complaint: the thing you are looking for stops being
+findable exactly when you narrow down to it.
+
+### Measure age against whatever the graph is showing
+
+A third option beside *the vault's whole history* and *a recent window*.
+
+Filter down to your brightest few per cent and every note left is at the top of
+the range together — so the gradient tells you nothing precisely when you have
+asked the most specific question. Measured on a 1,089-note vault filtered to its
+brightest 2%:
+
+| measured against | the 194 notes still on screen |
+|---|---|
+| the vault's whole history | **0.981 – 1** — all at full brightness, all identical |
+| whatever the graph is showing | **0.05 – 1** — the full range |
+
+It respects Obsidian's own Filters and the graph's search box too, so typing a
+tag there turns the search box into a time lens for just those notes. It pairs
+especially well with the **rank** scale.
+
+Two things keep it honest. It only ever decides *how bright*, never *which notes
+are in* — the filter still reads the absolute scale, so it cannot feed itself.
+And the range is held open to a floor, six hours by default, because three notes
+from the last ten minutes genuinely are all recent and drawing the
+nine-minute-old one as ancient would be a lie.
+
+### The spotlight can grow the node
+
+Worth knowing why it needed to. Obsidian sizes a node by its **link count and
+nothing else** — and the note you wrote last is almost always the least-linked
+thing in your vault. So the one node you always want to find was reliably the
+*smallest* on screen: measured at the size floor with 12 of its 35 neighbours
+larger than it.
+
+It multiplies on top of any other sizing rather than replacing it, so switching
+on *size by age* can never make the spotlight shrink.
+
+### The spotlit note is never filtered out
+
+On the same rule the note you have open already had. A filter quietly removing
+the one node the graph is pointing at is the graph disagreeing with itself.
+
+---
+
+📖 [Time](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/time.md)
+· [The graph](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/graph.md)
+
+## [1.33.0] - 2026-10-06
+
+Text takes a colour as you type it and cools back to normal over the next few
+minutes, so a page shows you where the work in it actually was.
+
+This was in 1.32.0 too, but only just — it had one bug that made it unusable on
+a styled theme, and it was missing the two things that make it worth leaving on.
+
+### Writing cools toward its own colour
+
+Before, every lit stretch cooled toward your body-text colour and then
+**snapped** to its real colour when the mark expired. On a theme with coloured
+headings that is very obvious and very wrong.
+
+Each stretch now cools toward whatever that text would otherwise be. A heading
+ends up its own colour, a link ends up link blue, body text ends up white. There
+is no colour table and nothing is read from your theme — it falls out of how CSS
+resolves `currentColor`.
+
+Measured on a page whose headings are `rgb(235, 111, 146)`: at the same point in
+the fade, a heading sits at `oklab(0.769, -0.042, …)` and a body line at
+`oklab(0.829, -0.075, …)`. Same ink, same age, already heading somewhere
+different.
+
+### Dim everything else
+
+The opposite arrangement: leave the writing alone and take the rest of the page
+down toward the background instead. It never replaces a colour you chose, which
+makes it the one to use while actually working, where the tint is better for
+showing someone.
+
+A note with nothing lit in it is never dimmed, so opening your vault does not
+grey it.
+
+### Pins
+
+**Pin this writing** holds a stretch at full strength and stops it cooling. A
+pin is a marker, not a timestamp — it answers *come back to this* — so it does
+not fade, and it has its own colour.
+
+With nothing selected it pins the lit stretch under your cursor, or the current
+line if there is none, which is what makes it work on text you did not just
+write.
+
+### The status bar counts, and resets
+
+`Edited 4 minutes ago · 340 lit · 12 pinned`. Click it to cool everything. It is
+only there while something is lit.
+
+### Also
+
+- The age drawn above a node now follows **Title size**. Obsidian derives that
+  font from the node's size, so scaling titles used to leave the ages behind.
+
+---
+
+Nothing is ever written to your note. It is a colour in the editor and the file
+on disk is untouched — close the note and it is gone.
+
+📖 [Fresh writing](https://github.com/Lucas-Liona/obsidian-pulsar-graph/blob/master/docs/writing.md)
+
+## [1.32.0] - 2026-10-06
+
+### Added
+
+- **Light up fresh writing, and let it cool**, off by default. Text you type is
+  lit and cools a shade at a time until it is back to normal, and **Cool it
+  all** clears every mark at once. CodeMirror reports the exact ranges each edit
+  inserted, so nothing is diffed or snapshotted and the note on disk is left
+  unchanged.
+
+## [1.31.0] - 2026-10-06
+
+### Added
+
+- **Size nodes by age, and set the title size.** Obsidian sizes a node by its
+  link count alone, and on a 1088-note vault 381 of the first 400 nodes sat at
+  the size floor, so the size channel was almost unused. Sizing by age
+  multiplies Obsidian's own size rather than replacing it, so a hub still reads
+  as a hub. Title size is its own control, since Obsidian otherwise derives a
+  title's font from its node's size.
+
+## [1.30.0] - 2026-10-06
+
+### Changed
+
+- **An age filter you can aim, and that says what it caught.** The histogram
+  under the range has twenty columns instead of five, the handles are thin
+  enough not to sit on top of each other at the narrowest range, and dragging
+  the stretch between them moves both edges at once. A caption under the line,
+  and optionally across the top of the graph, says how many notes the range
+  holds and how old they are, counted rather than estimated.
+
+## [1.29.0] - 2026-10-06
+
+### Added
+
+- **Choose what a faded tab fades, and how.** Either the icon and title as
+  before, or the whole tab with its background, which is the default; hovering a
+  faded tab brings it back to full strength either way, so its close button
+  stays usable. The fade can also step at the end of the span instead of sliding
+  across it, because a gradient over a short span saturates: at one minute, 13
+  of 14 tabs sat at the floor together.
+
+## [1.28.0] - 2026-10-06
+
+### Fixed
+
+- **The tab bar keeps up, and stops flickering.** Sidebar panels such as the
+  outline, backlinks and local graph report a file of their own, so they were
+  given a brightness dot or a dimmed title and seemed to change by themselves;
+  they are now left alone. A tab switch moved dots 42 times on a 14-tab window
+  and now moves none, and every dot is one colour instead of the active tab's
+  standing out. Writing in a note repaints its tab, rather than waiting for a
+  tab change or the 30-second timer.
+
 ## [1.27.0] - 2026-10-06
 
 ### Added
