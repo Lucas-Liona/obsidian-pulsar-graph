@@ -46,6 +46,12 @@ stylesheet covers the settings tab's curve preview.
   community directory runs on every release, so keep it clean.
 - `npm run type-check` — `tsc --noEmit`
 
+A vault checkout that has not been installed since the flat-config migration
+fails lint with `ERR_PACKAGE_PATH_NOT_EXPORTED` for `eslint/config` rather than
+with a lint error. `npm install` then `git checkout package-lock.json` — npm
+rewrites the lockfile wholesale on every install, and it has twice nearly gone
+into a commit.
+
 ## Conventions
 
 - `"strict": true` TypeScript, warning-clean.
@@ -149,7 +155,11 @@ preserves a colour by reading it there preserves nothing. Keep what the node had
 before as the fallback.
 
 **Alpha above 1 is clamped when drawn.** A high maximum opacity flattens the top
-of the curve rather than extending it.
+of the curve rather than extending it — and there is therefore no headroom above
+the maximum for anything to use. A "crest" multiplier for the replay's wave was
+built, measured at 5.04 against a maximum of 2.52, and deleted: it was four times
+past the point where anything changes. Contrast at the top of the range has to
+come from lowering what is around it.
 
 **Labels never see `node.color`.** A title's alpha is
 `textAlpha * fadeAlpha * colors.text.a`, and `textAlpha` is
@@ -206,7 +216,20 @@ Three things about that loop, each learned by breaking it:
   whose leaf is in a background tab never calls `render()`, so `fontDirty` is
   never consumed and font sizes read stale forever. The same is true of the
   controls: a collapsed panel's range bar has a bounding rect of zero, which
-  turns a drag calculation into a division by zero.
+  turns a drag calculation into a division by zero, and the graph's own replay
+  counter sits frozen at 1 because nothing is drawing.
+- **Synthetic pointer events complete real gestures.** Dispatching `pointerup`
+  while testing the range bar finished a drag, which committed the test range to
+  the user's settings and saved it to `data.json`. If a gesture ends in a commit,
+  stub the commit or expect to restore what it wrote — and compare `data.json`
+  against a copy taken before the probe, every time.
+- **Other settings will do the averaging for you.** A vault with neighbour glow
+  and cluster warmth switched on draws every linked island at a single
+  brightness, which made three separate measurements read "1 distinct value"
+  before anyone noticed. Zero them in memory before measuring anything about
+  brightness.
+
+There is a `probe` skill in `.claude/skills/` holding this loop in full.
 
 ### Capturing images and video
 
