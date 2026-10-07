@@ -8,7 +8,7 @@ import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filt
 import { FilterCaption, PulsarPanel } from './graph-controls';
 import { FADE_TYPE_LABELS, FadeType } from './fade';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -79,6 +79,8 @@ export default class PulsarGraphPlugin extends Plugin {
 
     private readonly store = new OpacityStore(() => this.settings);
     private readonly attached = new Map<GraphRenderer, AttachedGraph>();
+    /** Graphs hooked while Obsidian built them and not attached yet. */
+    private readonly early = new Map<GraphRenderer, { data: DataHook | null; cut: { dropped: number } }>();
     private statusBarEl: HTMLElement | null = null;
     private readonly attention = new Attention(this.app);
     private readonly tabs = new TabFading(this.app, this.attention);
@@ -346,6 +348,10 @@ export default class PulsarGraphPlugin extends Plugin {
             this.paintTabs();
         }));
 
+        // A graph has already drawn every note by the time the layout says it
+        // is open, so it is hooked as it is built as well.
+        running.register(hookGraphCreation(this.app, (renderer, onClose) => this.hookEarly(renderer, onClose)));
+
         running.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             const active = this.app.workspace.getActiveFile();
 
@@ -424,19 +430,25 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private releaseGraphs(): void {
-        const had = this.attached.size > 0;
+        const had = this.attached.size > 0 || this.early.size > 0;
 
         for (const graph of this.attached.values()) {
             graph.release();
         }
 
+        for (const { data } of this.early.values()) {
+            data?.release();
+        }
+
         this.attached.clear();
+        this.early.clear();
 
         // Releasing the hooks does not undo what they wrote. Node colour is the
         // only place a graph group's colour lives, so the opacity written into
         // it outlives the hook, and a graph left alone would stay faded until
         // something else happened to rebuild it. Asking Obsidian to render its
-        // own data again is what hands the colours back.
+        // own data again is what hands the colours back, and the notes the
+        // filter took out with them.
         if (had) {
             rebuildGraphData(this.app);
         }
@@ -1350,32 +1362,26 @@ export default class PulsarGraphPlugin extends Plugin {
         }
     }
 
-    private attach({ renderer, kind, centre, replaying }: OpenGraph): AttachedGraph {
-        // Labels, links and nodes all read the same number, so a node lifted by
-        // a neighbour carries its date and its links up with it.
-        const pooled: { byPath: Map<string, number> | null } = { byPath: null };
-        const strengthOf = (path: string): number | undefined => pooled.byPath?.get(path) ?? this.store.opacityFor(path);
-
-        const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
-        labels.setMode(this.labelMode(kind));
-
-        const paint = newPaint();
-        const cut = { dropped: 0 };
-        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
-        links.setMode(this.settings.linkRecency);
-        links.setTrails(this.settings.sessionTrails
-            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
-            : null);
-
-        const data = hookRendererData(
+    /**
+     * Filters what the engine hands a renderer, and repaints the graph once
+     * Obsidian has reset its colours. The graph is looked up rather than held,
+     * because a renderer can be hooked as Obsidian builds it, before there is
+     * an attached graph to paint.
+     */
+    private hookData(renderer: GraphRenderer, cut: { dropped: number }): DataHook | null {
+        return hookRendererData(
             renderer,
             () => {
+                const graph = this.attached.get(renderer);
+
                 // Obsidian has just rewritten every colour from group data, so
                 // the colours being preserved are stale — and every node that
                 // was painted still has our tint on it, which is why this
                 // takes the renderer.
-                forgetPaintedColors(renderer, paint);
-                this.applyTo(renderer);
+                if (graph) {
+                    forgetPaintedColors(renderer, graph.paint);
+                    this.applyTo(renderer);
+                }
             },
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
@@ -1386,6 +1392,52 @@ export default class PulsarGraphPlugin extends Plugin {
                 }
             })
         );
+    }
+
+    /**
+     * Hooks a graph Obsidian is building, so its first build is already
+     * filtered. Everything else waits for the graph to be attached, which takes
+     * this hook over. Opening the global graph of a 20,000-note vault with a
+     * filter keeping 4,168 of them used to build all 20,000 first.
+     */
+    private hookEarly(renderer: GraphRenderer, onClose: (callback: () => void) => void): void {
+        if (!this.running || !this.settings.graphFade || this.attached.has(renderer) || this.early.has(renderer)) {
+            return;
+        }
+
+        const cut = { dropped: 0 };
+        this.early.set(renderer, { data: this.hookData(renderer, cut), cut });
+
+        // A view closed before it was ever attached.
+        onClose(() => {
+            this.early.get(renderer)?.data?.release();
+            this.early.delete(renderer);
+        });
+    }
+
+    private attach({ renderer, kind, centre, replaying }: OpenGraph): AttachedGraph {
+        // Labels, links and nodes all read the same number, so a node lifted by
+        // a neighbour carries its date and its links up with it.
+        const pooled: { byPath: Map<string, number> | null } = { byPath: null };
+        const strengthOf = (path: string): number | undefined => pooled.byPath?.get(path) ?? this.store.opacityFor(path);
+
+        const labels = new AgeLabels(renderer, (path) => this.describeAge(path, strengthOf));
+        labels.setMode(this.labelMode(kind));
+
+        const paint = newPaint();
+        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
+        links.setMode(this.settings.linkRecency);
+        links.setTrails(this.settings.sessionTrails
+            ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
+            : null);
+
+        // Hooked as Obsidian built it, if this plugin was running then, in
+        // which case the hook has filtered every build so far and is kept.
+        const early = this.early.get(renderer);
+        this.early.delete(renderer);
+
+        const cut = early?.cut ?? { dropped: 0 };
+        const data = early ? early.data : this.hookData(renderer, cut);
         const preview: Preview = { keeps: null };
         const fonts: { multiplier?: number } = {};
 

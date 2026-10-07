@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GraphRenderer, hookRendererData, hookRendererFrame } from '../src/graph';
+import type { App } from 'obsidian';
+import { GraphRenderer, hookGraphCreation, hookRendererData, hookRendererFrame } from '../src/graph';
 import { hookNodeHover } from '../src/hover';
 
 /** Just enough of a renderer for the hooks, which only touch these properties. */
@@ -181,5 +182,104 @@ describe('hookNodeHover', () => {
         graph.onNodeUnhover?.();
 
         expect(seen).toEqual([]);
+    });
+});
+
+describe('hookGraphCreation', () => {
+    type Creator = (leaf: unknown) => unknown;
+
+    /** A registry like Obsidian's, whose graph views close through register(). */
+    function registry(): { app: App; viewByType: Record<string, Creator | undefined>; close: () => void } {
+        const closing: Array<() => void> = [];
+        const view = (): unknown => ({ renderer: renderer(), register: (callback: () => void) => closing.push(callback) });
+        const viewByType: Record<string, Creator | undefined> = { graph: view, localgraph: view, markdown: () => ({}) };
+
+        return {
+            app: { viewRegistry: { viewByType } } as unknown as App,
+            viewByType,
+            close: () => closing.splice(0).forEach((callback) => callback())
+        };
+    }
+
+    // The point of it: a hook put on here sees the graph's very first build,
+    // which the engine sends as the view opens, before the layout changes.
+    it('hands over each graph renderer before the view is returned', () => {
+        const { app, viewByType } = registry();
+        const built: number[] = [];
+
+        hookGraphCreation(app, (graph) => {
+            hookRendererData(graph, () => undefined, (data) => {
+                built.push(Object.keys((data as { nodes: object }).nodes).length);
+                return { nodes: {} };
+            });
+        });
+
+        for (const viewType of ['graph', 'localgraph']) {
+            const view = viewByType[viewType]?.({}) as { renderer: GraphRenderer };
+            view.renderer.setData?.({ nodes: { 'a.md': {}, 'b.md': {} } });
+        }
+
+        expect(built).toEqual([2, 2]);
+    });
+
+    it('leaves every other view type alone', () => {
+        const { app, viewByType } = registry();
+        const markdown = viewByType.markdown;
+        let created = 0;
+
+        hookGraphCreation(app, () => created++);
+        viewByType.markdown?.({});
+
+        expect(viewByType.markdown).toBe(markdown);
+        expect(created).toBe(0);
+    });
+
+    it('runs what was registered when the view closes', () => {
+        const { app, viewByType, close } = registry();
+        let closed = 0;
+
+        hookGraphCreation(app, (_graph, onClose) => onClose(() => closed++));
+        viewByType.graph?.({});
+        close();
+
+        expect(closed).toBe(1);
+    });
+
+    it('puts the creators back when it is still on top', () => {
+        const { app, viewByType } = registry();
+        const graph = viewByType.graph;
+        const local = viewByType.localgraph;
+
+        hookGraphCreation(app, () => undefined)();
+
+        expect(viewByType.graph).toBe(graph);
+        expect(viewByType.localgraph).toBe(local);
+    });
+
+    it('goes quiet when released underneath a later wrapper', () => {
+        const { app, viewByType } = registry();
+        let created = 0;
+
+        const release = hookGraphCreation(app, () => created++);
+        const outer = viewByType.graph;
+        viewByType.graph = (leaf) => outer?.(leaf);
+        release();
+        viewByType.graph({});
+
+        expect(created).toBe(0);
+    });
+
+    it('still opens the graph when the callback throws', () => {
+        const { app, viewByType } = registry();
+
+        hookGraphCreation(app, () => {
+            throw new Error('broken');
+        });
+
+        expect(viewByType.graph?.({})).toHaveProperty('renderer');
+    });
+
+    it('does nothing without a registry to wrap', () => {
+        expect(() => hookGraphCreation({} as App, () => undefined)()).not.toThrow();
     });
 });

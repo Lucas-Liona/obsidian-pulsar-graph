@@ -146,7 +146,12 @@ interface GraphView {
     engine?: GraphEngine;
     /** The local graph is a file view, so it reports the note it is showing. */
     file?: { path?: string } | null;
+    /** Runs a callback when the view closes, as every Obsidian component can. */
+    register?: (callback: () => void) => void;
 }
+
+/** What Obsidian's view registry builds a view of each type with. */
+type ViewCreator = (leaf: unknown) => unknown;
 
 /** Which of Obsidian's two graphs a renderer belongs to. */
 export type GraphKind = 'global' | 'local';
@@ -873,6 +878,74 @@ export function repaint(renderer: GraphRenderer): void {
 }
 
 export type Unhook = () => void;
+
+/**
+ * Calls back with each graph view Obsidian builds from now on, as it is built:
+ * the renderer, and a way to run something when that view closes.
+ *
+ * A graph view creates its renderer in its constructor and is handed the vault
+ * as it opens, before anything that waits for the layout to change can reach
+ * it. So the first build of a new graph used to be every note, whatever the
+ * filter said, and in a large vault that build is most of the cost of opening
+ * the graph. A leaf asks the registry for a creator each time it opens a view,
+ * so wrapping the two a core plugin registered reaches every graph built after
+ * this, and nothing else.
+ *
+ * Released like every hook here: put back where still on top, and switched off
+ * where something has wrapped it since.
+ */
+export function hookGraphCreation(
+    app: App,
+    onCreated: (renderer: GraphRenderer, onClose: (callback: () => void) => void) => void
+): Unhook {
+    const registry = (app as unknown as { viewRegistry?: { viewByType?: Record<string, ViewCreator | undefined> } })
+        .viewRegistry?.viewByType;
+
+    if (!registry) {
+        return () => undefined;
+    }
+
+    let live = true;
+    const restores: Unhook[] = [];
+
+    for (const viewType of GRAPH_VIEW_TYPES) {
+        const original = registry[viewType];
+        if (typeof original !== 'function') {
+            continue;
+        }
+
+        const wrapped = function (this: unknown, leaf: unknown): unknown {
+            const view = original.call(this, leaf) as GraphView | null | undefined;
+            const renderer = view?.renderer;
+
+            if (live && renderer && typeof renderer.setData === 'function') {
+                try {
+                    onCreated(renderer, (callback) => view?.register?.(callback));
+                } catch {
+                    // Never at the cost of the graph opening. One that is not
+                    // reached here is attached once it is open, as before.
+                }
+            }
+
+            return view;
+        };
+
+        registry[viewType] = wrapped;
+        restores.push(() => {
+            if (registry[viewType] === wrapped) {
+                registry[viewType] = original;
+            }
+        });
+    }
+
+    return () => {
+        live = false;
+
+        for (const restore of restores) {
+            restore();
+        }
+    };
+}
 
 /**
  * Calls back whenever a renderer rebuilds its data.

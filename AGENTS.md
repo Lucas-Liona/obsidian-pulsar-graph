@@ -146,6 +146,16 @@ ones. Harmless — a renderer whose leaf is gone never draws — but it means th
 count of attached graphs is not the count of graphs on screen. Observed after a
 programmatic `detach()`; not confirmed for a tab closed by hand.
 
+**A graph has drawn the whole vault before the layout says it is open.** A
+graph view creates its renderer and data engine in its constructor, and opening
+it hands the renderer everything before `layout-change` fires, so a hook put on
+there is one build late — in a 20,000-note vault, a build of all 20,000. A leaf
+looks up the creator for a view type afresh each time it opens one
+(`app.viewRegistry.viewByType[type]`), so wrapping the creators registered for
+`graph` and `localgraph` reaches every graph built afterwards, with its renderer
+present and no nodes yet. A background tab restored at startup is a placeholder
+until it is revealed, and is built through the same creator then.
+
 **A local graph knows what it is about.** The `localgraph` view is a file view,
 so `view.file` is the note it is showing, and its engine carries
 `options.localFile` — the note the graph was actually built from — along with
