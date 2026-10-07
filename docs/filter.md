@@ -59,6 +59,31 @@ Groups, Display and Forces. Filtering by time is a view rather than a preference
 where you already are instead of behind a settings dialog. It's the same setting
 in both places; moving one moves the other.
 
+## Reading the bar
+
+The shape behind the handles is your vault counted into columns — where the
+notes actually sit on the brightness range, so a handle has something real to
+aim at. It's drawn at **one column every three pixels** of however wide the bar
+happens to be: a 190-pixel panel gets 63 columns, the settings dialog gets a few
+hundred. At that resolution bars are noise, so it's drawn as an area instead.
+The small number in the corner is how many notes are in the tallest column —
+the one thing a shape can't tell you.
+
+**Hover a column** and the line underneath says what is in that column alone,
+in the same words it uses for a selection. The shape answers *where are the
+notes*; the question people actually arrive with is *what is that bump*.
+
+The line also carries the share: `194 of 1092 notes (18%)`. A ratio nobody
+computes mid-drag, and the percentage is what the handle is really choosing.
+
+**A press goes to the nearest handle**, not to whatever the browser decides is
+under the cursor. At the narrowest a range is allowed to be, the two handles sit
+**four pixels apart** — their grab areas overlap however they are sized, and an
+overlap is settled by document order, so the handle you aimed at loses to the
+one drawn after it, reliably and invisibly. Distance is what you meant, so
+distance decides. It also means a press *near* a handle catches it, which is
+what lets the handles stay thin enough to sit beside each other at all.
+
 **Dragging a handle doesn't rebuild the graph.** While you hold it, notes are
 only hidden: every position stays exactly where it was, so the thing you're
 aiming at holds still instead of crawling away from the cursor. The real filter,

@@ -13,9 +13,34 @@ const NUDGE = 0.01;
 /** Keeps a range from collapsing to nothing, which cannot be dragged back open. */
 const MINIMUM_WIDTH = 0.02;
 
+/** One histogram column per this many pixels of the bar's own width. */
+const PIXELS_PER_COLUMN = 3;
+
+const FEWEST_COLUMNS = 40;
+
+const MOST_COLUMNS = 400;
+
+/**
+ * How far from a handle a press still counts as grabbing it, as a fraction of
+ * the line. Handles are drawn narrow because at the narrowest a range is
+ * allowed to be they sit eight pixels apart, and a wide handle would cover its
+ * neighbour. Widening the grab box instead only moved the problem: two boxes
+ * overlapping means the browser hands the press to whichever is later in the
+ * document, which is not the one being aimed at. So the press is routed to the
+ * nearest handle by distance, and a thin handle stops being hard to catch.
+ */
+const GRAB_WITHIN = 0.03;
+
 export interface RangeBarOptions {
-    /** Drawn behind the ranges, so the ranges can be aimed at something real. */
-    histogram?: number[];
+    /**
+     * Drawn behind the ranges, so the ranges can be aimed at something real.
+     *
+     * Asked for a column count rather than handed an array, because the useful
+     * resolution is a property of how wide this bar happens to be drawn and
+     * nothing else knows that. Counting a vault into columns is one pass over
+     * the notes, so asking for three hundred of them costs the same as twenty.
+     */
+    histogram?: (buckets: number) => number[];
     /**
      * What the current ranges actually select, in words, drawn under the bar.
      * Brightness is not a quantity anyone has an intuition for, so a position
@@ -37,6 +62,8 @@ interface Drawn {
     span: HTMLElement;
     from: HTMLElement;
     to: HTMLElement;
+    /** Starts each handle's drag, for a press the track routed to it. */
+    begin: { from: (event: PointerEvent) => void; to: (event: PointerEvent) => void };
 }
 
 /** Where a whole-range drag started, so the shift is measured from one place. */
@@ -63,6 +90,10 @@ export class RangeBar {
     private drawn: Drawn[] = [];
     private ranges: OpacityRange[] = [];
     private caption: HTMLElement | null = null;
+    private counts: number[] = [];
+
+    /** How many drags are in flight, so hovering does not fight with one. */
+    private held = 0;
 
     constructor(parent: HTMLElement, private readonly options: RangeBarOptions) {
         this.element = parent.createDiv({ cls: 'pulsar-graph-range' });
@@ -89,10 +120,15 @@ export class RangeBar {
         this.buildHistogram(track);
 
         this.ranges.forEach((_range, index) => {
+            const span = this.buildSpan(track, index);
+            const from = this.buildHandle(track, index, 'from');
+            const to = this.buildHandle(track, index, 'to');
+
             this.drawn.push({
-                span: this.buildSpan(track, index),
-                from: this.buildHandle(track, index, 'from'),
-                to: this.buildHandle(track, index, 'to')
+                span,
+                from: from.element,
+                to: to.element,
+                begin: { from: from.begin, to: to.begin }
             });
         });
 
@@ -104,7 +140,96 @@ export class RangeBar {
             ? this.element.createDiv({ cls: 'pulsar-graph-range-caption' })
             : null;
 
+        // After the caption exists, since hovering writes into it.
+        this.routeGrabs(track);
+        this.readOnHover(track);
+
         this.position();
+    }
+
+    /**
+     * Sends a press to the nearest handle rather than to whatever the browser
+     * decided was under the cursor.
+     *
+     * Two handles eight pixels apart have overlapping grab boxes however the
+     * boxes are sized, and an overlap is resolved by document order — so the
+     * handle you aimed at loses to the one drawn after it, reliably and
+     * invisibly. Distance is what the user meant, so distance is what decides.
+     * It also means a press near a handle catches it, which is what lets the
+     * handles stay thin enough to sit beside each other at all.
+     *
+     * A press with no handle near it falls through untouched, so dragging a
+     * whole range by its middle still works.
+     */
+    private routeGrabs(track: HTMLElement): void {
+        track.addEventListener('pointerdown', (event: PointerEvent) => {
+            const bounds = track.getBoundingClientRect();
+            if (bounds.width <= 0) {
+                return;
+            }
+
+            const at = (event.clientX - bounds.left) / bounds.width;
+            let best: ((event: PointerEvent) => void) | null = null;
+            let nearest = GRAB_WITHIN;
+
+            this.ranges.forEach((range, index) => {
+                const drawn = this.drawn[index];
+                if (!drawn) {
+                    return;
+                }
+
+                for (const edge of ['from', 'to'] as const) {
+                    const away = Math.abs(range[edge] - at);
+
+                    if (away < nearest) {
+                        nearest = away;
+                        best = drawn.begin[edge];
+                    }
+                }
+            });
+
+            if (best) {
+                (best as (event: PointerEvent) => void)(event);
+            }
+        }, true);
+    }
+
+    /**
+     * Hovering a column says what is in it, in the caption the bar already has.
+     *
+     * The shape alone answers "where are the notes" and nothing else. The
+     * question people actually arrive with is "what is that bump", and the
+     * sentence under the bar can answer it for one column as easily as for a
+     * selection — it is the same measurement over a narrower stretch.
+     */
+    private readOnHover(track: HTMLElement): void {
+        const describe = this.options.describe;
+        if (!describe || !this.caption) {
+            return;
+        }
+
+        track.addEventListener('pointermove', (event: PointerEvent) => {
+            if (this.held > 0 || this.counts.length === 0) {
+                return;
+            }
+
+            const bounds = track.getBoundingClientRect();
+            if (bounds.width <= 0) {
+                return;
+            }
+
+            const at = Math.min(0.999999, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+            const column = Math.floor(at * this.counts.length);
+            const width = 1 / this.counts.length;
+
+            this.caption?.setText(describe([{ from: column * width, to: (column + 1) * width }]));
+        });
+
+        track.addEventListener('pointerleave', () => {
+            if (this.held === 0) {
+                this.position();
+            }
+        });
     }
 
     /** The only thing a drag touches. */
@@ -129,18 +254,46 @@ export class RangeBar {
         }
     }
 
+    /**
+     * The spread of the vault behind the handles, as a filled curve.
+     *
+     * Twenty bars read as a shape and are useless to aim at: a handle could sit
+     * anywhere inside a twentieth of the line without the picture under it
+     * changing. At one column every three pixels the bars turn to noise, so
+     * they stop being bars — the same counts drawn as an area are legible at
+     * any resolution, and the resolution is what makes the thing aimable.
+     */
     private buildHistogram(track: HTMLElement): void {
         const histogram = this.options.histogram;
-        if (!histogram || histogram.length === 0) {
+        if (!histogram) {
             return;
         }
 
-        const tallest = Math.max(1, ...histogram);
-        const chart = track.createDiv({ cls: 'pulsar-graph-range-histogram' });
+        // A hidden panel measures zero, which would ask for one column.
+        const width = track.getBoundingClientRect().width;
+        const buckets = width > 0 ? Math.min(MOST_COLUMNS, Math.max(FEWEST_COLUMNS, Math.round(width / PIXELS_PER_COLUMN))) : FEWEST_COLUMNS;
 
-        for (const count of histogram) {
-            chart.createDiv({ cls: 'pulsar-graph-range-tick' }).style.height = `${(count / tallest) * 100}%`;
+        this.counts = histogram(buckets);
+        if (this.counts.length === 0) {
+            return;
         }
+
+        const tallest = Math.max(1, ...this.counts);
+        const chart = track.createSvg('svg', { cls: 'pulsar-graph-range-histogram' });
+
+        chart.setAttr('viewBox', `0 0 ${this.counts.length - 1} 1`);
+        chart.setAttr('preserveAspectRatio', 'none');
+
+        const points = this.counts.map((count, index) => `${index},${(1 - count / tallest).toFixed(4)}`);
+
+        chart.createSvg('polygon', {
+            cls: 'pulsar-graph-range-area',
+            attr: { points: `0,1 ${points.join(' ')} ${this.counts.length - 1},1` }
+        });
+
+        // The one number the shape cannot carry: how tall the tallest column
+        // is. Without it the curve says where the notes are but not how many.
+        track.createDiv({ cls: 'pulsar-graph-range-peak', text: `${tallest}` });
     }
 
     /**
@@ -201,7 +354,7 @@ export class RangeBar {
             move: (event: PointerEvent, bounds: DOMRect) => void;
             end: () => void;
         }
-    ): void {
+    ): (event: PointerEvent) => void {
         let dragging = false;
 
         const moveWith = (event: PointerEvent): void => {
@@ -216,6 +369,7 @@ export class RangeBar {
             }
 
             dragging = false;
+            this.held--;
             element.toggleClass('is-held', false);
 
             const win = element.win;
@@ -227,11 +381,12 @@ export class RangeBar {
             this.options.onChange(this.copy());
         };
 
-        element.addEventListener('pointerdown', (event: PointerEvent) => {
+        const begin = (event: PointerEvent): void => {
             event.preventDefault();
             event.stopPropagation();
 
             dragging = true;
+            this.held++;
             element.toggleClass('is-held', true);
             on.start(event);
 
@@ -245,10 +400,14 @@ export class RangeBar {
             win.addEventListener('pointermove', moveWith);
             win.addEventListener('pointerup', finish);
             win.addEventListener('pointercancel', finish);
-        });
+        };
+
+        element.addEventListener('pointerdown', begin);
+
+        return begin;
     }
 
-    private buildHandle(track: HTMLElement, index: number, edge: 'from' | 'to'): HTMLElement {
+    private buildHandle(track: HTMLElement, index: number, edge: 'from' | 'to'): { element: HTMLElement; begin: (event: PointerEvent) => void } {
         const handle = track.createDiv({ cls: 'pulsar-graph-range-handle' });
         handle.tabIndex = 0;
 
@@ -257,7 +416,7 @@ export class RangeBar {
         handle.setAttr('aria-valuemax', '1');
         handle.setAttr('aria-label', edge === 'from' ? 'Range start' : 'Range end');
 
-        this.holdDrag(handle, track, {
+        const begin = this.holdDrag(handle, track, {
             start: () => undefined,
             move: (event, bounds) => this.moveTo(index, edge, (event.clientX - bounds.left) / bounds.width, true),
             end: () => undefined
@@ -275,7 +434,7 @@ export class RangeBar {
             }
         });
 
-        return handle;
+        return { element: handle, begin };
     }
 
     /** Each edge is held clear of the other, so a range can always be reopened. */

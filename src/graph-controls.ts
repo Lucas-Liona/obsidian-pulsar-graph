@@ -12,7 +12,7 @@ export interface ScrubberOptions {
     unpinned: () => boolean;
     enabled: () => boolean;
     ranges: () => OpacityRange[];
-    histogram: () => number[];
+    histogram: (buckets: number) => number[];
     describe: (ranges: OpacityRange[]) => string;
     onToggle: (enabled: boolean) => void;
     onPreview: (ranges: OpacityRange[] | null) => void;
@@ -102,7 +102,7 @@ export class GraphScrubber {
         }
 
         this.bar = new RangeBar(body, {
-            histogram: this.options.histogram(),
+            histogram: (buckets) => this.options.histogram(buckets),
             describe: (ranges) => this.options.describe(ranges),
             onPreview: (ranges) => this.options.onPreview(ranges),
             onChange: (ranges) => {

@@ -5,12 +5,12 @@ import { OpacityStore } from './opacity-store';
 import { PulsarGraphSettings } from './settings';
 
 /**
- * How many columns the brightness spread is counted into.
+ * How many columns the brightness spread is counted into by default.
  *
- * Fifths read as a shape but are useless to aim at, and this same array is
- * what the range bar draws behind its handles: five columns across the whole
- * line meant a handle could sit anywhere in a fifth of the vault without the
- * picture under it changing at all.
+ * Fifths read as a shape but are useless to aim at. The range bar asks for far
+ * more than this — one column every few pixels of its own width — because a
+ * handle that can sit anywhere inside a column without the picture under it
+ * changing is a handle with nothing to aim at.
  */
 const BANDS = 20;
 
@@ -39,9 +39,11 @@ export function describeVault(
     settings: PulsarGraphSettings,
     renderer: GraphRenderer | null,
     strengthOf: (path: string) => number | undefined,
-    history: Coverage | null
+    history: Coverage | null,
+    bands: number = BANDS
 ): VaultStats {
-    const spread = new Array<number>(BANDS).fill(0);
+    const columns = Math.max(1, Math.floor(bands));
+    const spread = new Array<number>(columns).fill(0);
     const levels = new Set<string>();
 
     let graded = 0;
@@ -53,7 +55,7 @@ export function describeVault(
         const opacity = Math.min(1, Math.max(0, strengthOf(path) ?? 0));
 
         graded++;
-        spread[Math.min(BANDS - 1, Math.floor(opacity * BANDS))]++;
+        spread[Math.min(columns - 1, Math.floor(opacity * columns))]++;
         levels.add(opacity.toFixed(2));
 
         if (opacity >= 0.99) {
