@@ -1,4 +1,6 @@
-import { OpacityRange } from './filter';
+import { bandwidthFor, niceCeiling, smoothCounts, smoothPath } from './density';
+import { OpacityRange, withinRanges } from './filter';
+import { writeStats } from './stats-text';
 
 /**
  * Dragging snaps to this. Half a percent of the line, which on a bar the width
@@ -13,12 +15,19 @@ const NUDGE = 0.01;
 /** Keeps a range from collapsing to nothing, which cannot be dragged back open. */
 const MINIMUM_WIDTH = 0.02;
 
-/** One histogram column per this many pixels of the bar's own width. */
-const PIXELS_PER_COLUMN = 3;
+/**
+ * Bars across the line, each a fortieth of it. Fixed rather than fitted to the
+ * width the bar happens to be drawn at, so that "notes per bar" — what the
+ * axis counts in — means the same thing in the settings as in a graph panel.
+ */
+const BARS = 40;
 
-const FEWEST_COLUMNS = 40;
+/** What the curve is computed from: ten bins under every bar. */
+const FINE = BARS * 10;
 
-const MOST_COLUMNS = 400;
+/** The SVG is drawn in a 1000 by 100 box and stretched to fit. */
+const CHART_WIDTH = 1000;
+const CHART_HEIGHT = 100;
 
 /**
  * How far from a handle a press still counts as grabbing it, as a fraction of
@@ -40,7 +49,7 @@ export interface RangeBarOptions {
      * nothing else knows that. Counting a vault into columns is one pass over
      * the notes, so asking for three hundred of them costs the same as twenty.
      */
-    histogram?: (buckets: number) => number[];
+    histogram?: (buckets: number) => Spread;
     /**
      * What the current ranges actually select, in words, drawn under the bar.
      * Brightness is not a quantity anyone has an intuition for, so a position
@@ -61,6 +70,22 @@ export interface RangeBarOptions {
      */
     onPreview?: (ranges: OpacityRange[]) => void;
     onChange: (ranges: OpacityRange[]) => void;
+}
+
+/**
+ * Where the notes are along the line, counted into equal bins, with the notes
+ * held at either end of the curve counted separately as well.
+ *
+ * Those are the notes the fade has run out on: everything older than the
+ * curve reaches sits at its floor, and on a vault with a steep fade that is a
+ * third of it. They are real and are drawn, but they are a pile rather than a
+ * spread, and a curve fitted through them would be a cliff that flattens
+ * everything else.
+ */
+export interface Spread {
+    counts: number[];
+    floor: number;
+    ceiling: number;
 }
 
 /** One range's elements, kept so a drag can move them rather than rebuild them. */
@@ -97,6 +122,8 @@ export class RangeBar {
     private ranges: OpacityRange[] = [];
     private caption: HTMLElement | null = null;
     private counts: number[] = [];
+    private bars: SVGRectElement[] = [];
+    private hovered: SVGRectElement | null = null;
 
     /** How many drags are in flight, so hovering does not fight with one. */
     private held = 0;
@@ -122,8 +149,10 @@ export class RangeBar {
         this.element.empty();
         this.drawn = [];
 
-        const track = this.element.createDiv({ cls: 'pulsar-graph-range-track' });
-        this.buildHistogram(track);
+        const plot = this.element.createDiv({ cls: 'pulsar-graph-range-plot' });
+        const axis = plot.createDiv({ cls: 'pulsar-graph-range-axis' });
+        const track = plot.createDiv({ cls: 'pulsar-graph-range-track' });
+        this.buildHistogram(track, axis);
 
         this.ranges.forEach((_range, index) => {
             const span = this.buildSpan(track, index);
@@ -229,10 +258,16 @@ export class RangeBar {
             const width = 1 / this.counts.length;
 
             const hovered = [{ from: column * width, to: (column + 1) * width }];
-            this.caption?.setText((this.options.describeHover ?? describe)(hovered));
+            if (this.caption) {
+                writeStats(this.caption, (this.options.describeHover ?? describe)(hovered));
+            }
+
+            this.hover(this.bars[column] ?? null);
         });
 
         track.addEventListener('pointerleave', () => {
+            this.hover(null);
+
             if (this.held === 0) {
                 this.position();
             }
@@ -256,51 +291,115 @@ export class RangeBar {
             drawn.to.setAttr('aria-valuenow', range.to.toFixed(2));
         });
 
+        // The bars inside what is kept are drawn brighter, so the selection
+        // shows in the picture of the notes rather than only as a tint over it.
+        this.bars.forEach((bar, index) => {
+            bar.toggleClass('is-kept', withinRanges((index + 0.5) / BARS, this.ranges));
+        });
+
         if (this.caption && this.options.describe) {
-            this.caption.setText(this.options.describe(this.copy()));
+            writeStats(this.caption, this.options.describe(this.copy()));
         }
     }
 
+    private hover(bar: SVGRectElement | null): void {
+        this.hovered?.toggleClass('is-hovered', false);
+        this.hovered = bar;
+        bar?.toggleClass('is-hovered', true);
+    }
+
     /**
-     * The spread of the vault behind the handles, as a filled curve.
+     * The spread of the vault behind the handles: bars for the counts, and a
+     * red curve for the shape.
      *
-     * Twenty bars read as a shape and are useless to aim at: a handle could sit
-     * anywhere inside a twentieth of the line without the picture under it
-     * changing. At one column every three pixels the bars turn to noise, so
-     * they stop being bars — the same counts drawn as an area are legible at
-     * any resolution, and the resolution is what makes the thing aimable.
+     * The axis is notes per bar, topped at a round number with a dotted line
+     * half way up, both labelled, so a bar's height can be read as a count
+     * rather than only compared with its neighbours. It is scaled to the curve rather than to
+     * the tallest bar: the notes piled at the floor of the fade would
+     * otherwise set the scale and press every other bar flat — which is what
+     * made the previous picture look empty. A bar taller than the axis is
+     * drawn to the top with a cap, and hovering it gives its count.
      */
-    private buildHistogram(track: HTMLElement): void {
+    private buildHistogram(track: HTMLElement, axis: HTMLElement): void {
         const histogram = this.options.histogram;
+        this.counts = [];
+        this.bars = [];
+        this.hovered = null;
+
         if (!histogram) {
             return;
         }
 
-        // A hidden panel measures zero, which would ask for one column.
-        const width = track.getBoundingClientRect().width;
-        const buckets = width > 0 ? Math.min(MOST_COLUMNS, Math.max(FEWEST_COLUMNS, Math.round(width / PIXELS_PER_COLUMN))) : FEWEST_COLUMNS;
-
-        this.counts = histogram(buckets);
-        if (this.counts.length === 0) {
+        const spread = histogram(FINE);
+        if (spread.counts.length !== FINE) {
             return;
         }
 
-        const tallest = Math.max(1, ...this.counts);
-        const chart = track.createSvg('svg', { cls: 'pulsar-graph-range-histogram' });
+        const per = FINE / BARS;
+        const counts = Array.from({ length: BARS }, (_, bar) => sum(spread.counts.slice(bar * per, (bar + 1) * per)));
+        this.counts = counts;
 
-        chart.setAttr('viewBox', `0 0 ${this.counts.length - 1} 1`);
+        // The fit leaves the piles at either end out, for the reason Spread
+        // gives, and so does the choice of scale.
+        const body = [...spread.counts];
+        body[0] -= spread.floor;
+        body[FINE - 1] -= spread.ceiling;
+
+        const curve = smoothCounts(body, bandwidthFor(body)).map((density) => density / BARS);
+        const between = [...counts];
+        between[0] -= spread.floor;
+        between[BARS - 1] -= spread.ceiling;
+
+        const top = niceCeiling(Math.max(...curve, quantile(between, 0.9), sum(body) === 0 ? Math.max(...counts) : 0));
+        // Square root, not linear. A fade that crowds old notes toward the
+        // floor puts half of a vault in the first few bars — 250 notes a bar
+        // against a tail of 5 to 15 on the vault this was drawn against — and
+        // a linear axis draws that tail as a flat line. The root keeps the
+        // order and the shape and shows both ends; the dotted line is labelled
+        // with what it actually stands for, a quarter of the top.
+        const height = (count: number): number => Math.min(1, Math.sqrt(Math.max(0, count) / top)) * CHART_HEIGHT;
+
+        const chart = track.createSvg('svg', { cls: 'pulsar-graph-range-chart' });
+        chart.setAttr('viewBox', `0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`);
         chart.setAttr('preserveAspectRatio', 'none');
 
-        const points = this.counts.map((count, index) => `${index},${(1 - count / tallest).toFixed(4)}`);
+        const slot = CHART_WIDTH / BARS;
+        counts.forEach((count, bar) => {
+            const drawn = height(count);
+            const rect = chart.createSvg('rect', {
+                cls: 'pulsar-graph-range-bar',
+                attr: { x: bar * slot + slot * 0.12, width: slot * 0.76, y: CHART_HEIGHT - drawn, height: drawn }
+            });
+            this.bars.push(rect);
 
-        chart.createSvg('polygon', {
-            cls: 'pulsar-graph-range-area',
-            attr: { points: `0,1 ${points.join(' ')} ${this.counts.length - 1},1` }
+            if (count > top) {
+                chart.createSvg('rect', {
+                    cls: 'pulsar-graph-range-cap',
+                    attr: { x: bar * slot + slot * 0.12, width: slot * 0.76, y: 0, height: 4 }
+                });
+            }
         });
 
-        // The one number the shape cannot carry: how tall the tallest column
-        // is. Without it the curve says where the notes are but not how many.
-        track.createDiv({ cls: 'pulsar-graph-range-peak', text: `${tallest}` });
+        chart.createSvg('line', {
+            cls: 'pulsar-graph-range-grid',
+            attr: { x1: 0, x2: CHART_WIDTH, y1: CHART_HEIGHT / 2, y2: CHART_HEIGHT / 2 }
+        });
+
+        if (sum(body) > 0) {
+            // Every other fine bin is plenty for a smooth line; the ends are
+            // carried out to the edges, where reflection has made it level.
+            const points: [number, number][] = [[0, CHART_HEIGHT - height(curve[0])]];
+            for (let bin = 0; bin < FINE; bin += 2) {
+                points.push([((bin + 0.5) / FINE) * CHART_WIDTH, CHART_HEIGHT - height(curve[bin])]);
+            }
+            points.push([CHART_WIDTH, CHART_HEIGHT - height(curve[FINE - 1])]);
+
+            chart.createSvg('path', { cls: 'pulsar-graph-range-curve', attr: { d: smoothPath(points) } });
+        }
+
+        axis.createDiv({ cls: 'pulsar-graph-range-tick pulsar-graph-range-tick-top', text: `${top}` });
+        axis.createDiv({ cls: 'pulsar-graph-range-tick pulsar-graph-range-tick-half', text: `${Math.round(top / 4)}` });
+        axis.setAttr('aria-label', `Notes per bar. Each bar is ${100 / BARS}% of the line.`);
     }
 
     /**
@@ -494,4 +593,14 @@ export class RangeBar {
     private copy(): OpacityRange[] {
         return this.ranges.map((kept) => ({ ...kept }));
     }
+}
+
+function sum(values: number[]): number {
+    return values.reduce((total, value) => total + value, 0);
+}
+
+/** The value a share of the others fall at or below. */
+function quantile(values: number[], share: number): number {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))] ?? 0;
 }

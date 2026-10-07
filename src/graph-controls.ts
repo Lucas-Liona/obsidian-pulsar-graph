@@ -1,6 +1,7 @@
 import { setIcon } from 'obsidian';
 import { OpacityRange } from './filter';
-import { RangeBar } from './range-bar';
+import { RangeBar, Spread } from './range-bar';
+import { writeStats } from './stats-text';
 
 export interface ScrubberOptions {
     /**
@@ -12,7 +13,7 @@ export interface ScrubberOptions {
     unpinned: () => boolean;
     enabled: () => boolean;
     ranges: () => OpacityRange[];
-    histogram: (buckets: number) => number[];
+    histogram: (buckets: number) => Spread;
     describe: (ranges: OpacityRange[]) => string;
     describeHover: (ranges: OpacityRange[]) => string;
     onToggle: (enabled: boolean) => void;
@@ -144,7 +145,7 @@ export class FilterCaption {
             return;
         }
 
-        this.element.setText(text);
+        writeStats(this.element, text);
         this.element.show();
     }
 
