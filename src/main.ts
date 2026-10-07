@@ -1,6 +1,6 @@
 import { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
+import { Component, debounce, MarkdownView, Menu, Notice, Plugin, setIcon, TAbstractFile, TFile, WorkspaceLeaf } from 'obsidian';
 import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeMode, AgeText } from './age-label';
@@ -12,7 +12,7 @@ import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
-import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink';
+import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkListener, setInkOptions, unpinInk } from './ink';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeSummary, keepsNote, openNoteMatters, summariseRanges } from './range-stats';
@@ -60,6 +60,9 @@ interface Preview {
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
 const UPDATE_DELAY_MS = 150;
 
+/** How often, at most, the fresh-writing count is redrawn while it changes. */
+const INK_COUNT_DELAY_MS = 200;
+
 /**
  * How often the status bar re-reads the clock. Its text is relative, so it goes
  * stale on its own while a note sits open and nothing in the vault changes.
@@ -84,6 +87,8 @@ export default class PulsarGraphPlugin extends Plugin {
     /** Graphs owed a repaint before the current task ends. */
     private readonly owed = new Set<GraphRenderer>();
     private statusBarEl: HTMLElement | null = null;
+    /** Fresh writing in the open note, its own item since it has its own click. */
+    private inkItemEl: HTMLElement | null = null;
     private readonly attention = new Attention(this.app);
     private readonly tabs = new TabFading(this.app, this.attention);
     private readonly history = new EditHistory(this.app, this);
@@ -125,6 +130,12 @@ export default class PulsarGraphPlugin extends Plugin {
         this.paintTabs();
         this.refreshBeadViews();
     }, UPDATE_DELAY_MS, true);
+
+    /**
+     * The fresh-writing count follows every keystroke and every cooling step,
+     * but at most this often: the count walks every mark in the note.
+     */
+    private readonly refreshInkSoon = debounce(() => this.updateInkItem(), INK_COUNT_DELAY_MS);
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -173,6 +184,20 @@ export default class PulsarGraphPlugin extends Plugin {
 
                 if (editor && !pinInk(editor)) {
                     new Notice('Nothing here to pin.');
+                }
+
+                this.updateStatusBar();
+            }
+        });
+
+        this.addCommand({
+            id: 'unpin-writing',
+            name: 'Unpin writing in this note',
+            editorCallback: (_editor, view) => {
+                const editor = (view as { editor?: { cm?: EditorView } }).editor?.cm;
+
+                if (editor && !unpinInk(editor)) {
+                    new Notice('Nothing pinned in this note.');
                 }
 
                 this.updateStatusBar();
@@ -371,6 +396,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.editorExtensions.push(inkExtension());
         this.app.workspace.updateOptions();
         this.syncInk();
+        setInkListener(() => this.refreshInkSoon());
 
         this.app.workspace.onLayoutReady(() => {
             if (!this.running) {
@@ -406,6 +432,11 @@ export default class PulsarGraphPlugin extends Plugin {
         this.statusBarEl?.remove();
         this.statusBarEl = null;
 
+        setInkListener(null);
+        this.refreshInkSoon.cancel();
+        this.inkItemEl?.remove();
+        this.inkItemEl = null;
+
         this.clearInkProperties();
         this.store.clear();
         this.lookAt(null);
@@ -421,6 +452,8 @@ export default class PulsarGraphPlugin extends Plugin {
         this.running = null;
         this.updateSoon.cancel();
         this.saveSoon.cancel();
+        this.refreshInkSoon.cancel();
+        setInkListener(null);
 
         this.releaseGraphs();
         this.tabs.clear();
@@ -1201,8 +1234,8 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
-     * Adds or removes the status bar item to match the setting. Obsidian has no
-     * way to take one back, so the element is held and removed by hand.
+     * Adds or removes the status bar items to match the settings. Obsidian has
+     * no way to take one back, so each element is held and removed by hand.
      */
     private syncStatusBar(): void {
         if (this.settings.statusBarAge && !this.statusBarEl) {
@@ -1210,6 +1243,13 @@ export default class PulsarGraphPlugin extends Plugin {
         } else if (!this.settings.statusBarAge && this.statusBarEl) {
             this.statusBarEl.remove();
             this.statusBarEl = null;
+        }
+
+        if (this.settings.ink && !this.inkItemEl) {
+            this.inkItemEl = this.buildInkItem();
+        } else if (!this.settings.ink && this.inkItemEl) {
+            this.inkItemEl.remove();
+            this.inkItemEl = null;
         }
 
         this.updateStatusBar();
@@ -1221,6 +1261,8 @@ export default class PulsarGraphPlugin extends Plugin {
      * showing something misleading about an attachment.
      */
     private updateStatusBar(): void {
+        this.updateInkItem();
+
         const element = this.statusBarEl;
         if (!element) {
             return;
@@ -1237,42 +1279,103 @@ export default class PulsarGraphPlugin extends Plugin {
         const sittings = this.settings.history ? this.history.sittings(file.path) : 0;
         const worked = sittings > 1 ? `${SEPARATOR}${sittings} sittings` : '';
 
-        element.empty();
-        element.createSpan({ text: `Edited ${formatAge(mtime, Date.now())}${worked}` });
+        element.setText(`Edited ${formatAge(mtime, Date.now())}${worked}`);
+    }
 
-        this.showInkCount(element);
+    /** The editor of the note in front, if it is one. */
+    private activeEditor(): EditorView | null {
+        return (this.app.workspace.getActiveViewOfType(MarkdownView) as { editor?: { cm?: EditorView } } | null)?.editor?.cm ?? null;
     }
 
     /**
-     * How much of the note you are in is still lit, and a way to clear it.
+     * Fresh writing, as an item of its own: a paint bucket and how many
+     * characters of the open note still look lit.
      *
-     * Only there while something is lit, so the status bar is not carrying a
-     * permanent zero, and it reports the open note because that is what the rest
-     * of this line is about. Clicking runs the same command as everything else
-     * that resets, since one reset concept should not mean two things.
+     * It used to be joined onto the age, which left it no spacing of its own
+     * and rebuilt it, click handler and all, every time the age was redrawn.
+     * Built once, it only has its text changed.
      */
-    private showInkCount(element: HTMLElement): void {
-        if (!this.settings.ink) {
+    private buildInkItem(): HTMLElement {
+        const item = this.addStatusBarItem();
+        item.addClass('mod-clickable', 'pulsar-graph-status-ink');
+        setIcon(item.createSpan({ cls: 'pulsar-graph-status-ink-icon' }), 'paint-bucket');
+        item.createSpan({ cls: 'pulsar-graph-status-ink-count' });
+        item.hide();
+
+        // This note only, because the number is about this note. Cooling every
+        // open note is still a command and a button in the settings.
+        item.addEventListener('click', () => {
+            const editor = this.activeEditor();
+
+            if (editor) {
+                coolInk(editor);
+            }
+
+            this.updateInkItem();
+        });
+
+        item.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+
+            const editor = this.activeEditor();
+            if (!editor) {
+                return;
+            }
+
+            const { lit, pinned } = inkCounts(editor);
+            const menu = new Menu();
+
+            menu.addItem((entry) => entry
+                .setTitle('Cool this note\'s writing')
+                .setIcon('paint-bucket')
+                .setDisabled(lit === 0)
+                .onClick(() => {
+                    coolInk(editor);
+                    this.updateInkItem();
+                }));
+
+            menu.addItem((entry) => entry
+                .setTitle('Unpin this note\'s writing')
+                .setIcon('pin-off')
+                .setDisabled(pinned === 0)
+                .onClick(() => {
+                    unpinInk(editor);
+                    this.updateInkItem();
+                }));
+
+            menu.showAtMouseEvent(event);
+        });
+
+        return item;
+    }
+
+    /**
+     * Only there while something in the open note is lit, so the status bar
+     * is not carrying a permanent zero. The pins are counted in the tooltip:
+     * they do not cool, so they are not what the number is tracking.
+     */
+    private updateInkItem(): void {
+        const item = this.inkItemEl;
+        if (!item) {
             return;
         }
 
-        const editor = (this.app.workspace.getActiveViewOfType(MarkdownView) as { editor?: { cm?: EditorView } } | null)?.editor?.cm;
-
-        if (!editor) {
-            return;
-        }
-
-        const { lit, pinned } = inkCounts(editor);
+        const editor = this.settings.ink ? this.activeEditor() : null;
+        const { lit, pinned } = editor ? inkCounts(editor) : { lit: 0, pinned: 0 };
 
         if (lit === 0 && pinned === 0) {
+            item.hide();
             return;
         }
 
-        const parts = [lit > 0 ? `${lit} lit` : null, pinned > 0 ? `${pinned} pinned` : null].filter(Boolean);
-        const button = element.createSpan({ cls: 'pulsar-graph-status-ink', text: SEPARATOR + joinStats(...parts) });
+        const characters = (count: number): string => `${count} ${count === 1 ? 'character' : 'characters'}`;
 
-        button.setAttr('aria-label', 'Cool fresh writing');
-        button.addEventListener('click', () => this.forgetInk());
+        // Pins alone leave the bucket and no number, since none of it is cooling.
+        item.find('.pulsar-graph-status-ink-count')?.setText(lit > 0 ? String(lit) : '');
+        item.setAttr('aria-label', lit > 0
+            ? `${characters(lit)} of fresh writing${pinned > 0 ? `, ${pinned} pinned` : ''}. Click to cool this note's writing, right-click for more`
+            : `${characters(pinned)} pinned. Right-click to unpin`);
+        item.show();
     }
 
     /**

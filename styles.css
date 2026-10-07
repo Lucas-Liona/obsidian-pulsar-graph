@@ -500,12 +500,17 @@
 
 /* The lit count in the status bar doubles as the reset. */
 .pulsar-graph-status-ink {
+	gap: var(--size-2-2);
 	color: var(--pulsar-ink);
-	cursor: pointer;
 }
 
-.pulsar-graph-status-ink:hover {
-	text-decoration: underline;
+.pulsar-graph-status-ink-icon {
+	display: flex;
+}
+
+.pulsar-graph-status-ink-icon svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
 }
 
 /*

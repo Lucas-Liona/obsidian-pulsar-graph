@@ -1685,7 +1685,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName('Start again')
-                .setDesc('Cools everything at once, so what is on the page counts as old and the next thing you write stands on its own. Also a command')
+                .setDesc('Cools every open note at once, so what is on the page counts as old and the next thing you write stands on its own. Pinned writing stays pinned. Also a command')
                 .addButton((button) => button
                     .setButtonText('Cool it all')
                     .onClick(() => this.plugin.forgetInk())
