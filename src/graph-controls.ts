@@ -8,6 +8,8 @@ export interface ScrubberOptions {
      * middle. Null for the global graph, which has no centre to measure from.
      */
     anchor: { enabled: () => boolean; onToggle: (on: boolean) => void } | null;
+    /** True while the vault has nothing pinned, which is when the hint shows. */
+    unpinned: () => boolean;
     enabled: () => boolean;
     ranges: () => OpacityRange[];
     histogram: () => number[];
@@ -75,6 +77,13 @@ export class GraphScrubber {
                 this.options.anchor?.onToggle(!this.options.anchor.enabled());
                 this.render();
             });
+        }
+
+        // One line, only while there is nothing pinned, in the panel someone
+        // already has open when they notice a note sinking. Pinning has three
+        // ways in and all of them are invisible until you know they are there.
+        if (this.options.unpinned()) {
+            body.createDiv({ cls: 'pulsar-graph-hint', text: 'Right-click a node to pin it.' });
         }
 
         const toggleRow = body.createDiv({ cls: 'pulsar-graph-control-row' });

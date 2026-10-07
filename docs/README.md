@@ -32,7 +32,7 @@ Everything these pages and the README use lives in [`assets/`](assets).
 | `age-filter.gif` | The age filter opened from newest-only to everything |
 | `fresh-writing.gif` · `writing-light.gif` | Text typed, cooling, and reset — on a dark theme and a light one |
 | `stale-tabs.gif` | A sleeping tab, clicked and closed |
-| `banner-graph.png` · `graph-caption.png` | The graph with the line that says what is on it |
+| `graph-caption.png` | The graph with the line that says what is on it |
 | `note-history.png` | A note's sittings as beads down the sidebar |
 | `hover.png` | A node's age on hover |
 | `icon.svg` · `icon-mark.svg` | The mark: one bright point, and the same point further into the past |

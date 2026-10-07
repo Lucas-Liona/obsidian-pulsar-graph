@@ -489,6 +489,12 @@ export default class PulsarGraphPlugin extends Plugin {
     private paintTabs(): void {
         this.store.refresh();
 
+        // Once, not once per tab. Picking the newest notes is a pass over every
+        // mtime in the vault, and this runs on a timer and on every leaf change.
+        const lit = new Set(this.settings.spotlightNewest
+            ? this.store.newestPaths(this.settings.spotlightCount, this.pins.all())
+            : []);
+
         this.tabs.apply({
             mode: this.settings.tabFade,
             scope: this.settings.tabFadeScope,
@@ -496,9 +502,7 @@ export default class PulsarGraphPlugin extends Plugin {
             dot: this.settings.tabDot,
             after: this.settings.tabFadeAfter,
             floor: this.settings.tabFadeFloor,
-            spotlight: this.settings.spotlightNewest
-                ? { path: this.store.newestPath(), color: this.settings.spotlightColor }
-                : null,
+            dotColor: (path) => this.dotColor(path, lit),
             graphStrength: (path) => this.store.opacityFor(path),
             stale: this.settings.staleTabs ? this.settings.staleTabAfter : null,
             staleMark: this.settings.staleTabMark
@@ -704,6 +708,21 @@ export default class PulsarGraphPlugin extends Plugin {
             : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
     }
 
+    /**
+     * What a tab's brightness dot is painted, if anything.
+     *
+     * The same order the graph paints in, for the same reason: a pin is the
+     * deliberate statement and the spotlight is the passing one. They rarely
+     * collide, because the spotlight is told to skip anything pinned.
+     */
+    private dotColor(path: string, spotlit: ReadonlySet<string>): string | null {
+        if (this.settings.pinMark && this.pins.has(path)) {
+            return this.settings.pinColor;
+        }
+
+        return spotlit.has(path) ? this.settings.spotlightColor : null;
+    }
+
     /** Whether a graph writes every age, which a small panel can afford to. */
     private labelMode(kind: GraphKind): AgeMode {
         return kind === 'local' && this.settings.localLabels ? 'titles' : this.settings.ageLabels;
@@ -848,6 +867,7 @@ export default class PulsarGraphPlugin extends Plugin {
                     }
                 }
                 : null,
+            unpinned: () => this.pins.size === 0,
             enabled: () => this.settings.filterEnabled,
             ranges: () => this.settings.filterRanges,
             histogram: () => this.measureVault().spread,
@@ -1232,10 +1252,13 @@ export default class PulsarGraphPlugin extends Plugin {
         // Chosen once and read twice: the colour and the size bonus have to
         // land on the same notes, and a local graph measured against itself
         // picks a different set from the vault's newest.
+        // Pinned notes are passed over rather than competed with. A pin already
+        // marks the note permanently, so spending the spotlight on it says
+        // nothing new and costs the one note that would have said something.
         const spotlit = this.settings.spotlightNewest
             ? scoped
-                ? this.store.newestAmong(pathsIn(renderer), this.settings.spotlightCount)
-                : this.store.newestPaths(this.settings.spotlightCount)
+                ? this.store.newestAmong(pathsIn(renderer), this.settings.spotlightCount, this.pins.all())
+                : this.store.newestPaths(this.settings.spotlightCount, this.pins.all())
             : [];
 
         graph.pooled.byPath = applyOpacity(renderer, this.store, {
