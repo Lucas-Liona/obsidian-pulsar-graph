@@ -21,7 +21,7 @@ export interface FilterOptions {
      * under you, and the spotlit note, because a filter quietly removing the
      * one node the graph is pointing at is the graph disagreeing with itself.
      */
-    keep: (string | undefined)[];
+    keep: ReadonlySet<string>;
     /**
      * How many notes this pass took out, reported because this is the only
      * place that knows. The nodes are gone before the renderer sees them, so
@@ -69,7 +69,7 @@ export function filterGraphData(data: unknown, options: FilterOptions): unknown 
     for (const [path, node] of Object.entries(data.nodes)) {
         const strength = options.strengthOf(path);
 
-        if (strength === undefined || options.keep.includes(path) || withinRanges(Math.min(1, Math.max(0, strength)), options.ranges)) {
+        if (strength === undefined || options.keep.has(path) || withinRanges(Math.min(1, Math.max(0, strength)), options.ranges)) {
             kept[path] = node;
         } else {
             dropped++;

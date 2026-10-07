@@ -45,6 +45,10 @@ stylesheet covers the settings tab's curve preview.
   enforced. Uses `eslint-plugin-obsidianmd`, which mirrors the checks the
   community directory runs on every release, so keep it clean.
 - `npm run type-check` — `tsc --noEmit`, then the same over `test/`
+- `npm run bench` — vitest benchmarks over synthetic vaults of 1k, 10k and 50k
+  notes, printed as mean ± sd per call by `scripts/bench-table.mjs`
+- `npm run build:profile` — the production bundle unminified with names kept,
+  for a CPU profile that reads `describeRange` rather than `s`. Never released
 - `npm test` — vitest over `test/**/*.test.ts`. `obsidian` is declarations
   only, so `test/obsidian-stub.ts` stands in for the few runtime values the
   source imports; a renderer is faked with plain objects shaped like PIXI's.
