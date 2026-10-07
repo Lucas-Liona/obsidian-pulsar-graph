@@ -13,6 +13,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 |---|---|
 | `main.ts` | Plugin lifecycle only: settings, events, attaching to graphs |
 | `settings.ts` | The settings type, defaults, parsing and the settings tab |
+| `settings-layout.ts` | The collapsible containers the settings tab is built from |
 | `presets.ts` | The named preset list |
 | `fade.ts` | The three curves, as pure functions of a 0–1 recency |
 | `opacity-store.ts` | mtime and opacity caches, the range being measured against, the rank order |
@@ -101,6 +102,13 @@ workspace event with a source of `graph-context-menu`. One listener puts an item
 on a graph node and in the file explorer both. Wrapping `onNodeRightClick`
 instead gets you nothing to add to: it builds and shows its menu in one
 synchronous call.
+
+**`getLeavesOfType` can outlive `iterateAllLeaves`.** A detached graph leaf was
+still returned by `getLeavesOfType('graph')` after `iterateAllLeaves` had stopped
+walking it, so anything attaching per renderer should expect to be handed dead
+ones. Harmless — a renderer whose leaf is gone never draws — but it means the
+count of attached graphs is not the count of graphs on screen. Observed after a
+programmatic `detach()`; not confirmed for a tab closed by hand.
 
 **A local graph knows what it is about.** The `localgraph` view is a file view,
 so `view.file` is the note it is showing, and its engine carries

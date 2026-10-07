@@ -3,6 +3,22 @@
 The reference table. Each setting is explained in the page for the surface it
 belongs to; this is the list of them.
 
+The page is in seven parts, and each one folds shut and stays that way:
+
+| | |
+|---|---|
+| **Time** | What counts as old. Every other part reads the number it produces, so it comes first and has no off switch — it is the model rather than a feature. |
+| **The graph** | Everything drawn in the graph view itself: the fade, node size, the ages above nodes, what the links carry, regions, the local graph, and the age filter. |
+| **Highlights** | The three ways of picking something out on purpose — the spotlight, pins, and fresh writing — against a background that dims by itself. |
+| **Tabs** | The tab bar read as attention: the brightness dot, fading, and marking the ones you have left alone. |
+| **Elsewhere** | What this draws that is neither a graph nor a tab. The status bar, today. |
+| **Setup** | The edit history, and saved sets of everything above. |
+| **Measurements** | What the settings are doing to your actual notes. |
+
+**The graph** and **Tabs** have a switch on the container itself. Off means the
+same thing the master switch means, for that part only: the hooks come off, the
+graphs are handed back their own colours, and nothing is left watching.
+
 Every slider has a number box beside it, and a preview at the top of the settings
 shows dots at real ages from your own vault at the opacity each would get, so you
 can see what a change does before you close the dialog.
@@ -75,6 +91,8 @@ alone.
 | Spotlight the newest note | on / off | off | all |
 | Spotlight colour | any | white | Spotlight on |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on |
+| Fade the graph at all | on / off | on | all |
+| Touch the tab bar at all | on / off | on | all |
 | Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph |
 | Measure from the note in the middle | on / off | off | local graph |
 | Write every age in a local graph | on / off | off | local graph |

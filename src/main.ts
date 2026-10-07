@@ -495,6 +495,11 @@ export default class PulsarGraphPlugin extends Plugin {
 
     /** Dims the tabs that have gone untouched, if that is switched on. */
     private paintTabs(): void {
+        if (!this.settings.tabBar) {
+            this.tabs.clear();
+            return;
+        }
+
         this.store.refresh();
 
         // Once, not once per tab. Picking the newest notes is a pass over every
@@ -1077,6 +1082,17 @@ export default class PulsarGraphPlugin extends Plugin {
      * closes.
      */
     private syncRenderers(): void {
+        // Switched off whole, every graph is handed back exactly as the plugin
+        // being switched off hands it back. Through releaseGraphs rather than
+        // by releasing each one here, because releasing a hook does not unwrite
+        // what it wrote: node colour is the only place a graph group's colour
+        // lives, so without the rebuild that path does, the graph stays faded
+        // under a switch that says it is off.
+        if (!this.settings.graphFade) {
+            this.releaseGraphs();
+            return;
+        }
+
         const open = openGraphs(this.app);
         const live = new Set(open.map(({ renderer }) => renderer));
 
