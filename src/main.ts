@@ -81,6 +81,8 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly attached = new Map<GraphRenderer, AttachedGraph>();
     /** Graphs hooked while Obsidian built them and not attached yet. */
     private readonly early = new Map<GraphRenderer, { data: DataHook | null; cut: { dropped: number } }>();
+    /** Graphs owed a repaint before the current task ends. */
+    private readonly owed = new Set<GraphRenderer>();
     private statusBarEl: HTMLElement | null = null;
     private readonly attention = new Attention(this.app);
     private readonly tabs = new TabFading(this.app, this.attention);
@@ -1347,7 +1349,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 joined = true;
             }
 
-            this.applyTo(graph.renderer);
+            this.applySoon(graph.renderer);
         }
 
         // A graph builds itself the moment it opens, before this plugin can
@@ -1554,7 +1556,30 @@ export default class PulsarGraphPlugin extends Plugin {
         return span <= 0 ? 1 : (value - this.settings.minOpacity) / span;
     }
 
+    /**
+     * Repaints a graph at the end of what is running now rather than at once.
+     * A note switch asks as the active leaf changes, and then Obsidian rebuilds
+     * the graph around the note just opened, which wipes the paint and asks
+     * again — two full passes, 27 ms each at 20,000 notes, the first of which
+     * was never drawn. A microtask still runs before anything is, and a repaint
+     * in the meantime settles what is owed.
+     */
+    private applySoon(renderer: GraphRenderer): void {
+        if (this.owed.has(renderer)) {
+            return;
+        }
+
+        this.owed.add(renderer);
+        queueMicrotask(() => {
+            if (this.owed.delete(renderer)) {
+                this.applyTo(renderer);
+            }
+        });
+    }
+
     private applyTo(renderer: GraphRenderer): void {
+        this.owed.delete(renderer);
+
         const graph = this.attached.get(renderer);
         if (!graph) {
             return;
