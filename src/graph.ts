@@ -1,5 +1,6 @@
 import { App } from 'obsidian';
 import { OpacityStore } from './opacity-store';
+import { nodeCount, sameGraphData } from './filter';
 
 /**
  * Used when a renderer does not expose its theme colours. Obsidian falls back
@@ -903,6 +904,8 @@ export function hookRendererData(
     // The engine's own data, kept whole. A filter is a view of it, so changing
     // one has to start from everything rather than from what last survived.
     let supplied: unknown = null;
+    // What the renderer was last actually given, after the filter.
+    let handed: unknown = null;
     let live = true;
 
     const patched = function (this: GraphRenderer, data: unknown): unknown {
@@ -913,8 +916,23 @@ export function hookRendererData(
         }
 
         supplied = data;
+        const next = transform(data);
 
-        const result = original.call(this, transform(data));
+        // The same graph again. Passing it on would have Obsidian reset every
+        // colour from group data and wake the renderer, and the repaint that
+        // follows wakes it again. The engine's timelapse sends the same data
+        // about nine times a second and only steps while the graph draws, so
+        // those two wake-ups were enough to keep a settled graph drawing at
+        // full rate indefinitely. Nothing has changed, so nothing is done. The
+        // node count is checked too, in case something rebuilt the renderer
+        // behind this hook's back.
+        if (handed !== null && sameGraphData(handed, next) && this.nodes?.length === nodeCount(next)) {
+            return undefined;
+        }
+
+        handed = next;
+
+        const result = original.call(this, next);
         onData();
 
         return result;

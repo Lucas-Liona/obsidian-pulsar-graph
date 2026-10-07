@@ -84,6 +84,87 @@ describe('hookRendererData', () => {
         expect(graph.setData('everything')).toBe('everything');
         expect(transformed).toEqual([]);
     });
+
+    // A graph whose timelapse had been started never went idle: the engine
+    // resends identical data nine times a second, and each one used to reset
+    // every colour and wake the renderer twice over.
+    describe('given the same graph again', () => {
+        /** A renderer whose setData builds one node per entry, as Obsidian's does. */
+        function building(): { graph: GraphRenderer; built: () => number } {
+            const graph = renderer();
+            let built = 0;
+
+            graph.setData = function (this: GraphRenderer, data: unknown): void {
+                built++;
+                this.nodes = Object.keys((data as { nodes: object }).nodes).map((id) => ({ id }));
+            };
+
+            return { graph, built: () => built };
+        }
+
+        const data = (...ids: string[]): object => ({
+            nodes: Object.fromEntries(ids.map((id) => [id, { type: '', links: {} }])),
+            numLinks: 0
+        });
+
+        it('hands the renderer nothing and does not call back', () => {
+            const { graph, built } = building();
+            let calledBack = 0;
+            hookRendererData(graph, () => calledBack++, (supplied) => supplied);
+
+            graph.setData?.(data('a.md', 'b.md'));
+            graph.setData?.(data('a.md', 'b.md'));
+            graph.setData?.(data('b.md', 'a.md'));
+
+            expect(built()).toBe(1);
+            expect(calledBack).toBe(1);
+        });
+
+        it('still passes on a graph that changed', () => {
+            const { graph, built } = building();
+            let calledBack = 0;
+            hookRendererData(graph, () => calledBack++, (supplied) => supplied);
+
+            graph.setData?.(data('a.md', 'b.md'));
+            graph.setData?.(data('a.md', 'b.md', 'c.md'));
+            graph.setData?.(data('a.md', 'b.md'));
+
+            expect(built()).toBe(3);
+            expect(calledBack).toBe(3);
+        });
+
+        it('compares what survives the filter, not what was supplied', () => {
+            const { graph, built } = building();
+            let hidden = new Set(['c.md']);
+            const hook = hookRendererData(graph, () => undefined, (supplied) => ({
+                ...(supplied as object),
+                nodes: Object.fromEntries(Object.entries((supplied as { nodes: object }).nodes).filter(([id]) => !hidden.has(id)))
+            }));
+
+            graph.setData?.(data('a.md', 'b.md', 'c.md'));
+
+            // A refilter that keeps the same notes costs nothing.
+            hook?.reapply();
+            expect(built()).toBe(1);
+
+            // One that brings a note back rebuilds.
+            hidden = new Set();
+            hook?.reapply();
+            expect(built()).toBe(2);
+            expect(graph.nodes?.length).toBe(3);
+        });
+
+        it('rebuilds if the renderer no longer holds what it was given', () => {
+            const { graph, built } = building();
+            hookRendererData(graph, () => undefined, (supplied) => supplied);
+
+            graph.setData?.(data('a.md', 'b.md'));
+            graph.nodes = [];
+            graph.setData?.(data('a.md', 'b.md'));
+
+            expect(built()).toBe(2);
+        });
+    });
 });
 
 describe('hookNodeHover', () => {
