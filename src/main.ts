@@ -733,7 +733,7 @@ export default class PulsarGraphPlugin extends Plugin {
      */
     describeRange(ranges: OpacityRange[], exempting = true): string {
         const exempt = exempting ? this.exemptFromFilter() : new Set<string>();
-        const summary = summariseRanges(this.store.entries(), (path) => this.store.opacityFor(path), ranges, exempt);
+        const summary = summariseRanges(this.store.entries(), (path) => this.filterPosition(path), ranges, exempt);
 
         return describeSummary(summary, Date.now());
     }
@@ -920,7 +920,56 @@ export default class PulsarGraphPlugin extends Plugin {
     private survivorTest(ranges: OpacityRange[]): (path: string) => boolean {
         const exempt = this.exemptFromFilter();
 
-        return (path) => keepsNote(path, this.store.opacityFor(path), ranges, exempt);
+        return (path) => keepsNote(path, this.filterPosition(path), ranges, exempt);
+    }
+
+    /**
+     * Where a note sits on the line the age filter is drawn over: its own
+     * brightness, as a fraction of the way from the minimum to the maximum.
+     *
+     * Not the opacity itself. Alpha is clamped at 1 when drawn and the maximum
+     * may go well past it — 3 by default — so measured in opacity every note
+     * brighter than 1 sat on the last point of the line, two thirds of the
+     * curve at the defaults, impossible to tell apart. Measured along the
+     * curve the whole line means something, and a range keeps meaning the
+     * same notes when the minimum or maximum moves.
+     *
+     * A note's own brightness, never the pooled one: whether a note is old
+     * should not depend on whether its neighbours are new.
+     */
+    filterPosition(path: string): number | undefined {
+        const opacity = this.store.opacityFor(path);
+
+        if (opacity === undefined) {
+            return undefined;
+        }
+
+        const span = this.settings.maxOpacity - this.settings.minOpacity;
+
+        return span <= 0 ? 1 : (opacity - this.settings.minOpacity) / span;
+    }
+
+    /**
+     * How many notes sit at each stretch of the filter's line, for the
+     * picture behind its handles. The same quantity the handles select on —
+     * the statistics' spread is the pooled brightness, which cluster warmth
+     * had folded into a spike of 310 notes that the filter never saw.
+     */
+    filterSpread(buckets: number): number[] {
+        this.store.refresh();
+
+        const columns = Math.max(1, Math.floor(buckets));
+        const counts = new Array<number>(columns).fill(0);
+
+        for (const [path] of this.store.entries()) {
+            const position = this.filterPosition(path);
+
+            if (position !== undefined) {
+                counts[Math.min(columns - 1, Math.floor(Math.min(1, Math.max(0, position)) * columns))]++;
+            }
+        }
+
+        return counts;
     }
 
     /** Adds the age section to a graph's own control panel, where it has one. */
@@ -946,7 +995,7 @@ export default class PulsarGraphPlugin extends Plugin {
             unpinned: () => this.pins.size === 0,
             enabled: () => this.settings.filterEnabled,
             ranges: () => this.settings.filterRanges,
-            histogram: (buckets) => this.measureVault(buckets).spread,
+            histogram: (buckets) => this.filterSpread(buckets),
             describe: (ranges) => this.describeRange(ranges),
             describeHover: (ranges) => this.describeRange(ranges, false),
             onToggle: (enabled) => {
@@ -1187,7 +1236,7 @@ export default class PulsarGraphPlugin extends Plugin {
             },
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
-                strengthOf: (path) => (this.settings.filterEnabled ? this.store.opacityFor(path) : undefined),
+                strengthOf: (path) => (this.settings.filterEnabled ? this.filterPosition(path) : undefined),
                 keep: this.exemptFromFilter(),
                 counted: (dropped) => {
                     cut.dropped = dropped;
