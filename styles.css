@@ -214,6 +214,13 @@
 	font-size: var(--font-ui-smaller);
 }
 
+/* One quiet line, for a feature whose every entry point is a context menu. */
+.pulsar-graph-hint {
+	margin-bottom: var(--size-4-2);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
 .graph-control-section.mod-pulsar .pulsar-graph-range {
 	margin-bottom: 0;
 }

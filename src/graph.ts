@@ -610,26 +610,30 @@ interface WantedPaint {
 /**
  * Which nodes get a colour of ours this pass, and what.
  *
- * Pins go on first and the spotlight paints over them, so a pinned note you
- * have just edited reads as the newest rather than as pinned. That way round
- * because the spotlight is the transient fact: it moves on by itself within a
- * note or two, and the pin colour comes back on its own. A pin covering the
- * spotlight instead would hide the one signal that was about to change.
+ * A pin wins. It is the one deliberate statement in the whole plugin — the user
+ * said this note matters whatever its date says — and a colour that quietly
+ * stops meaning "pinned" because the note was also edited this morning is a
+ * colour nobody can read.
+ *
+ * The two do not have to fight over a node at all, though, which is the better
+ * half of this: the spotlight is told to skip anything pinned and lands on the
+ * next newest note instead. Both facts stay visible, and the question "which of
+ * these wins" only arises for a graph with nothing left to promote.
  */
 function wantedPaint(renderer: GraphRenderer, options: OpacityOptions): Map<string, WantedPaint> {
     const wanted = new Map<string, WantedPaint>();
+
+    for (const path of options.spotlit) {
+        if (renderer.nodeLookup[path]) {
+            wanted.set(path, { rgb: options.spotlightRgb, strength: options.spotlightStrength });
+        }
+    }
 
     if (options.pinMark) {
         for (const path of options.pinned) {
             if (renderer.nodeLookup[path]) {
                 wanted.set(path, { rgb: options.pinRgb, strength: options.pinStrength });
             }
-        }
-    }
-
-    for (const path of options.spotlit) {
-        if (renderer.nodeLookup[path]) {
-            wanted.set(path, { rgb: options.spotlightRgb, strength: options.spotlightStrength });
         }
     }
 

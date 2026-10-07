@@ -303,16 +303,26 @@ export class OpacityStore {
      * asked on every repaint and the answer is almost always a handful out of
      * thousands.
      */
-    newestPaths(count: number): string[] {
+    newestPaths(count: number, skip?: ReadonlySet<string>): string[] {
         const wanted = Math.max(0, Math.floor(count));
 
         if (wanted <= 1) {
-            return this.newestNotePath === undefined ? [] : [this.newestNotePath];
+            if (this.newestNotePath !== undefined && !skip?.has(this.newestNotePath)) {
+                return [this.newestNotePath];
+            }
+
+            // The cached newest is the one note this can answer without a scan,
+            // so when that one is spoken for there is nothing for it but to look.
+            return skip === undefined ? [] : this.newestAmong(this.mtimes.keys(), 1, skip);
         }
 
         const best: [string, number][] = [];
 
         for (const [path, mtime] of this.mtimes) {
+            if (skip?.has(path)) {
+                continue;
+            }
+
             if (best.length < wanted) {
                 best.push([path, mtime]);
                 best.sort((a, b) => b[1] - a[1]);
@@ -336,7 +346,7 @@ export class OpacityStore {
      * Paths with no modification time are skipped: attachments and unresolved
      * links are graph nodes, but they are not notes and have no age to win on.
      */
-    newestAmong(paths: Iterable<string>, count: number): string[] {
+    newestAmong(paths: Iterable<string>, count: number, skip?: ReadonlySet<string>): string[] {
         const wanted = Math.max(0, Math.floor(count));
 
         if (wanted === 0) {
@@ -348,7 +358,7 @@ export class OpacityStore {
         for (const path of paths) {
             const mtime = this.mtimes.get(path);
 
-            if (mtime !== undefined) {
+            if (mtime !== undefined && !skip?.has(path)) {
                 dated.push([path, mtime]);
             }
         }

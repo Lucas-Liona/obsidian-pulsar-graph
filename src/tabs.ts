@@ -113,8 +113,14 @@ export interface TabFadeOptions {
     curve: TabFadeCurve;
     /** Shows a filled circle beside each title at that note's own brightness. */
     dot: boolean;
-    /** What the newest note's dot is painted, when the spotlight is on. */
-    spotlight: { path: string | undefined; color: string } | null;
+    /**
+     * What to paint one note's dot, or null to leave it the stylesheet's
+     * colour. The tab bar is the one place a pin can be seen without opening
+     * the graph, and a pinned note held at full brightness with nothing to say
+     * why reads as one edited this morning — which is the whole reason the
+     * graph marks it.
+     */
+    dotColor: (path: string) => string | null;
     /** Minutes of being ignored before a tab is as faint as it will get. */
     after: number;
     /** How faint that is. A tab you cannot read is a tab you cannot get back to. */
@@ -307,10 +313,12 @@ export class TabFading {
         // inherits the tab header's own text colour, which Obsidian sets muted
         // for an inactive tab and normal for the active one. Every dot but the
         // one you were sitting in came out the same shade of grey.
-        if (options.spotlight && options.spotlight.path === path) {
-            dot.style.backgroundColor = options.spotlight.color;
-        } else {
+        const colour = options.dotColor(path);
+
+        if (colour === null) {
             dot.style.removeProperty('background-color');
+        } else {
+            dot.style.backgroundColor = colour;
         }
 
         this.dots.add(dot);

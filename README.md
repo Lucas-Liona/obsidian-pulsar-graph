@@ -20,10 +20,6 @@ part of your vault you're actually working in lights up and the rest sinks back.
 
 <p align="center"><i>My own vault, 1200 notes. Every bright dot is something I touched this week.</i></p>
 
-<p align="center">
-  <img src="docs/assets/banner-graph.png" width="880" alt="A note graph on a dark background. A line across the top reads: 110 of 110 notes, 2 hours ago back to 11 months ago. Five nodes are bright green and larger than the rest; the others fade from pale grey to almost invisible.">
-</p>
-
 <p align="center"><i>The line across the top says what you are looking at. The green are the last five notes I touched.</i></p>
 
 <p align="center">

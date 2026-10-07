@@ -22,7 +22,8 @@ Three ways in, all doing the same thing:
   open and takes a hotkey.
 
 The first one is the useful one, because the graph is where you notice that a
-note has started sinking.
+note has started sinking — so while you have nothing pinned, the graph's own
+**Age** panel says so in one line. It goes away the moment you pin something.
 
 ## What a pin does
 
@@ -43,11 +44,17 @@ nothing to say why is indistinguishable from one you edited this morning, which
 makes the graph quietly wrong rather than merely plain. Nothing changes until you
 pin something, so the default costs nobody anything.
 
-Where a pinned note is *also* one of the newest, **the spotlight wins the
-colour**. The spotlight is the fact that is about to change — it moves on by
-itself within a note or two and the pin colour comes back — whereas the pin is
-not going anywhere. Covering the transient signal with the permanent one gets
-that backwards.
+**The spotlight does not land on a pinned note.** It skips anything pinned and
+picks the next newest instead, so the two never fight over one node and you get
+both facts at once: the note you chose, and the note you were last in. Where
+they do collide — a vault with nothing left to promote — the pin wins, because
+a pin is the one deliberate statement in the whole plugin and a colour that
+stops meaning *pinned* is a colour nobody can read.
+
+A pin shows **in the tab bar** too, if the brightness dot is on: a pinned note's
+dot takes the pin colour. The tab bar is the one place you can see a pin without
+opening the graph, and without it a note held at full brightness looks exactly
+like one you edited this morning.
 
 ## Taking them off
 
