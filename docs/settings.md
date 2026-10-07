@@ -3,7 +3,7 @@
 The reference table. Each setting is explained in the page for the surface it
 belongs to; this is the list of them.
 
-The page is in seven parts, and each one folds shut and stays that way:
+The page is in eight parts, and each one folds shut and stays that way:
 
 | | |
 |---|---|
@@ -14,6 +14,7 @@ The page is in seven parts, and each one folds shut and stays that way:
 | **Elsewhere** | What this draws that is neither a graph nor a tab: the status bar, and a dot after each link in a note. |
 | **Setup** | The edit history, and saved sets of everything above. |
 | **Measurements** | What the settings are doing to your actual notes. |
+| **Clear and reset** | What cannot be taken back: forgetting the history, resetting the settings and unpinning every note. Each asks for a second click. |
 
 **The graph** and **Tabs** have a switch on the container itself. Off means the
 same thing the master switch means, for that part only: the hooks come off, the
@@ -46,8 +47,8 @@ Every design decision in this plugin was settled by measuring rather than
 arguing, and the measurements kept turning out to say more about the vault than
 about the plugin. There's no reason to keep that to whoever's holding a debugger.
 
-If you'd rather not assemble a combination yourself, there are presets at the
-bottom, next to **Reset**:
+If you'd rather not assemble a combination yourself, there are presets in
+Setup:
 
 | Preset | What you get |
 | --- | --- |
@@ -70,8 +71,10 @@ your machine; it's the clipboard, not a server. Anything pasted in is put throug
 the same repair the plugin's own settings get, so a preset can be wrong or
 half-written but never dangerous.
 
-**Reset** puts the settings back to their defaults and leaves your saved presets
-alone.
+**Reset all settings**, in Clear and reset, puts the settings back to their
+defaults and leaves your saved presets, your pins and which parts are folded
+alone. Deleting a saved preset asks for a second click, as everything in Clear
+and reset does.
 
 | Setting | Range | Default | Applies to |
 | --- | --- | --- | --- |
