@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.39.0] - 2026-10-07
+
+Performance, from profiling 1.38.0 in a real vault, the demo vault and a
+generated bench vault of 20,000 notes. The bench numbers use a real vault's
+settings, whose age filter keeps 4,168 of the 20,000.
+
+### Fixed
+
+- **A graph opens already filtered.** A new graph used to show every note until
+  the next note switch happened to filter it, and a graph already open when
+  Pulsar loaded stayed unfiltered: 1,115 nodes instead of 241 in a real vault
+  after a reload. Graphs are now filtered from Obsidian's very first build of
+  them, so opening one costs what the filtered graph costs. Opening the bench
+  vault's global graph settles in 6.21 ± 0.07 s and blocks the main thread for
+  0.25 ± 0.02 s, against 32.34 ± 1.85 s and 27.80 ± 1.76 s with Pulsar off.
+
+- **A graph stops drawing once nothing changes.** A graph whose timelapse had
+  been started never went idle: Obsidian keeps handing it the same data about
+  nine times a second, and Pulsar repainted and woke it every time. With a
+  timelapse started in the demo vault, its renderer used 0.41 ± 0.02 of a core
+  with Pulsar on and 0.08 ± 0.02 with it off; it now uses 0.08 ± 0.01.
+
+- **A note switch does less.** It re-ran the filter over every open graph even
+  when the two notes involved could not change what was shown, and repainted
+  every graph twice, the first time for nothing. On the bench, the main thread
+  was blocked for 158.7 ± 8.8 ms per switch in 1.38.0 and is now 88.5 ± 8.1 ms.
+  Switching between notes the filter would hide, which does need a refilter,
+  went from 175.6 ± 5.9 ms to 109.6 ± 7.7 ms. In a vault whose filter keeps old
+  notes, switching between recent ones still refilters, because that really
+  does change what is shown.
+
+- **Refiltering is cheaper.** A refilter that leaves a graph as it was no longer
+  rebuilds it: 1.162 ± 0.253 ms down to 0.343 ± 0.048 ms in a real vault.
+
 ## [1.38.0] - 2026-10-07
 
 ### Added
