@@ -11,7 +11,7 @@ The page is in seven parts, and each one folds shut and stays that way:
 | **The graph** | Everything drawn in the graph view itself: the fade, node size, the ages above nodes, what the links carry, regions, the local graph, and the age filter. |
 | **Highlights** | The three ways of picking something out on purpose — the spotlight, pins, and fresh writing — against a background that dims by itself. |
 | **Tabs** | The tab bar read as attention: the brightness dot, fading, and marking the ones you have left alone. |
-| **Elsewhere** | What this draws that is neither a graph nor a tab. The status bar, today. |
+| **Elsewhere** | What this draws that is neither a graph nor a tab: the status bar, and a dot after each link in a note. |
 | **Setup** | The edit history, and saved sets of everything above. |
 | **Measurements** | What the settings are doing to your actual notes. |
 
@@ -95,6 +95,7 @@ alone.
 | Neighbour glow | 0.0 - 0.95 | 0 (off) | all |
 | Glow reach | 1 - 3 hops | 1 | Glow above 0 |
 | Age in the status bar | on / off | on | all |
+| A dot after each link | on / off | off | all |
 | Dot beside each tab | on / off | off | all |
 | Fade tabs | Never, By attention, By edit time | Never | all |
 | What fades | The icon and title, The whole tab | The whole tab | Fading on |

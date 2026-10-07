@@ -13,6 +13,7 @@ import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
 import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkListener, setInkOptions, unpinInk } from './ink';
+import { LinkDotSource, LinkLook, linkDotsExtension, ReadingDots, refreshLinkDots } from './link-dots';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
 import { describeSummary, keepsNote, openNoteMatters, summariseRanges } from './range-stats';
@@ -59,6 +60,9 @@ interface Preview {
 
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
 const UPDATE_DELAY_MS = 150;
+
+/** How long a link dot's look is trusted before it is worked out again. */
+const LINK_LOOK_MS = 30 * 1000;
 
 /** How often, at most, the fresh-writing count is redrawn while it changes. */
 const INK_COUNT_DELAY_MS = 200;
@@ -119,6 +123,63 @@ export default class PulsarGraphPlugin extends Plugin {
 
     /** Emptied when the plugin is off, so no editor carries anything of ours. */
     private readonly editorExtensions: Extension[] = [];
+    /** Whether that array has been handed to Obsidian yet. */
+    private editorsRegistered = false;
+    /** Made once, so the array can be compared to what is wanted by identity. */
+    private readonly inkEditor: Extension = inkExtension();
+    private readonly dotsEditor: Extension = linkDotsExtension(
+        () => this.linkDotSource(),
+        (view) => this.app.workspace.getLeavesOfType('markdown')
+            .map((leaf) => leaf.view)
+            .find((candidate): candidate is MarkdownView => candidate instanceof MarkdownView && (candidate.editor as { cm?: EditorView }).cm === view)
+            ?.file?.path ?? null
+    );
+    /** Link dots drawn in reading view, kept so they can be repainted in place. */
+    private readonly readingDots = new ReadingDots();
+    /** Whether link dots were on at the last settings sync, to notice them switching. */
+    private linkDotsShown = false;
+
+    /**
+     * Where links point and how their notes look, kept between keystrokes:
+     * every keystroke redraws the dots on screen, and working all of it out
+     * again each time added a third to a keystroke in a note of 24 links.
+     * Emptied whenever something about the notes changes, and the
+     * looks go stale on their own because they carry an age in words.
+     */
+    private readonly linkCache = { resolved: new Map<string, string | null>(), looks: new Map<string, LinkLook | null>(), since: 0 };
+
+    /** What a link dot needs to know, built once. */
+    private readonly linkSource: LinkDotSource = {
+        resolve: (linkpath, sourcePath) => {
+            const key = `${sourcePath}\n${linkpath}`;
+            let path = this.linkCache.resolved.get(key);
+
+            if (path === undefined) {
+                const file = this.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+                path = file && isNote(file) ? file.path : null;
+                this.linkCache.resolved.set(key, path);
+            }
+
+            return path;
+        },
+        look: (path) => {
+            const now = Date.now();
+
+            if (now - this.linkCache.since > LINK_LOOK_MS) {
+                this.linkCache.looks.clear();
+                this.linkCache.since = now;
+            }
+
+            let look = this.linkCache.looks.get(path);
+
+            if (look === undefined) {
+                look = this.linkLook(path);
+                this.linkCache.looks.set(path, look);
+            }
+
+            return look;
+        }
+    };
 
     /**
      * The tab bar repaints with the graph. Both read the same brightness, and
@@ -129,6 +190,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.syncRenderers();
         this.paintTabs();
         this.refreshBeadViews();
+        this.refreshLinkDots();
     }, UPDATE_DELAY_MS, true);
 
     /**
@@ -141,10 +203,16 @@ export default class PulsarGraphPlugin extends Plugin {
         await this.loadSettings();
         this.addSettingTab(new PulsarSettingTab(this.app, this));
 
-        // A mutable array, because an editor extension registered once can
-        // still be emptied: Obsidian re-reads it on updateOptions(). Registering
-        // the extension itself would mean it could never be taken away.
-        this.registerEditorExtension(this.editorExtensions);
+        // Always registered, asking the settings each time it runs: a
+        // post-processor cannot be taken back once added, and one that returns
+        // straight away costs nothing.
+        this.registerMarkdownPostProcessor((element, context) => {
+            const source = this.linkDotSource();
+
+            if (source) {
+                this.readingDots.decorate(element, context.sourcePath, source);
+            }
+        });
 
         // Commands stay registered either way. They are inert data in the
         // palette until something invokes one, and a command that vanished
@@ -392,9 +460,6 @@ export default class PulsarGraphPlugin extends Plugin {
             tasks.addPromise(this.history.flush());
         }));
 
-        this.editorExtensions.length = 0;
-        this.editorExtensions.push(inkExtension());
-        this.app.workspace.updateOptions();
         this.syncInk();
         setInkListener(() => this.refreshInkSoon());
 
@@ -425,9 +490,8 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.releaseGraphs();
         this.tabs.clear();
-
-        this.editorExtensions.length = 0;
-        this.app.workspace.updateOptions();
+        this.syncEditorExtensions();
+        this.refreshLinkDots();
 
         this.statusBarEl?.remove();
         this.statusBarEl = null;
@@ -755,6 +819,112 @@ export default class PulsarGraphPlugin extends Plugin {
             minutes: this.settings.inkMinutes,
             mode: this.settings.inkMode
         }, this.editors());
+
+        // After the options, so that switching off clears what is lit while
+        // the editors can still be reached.
+        this.syncEditorExtensions();
+    }
+
+    /**
+     * Puts the editor extensions in or takes them out, and only then has
+     * Obsidian reconfigure every open editor — which it does by rebuilding each
+     * one's configuration, 51 ms in a vault with many notes open, and about as
+     * much again of CodeMirror measuring afterwards. Every load used to pay for
+     * two of those whether anything needed an editor or not.
+     *
+     * The array is registered rather than the extensions, because a registered
+     * array can still be emptied: Obsidian re-reads it on updateOptions(). It is
+     * registered the first time it is needed, since registering is itself a
+     * reconfiguration — so a load costs none with fresh writing and link dots
+     * off, as they are by default, and one with either on.
+     */
+    private syncEditorExtensions(): void {
+        const wanted: Extension[] = [];
+
+        if (this.running && this.settings.ink) {
+            wanted.push(this.inkEditor);
+        }
+
+        if (this.running && this.settings.linkDots) {
+            wanted.push(this.dotsEditor);
+        }
+
+        if (wanted.length === this.editorExtensions.length && wanted.every((extension, index) => extension === this.editorExtensions[index])) {
+            return;
+        }
+
+        this.editorExtensions.splice(0, this.editorExtensions.length, ...wanted);
+
+        if (!this.editorsRegistered) {
+            this.editorsRegistered = true;
+            this.registerEditorExtension(this.editorExtensions);
+            return;
+        }
+
+        this.app.workspace.updateOptions();
+    }
+
+    /** Null while link dots are off, which is how every caller knows to stop. */
+    private linkDotSource(): LinkDotSource | null {
+        return this.running && this.settings.linkDots ? this.linkSource : null;
+    }
+
+    /**
+     * A linked note as its node is drawn: the global graph's brightness when
+     * one is open, so neighbour glow and grouping come through, and the note's
+     * own otherwise. A pin is drawn at full strength in its colour, as on the
+     * graph and in the tab bar.
+     */
+    private linkLook(path: string): LinkLook | null {
+        const mtime = this.store.mtimeFor(path);
+
+        if (mtime === undefined) {
+            return null;
+        }
+
+        const pinned = this.pins.has(path);
+        const global = [...this.attached.values()].find((graph) => graph.kind === 'global');
+        const strength = pinned ? 1 : global?.pooled.byPath?.get(path) ?? this.store.opacityFor(path);
+
+        if (strength === undefined) {
+            return null;
+        }
+
+        return {
+            strength,
+            colour: pinned && this.settings.pinMark ? this.settings.pinColor : null,
+            age: `Edited ${formatAge(mtime, Date.now())}`
+        };
+    }
+
+    /**
+     * Repaints the dots after a note's age or a pin changed, which typing in
+     * the note holding the links would never notice. Switched on, the notes
+     * already open in reading view are rendered again so they get theirs.
+     */
+    private refreshLinkDots(): void {
+        this.linkCache.resolved.clear();
+        this.linkCache.looks.clear();
+
+        const source = this.linkDotSource();
+        const shown = source !== null;
+
+        if (!shown) {
+            this.readingDots.clear();
+        } else {
+            this.readingDots.refresh(source);
+            refreshLinkDots(this.editors());
+        }
+
+        if (shown && !this.linkDotsShown) {
+            this.app.workspace.getLeavesOfType('markdown').forEach((leaf) => {
+                if (leaf.view instanceof MarkdownView && leaf.view.getMode() === 'preview') {
+                    leaf.view.previewMode.rerender(true);
+                }
+            });
+        }
+
+        this.linkDotsShown = shown;
     }
 
     async saveSettings(): Promise<void> {
@@ -775,6 +945,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.syncStatusBar();
         this.paintTabs();
         this.refreshBeadViews();
+        this.refreshLinkDots();
 
         for (const graph of this.attached.values()) {
             graph.panel?.refresh();
