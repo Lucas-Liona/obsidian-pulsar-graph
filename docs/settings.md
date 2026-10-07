@@ -79,6 +79,8 @@ alone.
 | Measure from the note in the middle | on / off | off | local graph |
 | Write every age in a local graph | on / off | off | local graph |
 | Say what the panel holds | on / off | off | local graph |
+| What the spotlight covers | The newest few notes, Anything touched recently | The newest few | Spotlight on |
+| Touched within | 1 – 720 minutes | 30 | Window mode |
 | Give pins a colour | on / off | on | all |
 | Pin colour | any | purple | Pin colour on |
 | Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on |

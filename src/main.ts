@@ -259,6 +259,14 @@ export default class PulsarGraphPlugin extends Plugin {
         running.registerInterval(window.setInterval(() => {
             this.paintTabs();
 
+            // A spotlight measured as a window empties on its own as the clock
+            // moves, and nothing else would ever prompt the graph to notice.
+            // A count never changes without an edit, so this costs nothing in
+            // the default setting.
+            if (this.settings.spotlightNewest && this.settings.spotlightBy === 'window') {
+                this.syncRenderers();
+            }
+
             // Lets the next session tell idle time from time the app was shut.
             if (this.settings.history) {
                 this.history.heartbeat();
@@ -491,9 +499,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // Once, not once per tab. Picking the newest notes is a pass over every
         // mtime in the vault, and this runs on a timer and on every leaf change.
-        const lit = new Set(this.settings.spotlightNewest
-            ? this.store.newestPaths(this.settings.spotlightCount, this.pins.all())
-            : []);
+        const lit = new Set(this.spotlitFrom(this.store.paths()));
 
         this.tabs.apply({
             mode: this.settings.tabFade,
@@ -709,6 +715,30 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
+     * The notes the spotlight is pointing at, out of a given set.
+     *
+     * The vault passes every note it knows about; a graph measured against
+     * itself passes its own. Either way the question — newest few, or anything
+     * touched lately — is answered in one place, so the colour, the node sizes,
+     * the tab dots and the notes the filter may not remove can never disagree.
+     *
+     * Pinned notes are passed over rather than competed with. A pin already
+     * marks the note permanently, so spending the spotlight on it says nothing
+     * new and costs the one note that would have said something.
+     */
+    private spotlitFrom(paths: Iterable<string>): string[] {
+        if (!this.settings.spotlightNewest) {
+            return [];
+        }
+
+        if (this.settings.spotlightBy === 'window') {
+            return this.store.newestSince(paths, Date.now() - this.settings.spotlightMinutes * 60 * 1000, this.pins.all());
+        }
+
+        return this.store.newestAmong(paths, this.settings.spotlightCount, this.pins.all());
+    }
+
+    /**
      * What a tab's brightness dot is painted, if anything.
      *
      * The same order the graph paints in, for the same reason: a pin is the
@@ -832,7 +862,7 @@ export default class PulsarGraphPlugin extends Plugin {
     private keptFromFilter(): (string | undefined)[] {
         return [
             this.app.workspace.getActiveFile()?.path,
-            ...(this.settings.spotlightNewest ? this.store.newestPaths(this.settings.spotlightCount) : []),
+            ...this.spotlitFrom(this.store.paths()),
             ...this.pins.list()
         ];
     }
@@ -1252,14 +1282,7 @@ export default class PulsarGraphPlugin extends Plugin {
         // Chosen once and read twice: the colour and the size bonus have to
         // land on the same notes, and a local graph measured against itself
         // picks a different set from the vault's newest.
-        // Pinned notes are passed over rather than competed with. A pin already
-        // marks the note permanently, so spending the spotlight on it says
-        // nothing new and costs the one note that would have said something.
-        const spotlit = this.settings.spotlightNewest
-            ? scoped
-                ? this.store.newestAmong(pathsIn(renderer), this.settings.spotlightCount, this.pins.all())
-                : this.store.newestPaths(this.settings.spotlightCount, this.pins.all())
-            : [];
+        const spotlit = this.spotlitFrom(scoped ? pathsIn(renderer) : this.store.paths());
 
         graph.pooled.byPath = applyOpacity(renderer, this.store, {
             spotlit,

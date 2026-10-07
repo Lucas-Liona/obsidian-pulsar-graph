@@ -50,11 +50,31 @@ That last one is worth a try if you already use the text fade threshold the way 
 do: the names come in as you lean towards the graph, and now the dates come with
 them, with old notes carrying faint ones.
 
-**How many notes** the spotlight covers is yours. At 1 it marks the thing you
-touched last. At 5 it marks the last five, which reads as *where you have been*
-rather than *where you are* — a short trail through the graph instead of a single
-point. Each one keeps the colour it had underneath, so turning it back down hands
-them all back.
+**What it covers** is a choice between two different questions.
+
+| | |
+|---|---|
+| **The newest few notes** | A count. At 1 it marks the thing you touched last; at 5 it marks the last five, which reads as *where you have been* rather than *where you are*. |
+| **Anything touched recently** | A window. Every note worked on in the last so many minutes, however many that is — including none. |
+
+The difference is that **a count always answers**. Ask for the newest three and
+you get three, whether you have been writing all morning or have not opened the
+vault since March. Measured in a real vault at an idle moment, the top three were
+21, 34 and **124 minutes** old — so a count of three was marking a note left two
+hours ago as where you are.
+
+A window goes quiet when you do. In the same vault at the same moment: nothing in
+the last 15 minutes, one note in 30, two in an hour, four in three hours, 19 in a
+day. The spotlight simply went dark, which is the true answer.
+
+It has no upper bound, and that is the trade. The busiest half-hour in that
+vault's history touched **623 notes** — a bulk import — and a 30-minute window
+during one of those lights the whole graph. That is not wrong, exactly: a lot
+really did just change. But if a sync or a mass rename makes your graph flare,
+that is why, and a count is the setting that cannot do it.
+
+Each spotlit note keeps the colour it had underneath, so turning it back down
+hands them all back.
 
 **Spotlight size** makes the newest note's circle larger as well as coloured.
 Worth knowing why it needs to: Obsidian sizes a node by its link count and

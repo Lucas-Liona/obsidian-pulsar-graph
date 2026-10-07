@@ -38,6 +38,20 @@ const LOCAL_SCOPE_LABELS: Record<LocalScope, string> = {
     graph: 'The notes in the panel'
 };
 
+/**
+ * How the spotlight chooses what to point at. A count always answers, even
+ * when the newest thing you touched was in March; a window answers only while
+ * something is actually warm.
+ */
+export type SpotlightBy = 'count' | 'window';
+
+const SPOTLIGHT_BYS = ['count', 'window'] as const;
+
+const SPOTLIGHT_BY_LABELS: Record<SpotlightBy, string> = {
+    count: 'The newest few notes',
+    window: 'Anything touched recently'
+};
+
 export type AgeScale = 'even' | 'rank' | 'log' | 'halflife';
 
 /**
@@ -83,6 +97,10 @@ export interface PulsarGraphSettings {
     spotlightStrength: number;
     spotlightSize: number;
     spotlightCount: number;
+    /** Whether the spotlight takes a fixed number of notes or a time window. */
+    spotlightBy: SpotlightBy;
+    /** How far back that window reaches, in minutes. */
+    spotlightMinutes: number;
     /** The notes held bright whatever their dates say, as vault paths. */
     pins: string[];
     pinMark: boolean;
@@ -207,6 +225,8 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightStrength: 1,
     spotlightSize: 2,
     spotlightCount: 1,
+    spotlightBy: 'count',
+    spotlightMinutes: 30,
     pins: [],
     // On, unlike every other colour here, because the list it paints starts
     // empty and so nothing changes until the user pins something. An unmarked
@@ -310,6 +330,8 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
 
 /** How many of the most recently edited notes the spotlight covers. */
 const SPOTLIGHT_COUNT_RANGE = { lowest: 1, highest: 25, step: 1 };
+
+const SPOTLIGHT_WINDOW_RANGE = { lowest: 1, highest: 720, step: 5 };
 
 /** What the newest note's own circle is multiplied by, on top of any sizing. */
 const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
@@ -423,6 +445,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
     return {
         enabled: parseBoolean(data.enabled, DEFAULT_SETTINGS.enabled),
         normalizeBy: parseNormalizeBy(data.normalizeBy),
+        spotlightBy: SPOTLIGHT_BYS.find((by) => by === data.spotlightBy) ?? DEFAULT_SETTINGS.spotlightBy,
+        spotlightMinutes: clamp(parseNumber(data.spotlightMinutes, DEFAULT_SETTINGS.spotlightMinutes), SPOTLIGHT_WINDOW_RANGE.lowest, SPOTLIGHT_WINDOW_RANGE.highest),
         localScope: parseLocalScope(data.localScope),
         localAnchor: parseBoolean(data.localAnchor, DEFAULT_SETTINGS.localAnchor),
         localLabels: parseBoolean(data.localLabels, DEFAULT_SETTINGS.localLabels),
@@ -947,17 +971,46 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
 
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('How many notes')
-                    .setDesc('The spotlight can cover more than the single newest note. At 5 it marks the last five things you touched, which reads as where you have been rather than where you are'),
-                SPOTLIGHT_COUNT_RANGE,
-                settings.spotlightCount,
-                (value) => {
-                    settings.spotlightCount = Math.round(value);
-                    this.save();
-                }
-            );
+            new Setting(containerEl)
+                .setName('What it covers')
+                .setDesc('A count always answers, even when the newest thing you touched was months ago. A window answers only while something is warm, and goes dark when you stop — which is the difference between where you have been and where you are')
+                .addDropdown((dropdown) => {
+                    for (const by of SPOTLIGHT_BYS) {
+                        dropdown.addOption(by, SPOTLIGHT_BY_LABELS[by]);
+                    }
+
+                    dropdown.setValue(settings.spotlightBy).onChange(async (value) => {
+                        settings.spotlightBy = value as SpotlightBy;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    });
+                });
+
+            if (settings.spotlightBy === 'window') {
+                new NumberControl(
+                    new Setting(containerEl)
+                        .setName('Touched within')
+                        .setDesc('Minutes. Every note worked on this recently is marked, however many that is — none at all, when you have been away longer than this'),
+                    SPOTLIGHT_WINDOW_RANGE,
+                    settings.spotlightMinutes,
+                    (value) => {
+                        settings.spotlightMinutes = Math.round(value);
+                        this.save();
+                    }
+                );
+            } else {
+                new NumberControl(
+                    new Setting(containerEl)
+                        .setName('How many notes')
+                        .setDesc('The spotlight can cover more than the single newest note. At 5 it marks the last five things you touched, which reads as where you have been rather than where you are'),
+                    SPOTLIGHT_COUNT_RANGE,
+                    settings.spotlightCount,
+                    (value) => {
+                        settings.spotlightCount = Math.round(value);
+                        this.save();
+                    }
+                );
+            }
 
             new NumberControl(
                 new Setting(containerEl)
