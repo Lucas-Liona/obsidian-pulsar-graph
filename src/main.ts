@@ -119,6 +119,8 @@ export default class PulsarGraphPlugin extends Plugin {
 
     /** Emptied when the plugin is off, so no editor carries anything of ours. */
     private readonly editorExtensions: Extension[] = [];
+    /** Whether that array has been handed to Obsidian yet. */
+    private inkRegistered = false;
 
     /**
      * The tab bar repaints with the graph. Both read the same brightness, and
@@ -140,11 +142,6 @@ export default class PulsarGraphPlugin extends Plugin {
     async onload(): Promise<void> {
         await this.loadSettings();
         this.addSettingTab(new PulsarSettingTab(this.app, this));
-
-        // A mutable array, because an editor extension registered once can
-        // still be emptied: Obsidian re-reads it on updateOptions(). Registering
-        // the extension itself would mean it could never be taken away.
-        this.registerEditorExtension(this.editorExtensions);
 
         // Commands stay registered either way. They are inert data in the
         // palette until something invokes one, and a command that vanished
@@ -392,9 +389,6 @@ export default class PulsarGraphPlugin extends Plugin {
             tasks.addPromise(this.history.flush());
         }));
 
-        this.editorExtensions.length = 0;
-        this.editorExtensions.push(inkExtension());
-        this.app.workspace.updateOptions();
         this.syncInk();
         setInkListener(() => this.refreshInkSoon());
 
@@ -425,9 +419,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         this.releaseGraphs();
         this.tabs.clear();
-
-        this.editorExtensions.length = 0;
-        this.app.workspace.updateOptions();
+        this.installInk(false);
 
         this.statusBarEl?.remove();
         this.statusBarEl = null;
@@ -755,6 +747,43 @@ export default class PulsarGraphPlugin extends Plugin {
             minutes: this.settings.inkMinutes,
             mode: this.settings.inkMode
         }, this.editors());
+
+        // After the options, so that switching off clears what is lit while
+        // the editors can still be reached.
+        this.installInk(this.settings.ink);
+    }
+
+    /**
+     * Puts the editor extension in or takes it out, and only then has Obsidian
+     * reconfigure every open editor — which it does by rebuilding each one's
+     * configuration, 51 ms in a vault with many notes open, and about as much
+     * again of CodeMirror measuring afterwards. Every load used to pay for two
+     * of those whether fresh writing was on or not.
+     *
+     * The array is registered rather than the extension, because a registered
+     * array can still be emptied: Obsidian re-reads it on updateOptions(). It is
+     * registered the first time it is needed, since registering is itself a
+     * reconfiguration — so a load costs none with fresh writing off, as it is
+     * by default, and one with it on.
+     */
+    private installInk(wanted: boolean): void {
+        if (wanted === this.editorExtensions.length > 0) {
+            return;
+        }
+
+        this.editorExtensions.length = 0;
+
+        if (wanted) {
+            this.editorExtensions.push(inkExtension());
+        }
+
+        if (!this.inkRegistered) {
+            this.inkRegistered = true;
+            this.registerEditorExtension(this.editorExtensions);
+            return;
+        }
+
+        this.app.workspace.updateOptions();
     }
 
     async saveSettings(): Promise<void> {
