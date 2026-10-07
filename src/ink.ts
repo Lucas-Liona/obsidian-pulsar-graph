@@ -34,8 +34,15 @@ const options: InkOptions = { enabled: false, minutes: 5, mode: 'colour' };
 /** Moves every mark one shade colder. */
 const cool = StateEffect.define<null>();
 
-/** Drops every mark, so whatever is on the page now counts as old. */
+/**
+ * Drops every mark that is cooling, so whatever is on the page now counts as
+ * old. Pins stay: they were set on purpose, and cooling is about what was
+ * written, not about what was marked.
+ */
 const forget = StateEffect.define<null>();
+
+/** Drops every pin, which is the one thing cooling leaves alone. */
+const unpin = StateEffect.define<null>();
 
 /** Holds a stretch at full strength until it is cleared. */
 const pin = StateEffect.define<{ from: number; to: number }>();
@@ -117,13 +124,17 @@ const inkField = StateField.define<DecorationSet>({
     create: () => Decoration.none,
 
     update(set, transaction) {
+        set = set.map(transaction.changes);
+
         for (const effect of transaction.effects) {
             if (effect.is(forget)) {
-                return Decoration.none;
+                return set.update({ filter: (_from, _to, value) => isPin(value) });
+            }
+
+            if (effect.is(unpin)) {
+                set = set.update({ filter: (_from, _to, value) => !isPin(value) });
             }
         }
-
-        set = set.map(transaction.changes);
 
         for (const effect of transaction.effects) {
             if (!effect.is(pin)) {
@@ -283,8 +294,26 @@ const dimmer = ViewPlugin.fromClass(
     { decorations: (plugin) => plugin.decorations }
 );
 
+/** Told whenever an editor's marks change, so a count shown elsewhere can follow. */
+let listener: ((view: EditorView) => void) | null = null;
+
+/**
+ * Reports changes to the marks: writing, a cooling step, a pin. A field that
+ * did not change is the same object afterwards, so everything else — moving
+ * the cursor, scrolling — costs one comparison.
+ */
+const watcher = EditorView.updateListener.of((update) => {
+    if (listener && update.startState.field(inkField, false) !== update.state.field(inkField, false)) {
+        listener(update.view);
+    }
+});
+
 export function inkExtension(): Extension {
-    return [inkField, ticker, dimmer];
+    return [inkField, ticker, dimmer, watcher];
+}
+
+export function setInkListener(next: ((view: EditorView) => void) | null): void {
+    listener = next;
 }
 
 /** Marks a stretch to come back to. Returns false when there was nothing to mark. */
@@ -326,7 +355,12 @@ export function pinInk(editor: EditorView): boolean {
     return true;
 }
 
-/** How many characters are lit, and how many of those are pinned. */
+/**
+ * How many characters still look lit, and how many are pinned.
+ *
+ * The last shade is left out: it is a step away from ordinary text and reads
+ * as ordinary text, so counting it reported writing nobody could see.
+ */
 export function inkCounts(editor: EditorView): { lit: number; pinned: number } {
     const set = editor.state.field(inkField, false);
     let lit = 0;
@@ -338,7 +372,7 @@ export function inkCounts(editor: EditorView): { lit: number; pinned: number } {
 
             if (isPin(iter.value)) {
                 pinned += width;
-            } else {
+            } else if (shadeOf(iter.value) < STEPS - 1) {
                 lit += width;
             }
         }
@@ -373,11 +407,27 @@ export function setInkOptions(next: InkOptions, editors: EditorView[]): void {
     }
 }
 
+/** Cools every editor at once. Pins stay. */
 export function forgetInk(editors: EditorView[]): void {
     for (const editor of editors) {
         if (editor.state.field(inkField, false) !== undefined) {
             editor.dispatch({ effects: forget.of(null) });
         }
     }
+}
+
+/** Cools one editor, for a count that is only about that note. Pins stay. */
+export function coolInk(editor: EditorView): void {
+    forgetInk([editor]);
+}
+
+/** Takes every pin out of one editor. Returns false when it had none. */
+export function unpinInk(editor: EditorView): boolean {
+    if (inkCounts(editor).pinned === 0) {
+        return false;
+    }
+
+    editor.dispatch({ effects: unpin.of(null) });
+    return true;
 }
 
