@@ -53,27 +53,41 @@ Three things it will not do:
 It reads each note's *own* brightness, not the brightness it ends up drawn at. A
 note shouldn't count as recent because something next to it is.
 
-The same control lives in the graph's own panel, under **Age**, beside Filters,
-Groups, Display and Forces. Filtering by time is a view rather than a preference
+The same control lives in the graph's own panel, in the **Pulsar** section
+beside Filters, Groups, Display and Forces, under **Age filter**. Filtering by time is a view rather than a preference
 — you reach for it to look at something and then put it back — so it belongs
 where you already are instead of behind a settings dialog. It's the same setting
 in both places; moving one moves the other.
 
 ## Reading the bar
 
-The shape behind the handles is your vault counted into columns — where the
-notes actually sit on the brightness range, so a handle has something real to
-aim at. It's drawn at **one column every three pixels** of however wide the bar
-happens to be: a 190-pixel panel gets 63 columns, the settings dialog gets a few
-hundred. At that resolution bars are noise, so it's drawn as an area instead.
-The small number in the corner is how many notes are in the tallest column —
-the one thing a shape can't tell you.
+The picture behind the handles is your vault counted along the line the
+handles move on: each note's own brightness, as a fraction of the way from your
+minimum to your maximum. It's the same quantity the handles select on, so what
+you see under a handle is what that handle keeps.
 
-**Hover a column** and the line underneath says what is in that column alone,
-in the same words it uses for a selection. The shape answers *where are the
+- **Bars** — forty of them, each a fortieth of the line, the same in the
+  settings and in a graph's panel.
+- **The red line** — the same notes smoothed: a Gaussian kernel density, folded
+  back at both ends so no note falls off the line. It has no corners, so it
+  shows where the vault is thick and where it is thin without jumping whenever
+  a note crosses a bar's edge.
+- **The axis** — notes per bar, on the left: a round number at the top and a
+  dotted line half way up, both labelled. The axis is a square root, because a
+  steep fade puts half a vault in the first few bars and a straight axis would
+  draw everything else flat; read the labels rather than the height.
+- **A red cap** on a bar means it is taller than the axis. That is usually the
+  notes held at the floor of the fade — everything older than the curve
+  reaches — which are a pile rather than a spread, and are left out of the red
+  line for that reason. Hover the bar for its count.
+
+Bars inside what you are keeping are drawn brighter.
+
+**Hover a bar** and the line underneath says what is in that bar alone, in the
+same words it uses for a selection. The shape answers *where are the
 notes*; the question people actually arrive with is *what is that bump*.
 
-The line also carries the share: `194 of 1092 notes (18%)`. A ratio nobody
+The line also carries the share: `194 of 1092 notes · 18%`. A ratio nobody
 computes mid-drag, and the percentage is what the handle is really choosing.
 
 **A press goes to the nearest handle**, not to whatever the browser decides is

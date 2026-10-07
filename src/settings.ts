@@ -125,7 +125,6 @@ export interface PulsarGraphSettings {
     /** Writes every age in a local graph, however the global graph is set. */
     localLabels: boolean;
     /** A line across the top of a local graph saying what the panel holds. */
-    localSummary: boolean;
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -265,7 +264,6 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     localScope: 'vault',
     localAnchor: false,
     localLabels: false,
-    localSummary: false,
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -368,13 +366,13 @@ const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
 const SPREAD_FLOOR_RANGE = { lowest: 1, highest: 168, step: 1 };
 
 /** What a title's font is multiplied by. Obsidian offers no control at all. */
-const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
+export const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
 
 /** Opacity above 1.0 keeps a node at full strength as the graph fades it. */
 const MAX_OPACITY_LIMIT = 12;
 
 /** The oldest note should only ever be dimmed, never boosted. */
-const MIN_OPACITY_LIMIT = 1;
+export const MIN_OPACITY_LIMIT = 1;
 
 /**
  * Fine enough that a near-invisible minimum like 0.01 stays expressible, which
@@ -483,7 +481,6 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         localScope: parseLocalScope(data.localScope),
         localAnchor: parseBoolean(data.localAnchor, DEFAULT_SETTINGS.localAnchor),
         localLabels: parseBoolean(data.localLabels, DEFAULT_SETTINGS.localLabels),
-        localSummary: parseBoolean(data.localSummary, DEFAULT_SETTINGS.localSummary),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
         halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
@@ -1476,17 +1473,6 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.localLabels)
                 .onChange(async (value) => {
                     settings.localLabels = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        new Setting(containerEl)
-            .setName('Say what the panel holds')
-            .setDesc('How many notes are in the panel, how recent the newest and oldest are, and how many the filter has taken out. The whole-graph caption counts your vault instead')
-            .addToggle((toggle) => toggle
-                .setValue(settings.localSummary)
-                .onChange(async (value) => {
-                    settings.localSummary = value;
                     await this.plugin.saveSettings();
                 })
             );

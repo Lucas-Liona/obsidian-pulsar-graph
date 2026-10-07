@@ -23,7 +23,7 @@ Three ways in, all doing the same thing:
 
 The first one is the useful one, because the graph is where you notice that a
 note has started sinking — so while you have nothing pinned, the graph's own
-**Age** panel says so in one line. It goes away the moment you pin something.
+**Pulsar** section says so in one line. It goes away the moment you pin something.
 
 ## What a pin does
 
