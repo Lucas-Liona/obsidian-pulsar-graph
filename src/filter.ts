@@ -101,6 +101,102 @@ export function filterGraphData(data: unknown, options: FilterOptions): unknown 
     return { ...data, nodes: kept };
 }
 
+/**
+ * Whether two sets of graph data build the same graph: the same nodes, of the
+ * same types and colours, linked the same way.
+ *
+ * The engine hands over a fresh object every time it renders, whether or not
+ * anything changed. Its timelapse does that about nine times a second for as
+ * long as the view stays open, so identity says nothing and only the contents
+ * can. Key order is ignored; the engine's is stable, but nothing promises it.
+ */
+export function sameGraphData(a: unknown, b: unknown): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (!isGraphData(a) || !isGraphData(b)) {
+        return false;
+    }
+
+    // numLinks and anything else beside the nodes, all of them plain values.
+    if (!sameFields(a, b, 'nodes')) {
+        return false;
+    }
+
+    const theirs = b.nodes;
+    let count = 0;
+
+    for (const id of Object.keys(a.nodes)) {
+        count++;
+
+        if (!Object.prototype.hasOwnProperty.call(theirs, id) || !sameFields(a.nodes[id], theirs[id])) {
+            return false;
+        }
+    }
+
+    return count === Object.keys(theirs).length;
+}
+
+/** How many nodes a set of graph data holds; zero when it is not graph data. */
+export function nodeCount(data: unknown): number {
+    return isGraphData(data) ? Object.keys(data.nodes).length : 0;
+}
+
+/**
+ * Field-by-field equality one level deep, which is as deep as a node goes: a
+ * type, a colour of { a, rgb }, and links as { path: true }.
+ */
+function sameFields(a: unknown, b: unknown, skip?: string): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) {
+        return false;
+    }
+
+    const left = a as Record<string, unknown>;
+    const right = b as Record<string, unknown>;
+    const keys = Object.keys(left);
+
+    if (keys.length !== Object.keys(right).length) {
+        return false;
+    }
+
+    for (const key of keys) {
+        if (key === skip) {
+            continue;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(right, key)) {
+            return false;
+        }
+
+        const mine = left[key];
+        const yours = right[key];
+
+        if (mine === yours) {
+            continue;
+        }
+
+        if (typeof mine !== 'object' || typeof yours !== 'object' || mine === null || yours === null || !sameValues(mine, yours)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function sameValues(a: object, b: object): boolean {
+    const left = a as Record<string, unknown>;
+    const right = b as Record<string, unknown>;
+    const keys = Object.keys(left);
+
+    return keys.length === Object.keys(right).length
+        && keys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && left[key] === right[key]);
+}
+
 function isGraphData(data: unknown): data is GraphData {
     return typeof data === 'object' && data !== null && typeof (data as GraphData).nodes === 'object';
 }
