@@ -4,7 +4,7 @@ import { readSnapshots } from './file-recovery';
 import { AgeMode } from './age-label';
 import { InkMode } from './ink';
 import { LinkRecency } from './links';
-import { OpacityRange, WHOLE_RANGE } from './filter';
+import { OpacityRange, rangeOntoCurve, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { RangeBar } from './range-bar';
 import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
@@ -148,6 +148,11 @@ export interface PulsarGraphSettings {
     filterEnabled: boolean;
     filterCaption: boolean;
     filterRanges: OpacityRange[];
+    /**
+     * What the ranges are measured along. Absent in anything saved before
+     * they moved onto the curve, which is how those get converted on load.
+     */
+    filterAxis: 'curve';
     tabFade: TabFade;
     tabFadeScope: TabFadeScope;
     tabFadeCurve: TabFadeCurve;
@@ -283,6 +288,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     filterEnabled: false,
     filterCaption: true,
     filterRanges: [{ ...WHOLE_RANGE }],
+    filterAxis: 'curve',
     tabFade: 'off',
     tabFadeScope: 'tab',
     tabFadeCurve: 'over',
@@ -520,7 +526,8 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         titleScale: clamp(parseNumber(data.titleScale, DEFAULT_SETTINGS.titleScale), TITLE_SCALE_RANGE.lowest, TITLE_SCALE_RANGE.highest),
         filterEnabled: parseBoolean(data.filterEnabled, DEFAULT_SETTINGS.filterEnabled),
         filterCaption: parseBoolean(data.filterCaption, DEFAULT_SETTINGS.filterCaption),
-        filterRanges: parseRanges(data.filterRanges),
+        filterRanges: parseRanges(data.filterRanges, data.filterAxis === 'curve' ? null : { min: Math.min(minOpacity, maxOpacity), max: Math.max(minOpacity, maxOpacity) }),
+        filterAxis: 'curve',
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
         tabFadeScope: TAB_SCOPES.find((scope) => scope === data.tabFadeScope) ?? DEFAULT_SETTINGS.tabFadeScope,
         tabFadeCurve: TAB_CURVES.find((curve) => curve === data.tabFadeCurve) ?? DEFAULT_SETTINGS.tabFadeCurve,
@@ -556,7 +563,12 @@ function parsePins(value: unknown): string[] {
     return [...new Set(value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0))];
 }
 
-function parseRanges(value: unknown): OpacityRange[] {
+/**
+ * `legacy` carries the opacities a range saved on the old axis was measured
+ * against, so it can be moved onto the curve. Saved presets come through here
+ * too, each with its own.
+ */
+function parseRanges(value: unknown, legacy: { min: number; max: number } | null): OpacityRange[] {
     if (!Array.isArray(value)) {
         return [{ ...WHOLE_RANGE }];
     }
@@ -569,8 +581,8 @@ function parseRanges(value: unknown): OpacityRange[] {
         }
 
         const { from, to } = entry as { from?: unknown; to?: unknown };
-        const low = clamp(parseNumber(from, 0), 0, 1);
-        const high = clamp(parseNumber(to, 1), 0, 1);
+        const parsed = { from: clamp(parseNumber(from, 0), 0, 1), to: clamp(parseNumber(to, 1), 0, 1) };
+        const { from: low, to: high } = legacy ? rangeOntoCurve(parsed, legacy.min, legacy.max) : parsed;
 
         if (high > low) {
             ranges.push({ from: low, to: high });
@@ -1389,7 +1401,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             const holder = containerEl.createDiv();
 
             const rangeBar = new RangeBar(holder, {
-                histogram: (buckets) => this.plugin.measureVault(buckets).spread,
+                histogram: (buckets) => this.plugin.filterSpread(buckets),
                 describe: (ranges) => this.plugin.describeRange(ranges),
                 describeHover: (ranges) => this.plugin.describeRange(ranges, false),
                 onPreview: (ranges) => this.plugin.previewRanges(ranges),

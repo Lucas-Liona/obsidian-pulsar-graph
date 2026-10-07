@@ -35,6 +35,26 @@ export function isWholeRange(ranges: OpacityRange[]): boolean {
     return ranges.length === 1 && ranges[0].from <= 0 && ranges[0].to >= 1;
 }
 
+/**
+ * Moves a range from the old axis, raw opacity clamped to 1, onto the curve.
+ *
+ * Exact rather than approximate: the old axis is a monotonic function of the
+ * new one below 1, and everything at or above 1 sat on its last point, which
+ * is the top of the curve. A range keeps selecting the same notes.
+ */
+export function rangeOntoCurve(range: OpacityRange, minOpacity: number, maxOpacity: number): OpacityRange {
+    const span = maxOpacity - minOpacity;
+    const move = (value: number): number => {
+        if (value >= 1 || span <= 0) {
+            return value >= 1 ? 1 : value;
+        }
+
+        return Math.min(1, Math.max(0, (value - minOpacity) / span));
+    };
+
+    return { from: move(range.from), to: move(range.to) };
+}
+
 export function withinRanges(value: number, ranges: OpacityRange[]): boolean {
     return ranges.some((range) => value >= range.from && value <= range.to);
 }
