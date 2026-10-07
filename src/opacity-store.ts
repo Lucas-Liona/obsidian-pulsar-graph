@@ -245,6 +245,39 @@ export class OpacityStore {
     }
 
     /**
+     * The most recently modified of a given set of notes, newest first.
+     *
+     * The same question as `newestPaths`, asked of one graph rather than of the
+     * vault. A local graph holds a dozen notes out of thousands, so the vault's
+     * newest is almost never among them and a spotlight measured against the
+     * vault has nothing to point at.
+     *
+     * Paths with no modification time are skipped: attachments and unresolved
+     * links are graph nodes, but they are not notes and have no age to win on.
+     */
+    newestAmong(paths: Iterable<string>, count: number): string[] {
+        const wanted = Math.max(0, Math.floor(count));
+
+        if (wanted === 0) {
+            return [];
+        }
+
+        const dated: [string, number][] = [];
+
+        for (const path of paths) {
+            const mtime = this.mtimes.get(path);
+
+            if (mtime !== undefined) {
+                dated.push([path, mtime]);
+            }
+        }
+
+        dated.sort((a, b) => b[1] - a[1]);
+
+        return dated.slice(0, wanted).map(([path]) => path);
+    }
+
+    /**
      * Walks the curve across whatever range opacity is currently measured
      * against, so the settings preview shows what these numbers do to real
      * ages rather than to an invented range.

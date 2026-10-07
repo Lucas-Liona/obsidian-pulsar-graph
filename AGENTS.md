@@ -102,6 +102,14 @@ on a graph node and in the file explorer both. Wrapping `onNodeRightClick`
 instead gets you nothing to add to: it builds and shows its menu in one
 synchronous call.
 
+**A local graph knows what it is about.** The `localgraph` view is a file view,
+so `view.file` is the note it is showing, and its engine carries
+`options.localFile` — the note the graph was actually built from — along with
+`options.localJumps`, how many links out it reached. Prefer the engine's: a view
+caught mid-switch can report a file that none of the drawn nodes are related to
+yet. The global graph has no centre and reports no file, which is the one
+structural difference between the two beyond size.
+
 **Easing a tint upward stalls; downward converges.** A circle's tint moves a
 tenth of the gap per frame and the step truncates, so a channel climbing the last
 few units moves by `9 * 0.1 = 0` and stops there permanently — a node left

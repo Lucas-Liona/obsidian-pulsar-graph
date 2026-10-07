@@ -21,6 +21,23 @@ const NORMALIZE_LABELS: Record<NormalizeBy, string> = {
     shown: 'Whatever the graph is showing'
 };
 
+/**
+ * What a local graph's brightness is measured against.
+ *
+ * The vault is what every graph did before this existed, and it is still right
+ * for the global graph. For a local graph it usually is not: a dozen notes all
+ * touched in the same fortnight, graded against a year of history, come out as
+ * a dozen identical dots.
+ */
+export type LocalScope = 'vault' | 'graph';
+
+const LOCAL_SCOPES = ['vault', 'graph'] as const;
+
+const LOCAL_SCOPE_LABELS: Record<LocalScope, string> = {
+    vault: "The vault's whole history",
+    graph: 'The notes in the panel'
+};
+
 export type AgeScale = 'even' | 'rank' | 'log' | 'halflife';
 
 /**
@@ -72,6 +89,8 @@ export interface PulsarGraphSettings {
     pinColor: string;
     pinStrength: number;
     spreadFloorHours: number;
+    /** What a local graph's own brightness and spotlight are measured against. */
+    localScope: LocalScope;
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -191,6 +210,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     pinColor: '#c084fc',
     pinStrength: 0.85,
     spreadFloorHours: 6,
+    // The vault, because that is what every graph was measured against before
+    // this setting existed and nothing should change under anyone on upgrade.
+    localScope: 'vault',
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -392,6 +414,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
     return {
         enabled: parseBoolean(data.enabled, DEFAULT_SETTINGS.enabled),
         normalizeBy: parseNormalizeBy(data.normalizeBy),
+        localScope: parseLocalScope(data.localScope),
         windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
         ageScale: parseAgeScale(data.ageScale),
         halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
@@ -523,6 +546,10 @@ export function repairPreset(stored: unknown): PresetSettings {
 
 function parseAgeScale(value: unknown): AgeScale {
     return AGE_SCALES.find((scale) => scale === value) ?? DEFAULT_SETTINGS.ageScale;
+}
+
+function parseLocalScope(value: unknown): LocalScope {
+    return LOCAL_SCOPES.find((scope) => scope === value) ?? DEFAULT_SETTINGS.localScope;
 }
 
 function parseNormalizeBy(value: unknown): NormalizeBy {
@@ -675,11 +702,11 @@ export class PulsarSettingTab extends PluginSettingTab {
                     });
                 });
 
-            if (settings.normalizeBy === 'shown') {
+            if (settings.normalizeBy === 'shown' || settings.localScope === 'graph') {
                 new NumberControl(
                     new Setting(containerEl)
                         .setName('Never spread across less than')
-                        .setDesc('Hours. Filter hard enough and what is left covers almost no time at all, and a nine-minute-old note would be drawn as ancient. Below this the range simply does not use its full width, which is the honest answer'),
+                        .setDesc('Hours. Narrow the notes being measured enough and what is left covers almost no time at all, and a nine-minute-old note would be drawn as ancient. Below this the range simply does not use its full width, which is the honest answer. Read by anything that re-spreads: the graph-is-showing scale above, and a local graph measured against its own panel'),
                     SPREAD_FLOOR_RANGE,
                     settings.spreadFloorHours,
                     (value) => {
@@ -1177,6 +1204,25 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
             }
         }
+
+        section('Local graph', 'The panel showing one note and what links to it. It asks a narrower question than the whole graph, and these answer it differently');
+
+        new Setting(containerEl)
+            .setName('Measure a local graph against')
+            .setDesc('A local graph holds a dozen notes out of thousands. Measured against the vault they are usually all the same age as each other, and the panel is a dozen identical dots; measured against the panel, the oldest of the twelve is dark and the newest is bright. It also decides which note the spotlight picks, since the vault\'s newest is rarely one of the twelve')
+            .addDropdown((dropdown) => {
+                for (const scope of LOCAL_SCOPES) {
+                    dropdown.addOption(scope, LOCAL_SCOPE_LABELS[scope]);
+                }
+
+                dropdown.setValue(settings.localScope).onChange(async (value) => {
+                    settings.localScope = value as LocalScope;
+                    await this.plugin.saveSettings();
+                    // The spread floor in the Time section applies once this is
+                    // on, so it appears and disappears with it.
+                    this.display();
+                });
+            });
 
         section('Tabs', 'The tab bar in the main editor area, read as attention rather than as a pile of things you opened once');
 

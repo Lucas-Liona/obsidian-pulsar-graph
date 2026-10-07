@@ -122,6 +122,11 @@ export interface GraphRenderer {
 
 interface GraphEngine {
     render?: () => void;
+    /**
+     * The local graph's own settings. `localFile` is the note it was built
+     * around and `localJumps` how many links out it reached.
+     */
+    options?: { localFile?: string; localJumps?: number };
 }
 
 interface GraphView {
@@ -130,6 +135,59 @@ interface GraphView {
     /** The global graph calls it dataEngine; the local graph calls it engine. */
     dataEngine?: GraphEngine;
     engine?: GraphEngine;
+    /** The local graph is a file view, so it reports the note it is showing. */
+    file?: { path?: string } | null;
+}
+
+/** Which of Obsidian's two graphs a renderer belongs to. */
+export type GraphKind = 'global' | 'local';
+
+/**
+ * One open graph view and the two things that differ between the kinds.
+ *
+ * A local graph is not a smaller global graph: it is a question about one note,
+ * and every node in it is there because of its relationship to that note. Most
+ * of this plugin does not care, but anything asking "compared to what" does.
+ */
+export interface OpenGraph {
+    renderer: GraphRenderer;
+    kind: GraphKind;
+    /**
+     * The note a local graph is built around, read fresh each time because a
+     * local graph follows the active note without its view being replaced.
+     * Always null for the global graph, which has no centre.
+     */
+    centre: () => string | null;
+}
+
+/**
+ * What the local graph was built around.
+ *
+ * The engine's own `localFile` is preferred over the view's file: it is the one
+ * the graph was actually built from, so a view mid-switch cannot report a
+ * centre that none of the drawn nodes are related to.
+ */
+function centreOf(view: GraphView): string | null {
+    const built = view.engine?.options?.localFile;
+
+    if (typeof built === 'string' && built.length > 0) {
+        return built;
+    }
+
+    const showing = view.file?.path;
+
+    return typeof showing === 'string' && showing.length > 0 ? showing : null;
+}
+
+/** Every open graph view, paired with the kind of graph it is. */
+function* graphViews(app: App): Generator<{ view: GraphView; kind: GraphKind }> {
+    for (const viewType of GRAPH_VIEW_TYPES) {
+        const kind: GraphKind = viewType === 'localgraph' ? 'local' : 'global';
+
+        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
+            yield { view: leaf.view, kind };
+        }
+    }
 }
 
 /**
@@ -140,40 +198,41 @@ interface GraphView {
  * is served from what was kept.
  */
 export function rebuildGraphData(app: App): void {
-    for (const viewType of GRAPH_VIEW_TYPES) {
-        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
-            const view = leaf.view as GraphView;
-            const engine = view.dataEngine ?? view.engine;
+    for (const { view } of graphViews(app)) {
+        const engine = view.dataEngine ?? view.engine;
 
-            engine?.render?.();
-        }
+        engine?.render?.();
     }
 }
 
-export function getGraphRenderers(app: App): GraphRenderer[] {
-    const renderers: GraphRenderer[] = [];
+export function openGraphs(app: App): OpenGraph[] {
+    const open: OpenGraph[] = [];
 
-    for (const viewType of GRAPH_VIEW_TYPES) {
-        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
-            const renderer = (leaf.view as GraphView).renderer;
-            if (renderer?.nodeLookup) {
-                renderers.push(renderer);
-            }
+    for (const { view, kind } of graphViews(app)) {
+        const renderer = view.renderer;
+
+        if (renderer?.nodeLookup) {
+            open.push({
+                renderer,
+                kind,
+                centre: kind === 'local' ? () => centreOf(view) : () => null
+            });
         }
     }
 
-    return renderers;
+    return open;
+}
+
+/** Every path the graph is currently drawing a node for. */
+export function pathsIn(renderer: GraphRenderer): string[] {
+    return Object.keys(renderer.nodeLookup);
 }
 
 /** The element a graph view draws its own controls into, if it has one. */
 export function controlsFor(app: App, renderer: GraphRenderer): HTMLElement | null {
-    for (const viewType of GRAPH_VIEW_TYPES) {
-        for (const leaf of app.workspace.getLeavesOfType(viewType)) {
-            const view = leaf.view as GraphView;
-
-            if (view.renderer === renderer) {
-                return view.containerEl?.querySelector('.graph-controls') ?? null;
-            }
+    for (const { view } of graphViews(app)) {
+        if (view.renderer === renderer) {
+            return view.containerEl?.querySelector('.graph-controls') ?? null;
         }
     }
 
@@ -185,14 +244,17 @@ export interface OpacityOptions {
     adaptive: boolean;
     /** How far the range is held open when what is shown covers almost no time. */
     spreadFloorHours: number;
-    /** Picks the single most recently modified note out of the graph. */
-    spotlightNewest: boolean;
-    /** The colour to paint it, as a packed 0xRRGGBB. */
+    /**
+     * The notes to spotlight, already chosen. Handed in rather than looked up
+     * here because the node sizes read the same list, and which notes are the
+     * newest depends on whether this graph is measured against the vault or
+     * against itself — a question only the caller knows the answer to.
+     */
+    spotlit: readonly string[];
+    /** The colour to paint them, as a packed 0xRRGGBB. */
     spotlightRgb: number;
     /** 0 leaves the node's own colour alone, 1 replaces it outright. */
     spotlightStrength: number;
-    /** How many of the most recently edited notes it covers. */
-    spotlightCount: number;
     /** How much of a neighbour's brightness carries over. 0 switches it off. */
     neighbourBleed: number;
     /** How many links the carry travels along. */
@@ -454,7 +516,7 @@ function* neighboursOf(node: GraphNode): Generator<string> {
  */
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
-    const wanted = wantedPaint(renderer, store, options);
+    const wanted = wantedPaint(renderer, options);
 
     releasePaint(renderer, options.paint, wanted);
 
@@ -543,7 +605,7 @@ interface WantedPaint {
  * note or two, and the pin colour comes back on its own. A pin covering the
  * spotlight instead would hide the one signal that was about to change.
  */
-function wantedPaint(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, WantedPaint> {
+function wantedPaint(renderer: GraphRenderer, options: OpacityOptions): Map<string, WantedPaint> {
     const wanted = new Map<string, WantedPaint>();
 
     if (options.pinMark) {
@@ -554,8 +616,8 @@ function wantedPaint(renderer: GraphRenderer, store: OpacityStore, options: Opac
         }
     }
 
-    if (options.spotlightNewest) {
-        for (const path of store.newestPaths(options.spotlightCount)) {
+    for (const path of options.spotlit) {
+        if (renderer.nodeLookup[path]) {
             wanted.set(path, { rgb: options.spotlightRgb, strength: options.spotlightStrength });
         }
     }
