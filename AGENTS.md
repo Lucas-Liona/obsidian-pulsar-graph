@@ -5,6 +5,13 @@ grades Obsidian's graph by time: how recently each note was modified becomes how
 strongly its node is drawn, so the part of a vault being worked in stands out and
 the rest sinks back.
 
+Two rules before anything else here:
+
+- **Be cautious.** Never make a change, or accept one, without measuring its
+  impact: mean ± sd before and after for anything that runs on every event or
+  frame, and a screenshot for anything visible.
+- **Be courteous** about shared things: PR hygiene, API limits.
+
 ## Project shape
 
 TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
