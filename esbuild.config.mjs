@@ -9,7 +9,12 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === "production");
+const mode = process.argv[2];
+const prod = (mode === "production");
+// A production build that a profiler can read: the same code, unminified and
+// with its function names kept, so a flame graph says "describeRange" rather
+// than "s". Never released; release builds are verified byte for byte.
+const profile = (mode === "profile");
 
 const context = await esbuild.context({
 	banner: {
@@ -36,13 +41,14 @@ const context = await esbuild.context({
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",
-	sourcemap: prod ? false : "inline",
+	sourcemap: prod || profile ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
 	minify: prod,
+	keepNames: profile,
 });
 
-if (prod) {
+if (prod || profile) {
 	await context.rebuild();
 	process.exit(0);
 } else {

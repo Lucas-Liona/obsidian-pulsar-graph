@@ -76,3 +76,50 @@ Two numbers from the same vault, one for each side of the change, with the
 settings that would confound it switched off. The commit message carries both.
 Where a change cannot be measured, the body says so and says what would have
 measured it — see the hygiene the merged PRs set.
+
+## Timing and profiling
+
+Two tools, for two questions. **How long does it take** is a batch timing inside
+`eval`; **where does the time go** is a CPU profile.
+
+**Time in batches, report mean ± sd.** `performance.now()` is coarsened to
+0.1 ms in Electron, so a single call under that reads as 0 or 0.1. Time a batch
+of calls, divide, repeat the batch, and report the spread:
+
+```js
+const stat = (a) => { const m = a.reduce((x, y) => x + y, 0) / a.length;
+  return { mean: m, sd: Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)) }; };
+```
+
+**Profile through the DevTools protocol.** Node's `inspector` module is not
+available in Obsidian's renderer ("initialized without a V8::Inspector"), but
+`@electron/remote` is, and its webContents debugger speaks CDP to the window the
+script is running in:
+
+```js
+const d = require('@electron/remote').getCurrentWebContents().debugger;
+const mine = !d.isAttached(); if (mine) d.attach('1.3');
+await d.sendCommand('Profiler.enable');
+await d.sendCommand('Profiler.setSamplingInterval', { interval: 100 });
+await d.sendCommand('Profiler.start');
+/* the work */
+const { profile } = await d.sendCommand('Profiler.stop');
+require('fs').writeFileSync('C:\\Users\\lucas\\AppData\\Local\\Temp\\pulsar-prof\\x.cpuprofile', JSON.stringify(profile));
+if (mine) d.detach();
+```
+
+Deploy `npm run build:profile` first, or every frame is named `s` or `t`. Then
+`node scripts/flame.mjs x.cpuprofile --top 15` for a table, or without `--top`
+for folded stacks that `flamegraph.pl` turns into an SVG. A `.cpuprofile` also
+opens directly in DevTools' Performance panel or speedscope.
+
+**Count wrappers from the stack, not from what they draw.** Labels and colours
+undercount: a stale instance whose labels were orphaned draws nothing and still
+runs. Patch one node's `render` for a frame, raise `Error.stackTraceLimit`, and
+count `plugin:pulsar-graph` frames in the stack — one per wrapper in the
+render chain. It should be 1.
+
+**Hold the node count fixed across a comparison.** A graph in a background tab
+is not re-rendered when the plugin reloads, so it keeps whatever data it last
+had — filtered or not. The same probe read 239 nodes one run and 1113 the next.
+Every per-frame number scales with it; print it alongside every timing.

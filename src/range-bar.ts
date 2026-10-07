@@ -49,6 +49,12 @@ export interface RangeBarOptions {
      */
     describe?: (ranges: OpacityRange[]) => string;
     /**
+     * The same sentence for one hovered column. Separate because the question
+     * is narrower — what is in this stretch — and because it is asked on every
+     * pointer move, so it must not do more work than that question needs.
+     */
+    describeHover?: (ranges: OpacityRange[]) => string;
+    /**
      * Called continuously while a handle is held. Rebuilding a graph on every
      * frame of a drag would be unusable, so this is where a cheap preview goes
      * and onChange is where the real work goes.
@@ -222,7 +228,8 @@ export class RangeBar {
             const column = Math.floor(at * this.counts.length);
             const width = 1 / this.counts.length;
 
-            this.caption?.setText(describe([{ from: column * width, to: (column + 1) * width }]));
+            const hovered = [{ from: column * width, to: (column + 1) * width }];
+            this.caption?.setText((this.options.describeHover ?? describe)(hovered));
         });
 
         track.addEventListener('pointerleave', () => {

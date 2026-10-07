@@ -416,19 +416,38 @@ export class OpacityStore {
             return [];
         }
 
-        const dated: [string, number][] = [];
+        // Kept newest first and never longer than wanted, rather than sorting
+        // everything to read off the top few. The sort was most of what a
+        // pass cost on a large vault, and it ran on every pass and every
+        // filter readout. Ties go to whichever came first, as a stable sort
+        // would have it, since an imported vault has hundreds of notes on
+        // the same instant.
+        const best: [string, number][] = [];
 
         for (const path of paths) {
             const mtime = this.mtimes.get(path);
 
-            if (mtime !== undefined && !skip?.has(path)) {
-                dated.push([path, mtime]);
+            if (mtime === undefined || skip?.has(path)) {
+                continue;
+            }
+
+            if (best.length === wanted && mtime <= best[wanted - 1][1]) {
+                continue;
+            }
+
+            let at = best.length;
+            while (at > 0 && best[at - 1][1] < mtime) {
+                at--;
+            }
+
+            best.splice(at, 0, [path, mtime]);
+
+            if (best.length > wanted) {
+                best.pop();
             }
         }
 
-        dated.sort((a, b) => b[1] - a[1]);
-
-        return dated.slice(0, wanted).map(([path]) => path);
+        return best.map(([path]) => path);
     }
 
     /**

@@ -4,7 +4,7 @@ import { Component, debounce, MarkdownView, Menu, Notice, Plugin, TAbstractFile,
 import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeMode, AgeText } from './age-label';
-import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE, withinRanges } from './filter';
+import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
 import { FilterCaption, GraphScrubber } from './graph-controls';
 import { LinkShading } from './links';
 import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
@@ -14,6 +14,7 @@ import { hookNodeHover } from './hover';
 import { forgetInk, inkCounts, inkExtension, pinInk, setInkOptions } from './ink';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
+import { describeSummary, keepsNote, summariseRanges } from './range-stats';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
@@ -38,11 +39,19 @@ interface AttachedGraph {
     data: DataHook | null;
     scrubber: GraphScrubber | null;
     caption: FilterCaption | null;
-    /** Ranges being dragged right now, shown by hiding rather than rebuilding. */
-    preview: { ranges: OpacityRange[] | null };
+    /**
+     * Which notes the ranges being dragged right now keep, shown by hiding
+     * rather than rebuilding. Built once per move of a handle, not per frame.
+     */
+    preview: Preview;
     /** How many notes the filter took out of this graph on its last rebuild. */
     cut: { dropped: number };
     paint: PaintState;
+}
+
+/** What a drag is previewing, if anything. */
+interface Preview {
+    keeps: ((path: string) => boolean) | null;
 }
 
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
@@ -700,13 +709,14 @@ export default class PulsarGraphPlugin extends Plugin {
      * the graph's own panel, since the graph is usually visible behind it.
      */
     previewRanges(ranges: OpacityRange[] | null): void {
+        const keeps = this.settings.filterEnabled && ranges ? this.survivorTest(ranges) : null;
+
         for (const [renderer, graph] of this.attached) {
-            graph.preview.ranges = this.settings.filterEnabled ? ranges : null;
+            graph.preview.keeps = keeps;
             repaint(renderer);
         }
     }
 
-    /** Whether a note is inside the kept ranges, or exempt from them. */
     /**
      * What a range is actually selecting, in the units the question was asked
      * in. Drawn under the bar in both places the bar appears.
@@ -716,38 +726,16 @@ export default class PulsarGraphPlugin extends Plugin {
      * about the maths rather than about the vault. Walking the notes and
      * reporting which of them survive is both exact and the more useful thing
      * to know: how many are left, and how old the ends of that stretch are.
+     *
+     * A hovered column is asked about without the exemptions. The question
+     * there is what is in that stretch, and counting the open note and the
+     * spotlit ones into every column answered a different one.
      */
-    describeRange(ranges: OpacityRange[]): string {
-        const now = Date.now();
-        let kept = 0;
-        let total = 0;
-        let oldest = Number.POSITIVE_INFINITY;
-        let newest = 0;
+    describeRange(ranges: OpacityRange[], exempting = true): string {
+        const exempt = exempting ? this.exemptFromFilter() : new Set<string>();
+        const summary = summariseRanges(this.store.entries(), (path) => this.store.opacityFor(path), ranges, exempt);
 
-        for (const [path, mtime] of this.store.entries()) {
-            total++;
-
-            if (!this.survives(path, ranges)) {
-                continue;
-            }
-
-            kept++;
-            oldest = Math.min(oldest, mtime);
-            newest = Math.max(newest, mtime);
-        }
-
-        if (kept === 0) {
-            return `Nothing in range, of ${total} notes.`;
-        }
-
-        // The share, because "194 of 1092" is a ratio nobody computes while
-        // dragging and "18%" is the thing the handle is actually choosing.
-        const share = Math.round((kept / total) * 100);
-        const count = `${kept} of ${total} notes (${share < 1 ? '<1' : share}%)`;
-
-        return oldest === newest
-            ? `${count}, from ${formatAge(newest, now)}`
-            : `${count}, ${formatAge(newest, now)} back to ${formatAge(oldest, now)}`;
+        return describeSummary(summary, Date.now());
     }
 
     /**
@@ -912,26 +900,31 @@ export default class PulsarGraphPlugin extends Plugin {
      * pinning — so it is precisely what an age filter is built to remove, and a
      * pin that vanishes the moment you narrow the range is not a pin.
      */
-    private keptFromFilter(): (string | undefined)[] {
-        return [
-            this.app.workspace.getActiveFile()?.path,
-            ...this.spotlitFrom(this.store.paths()),
-            ...this.pins.list()
-        ];
-    }
+    private exemptFromFilter(): Set<string> {
+        const exempt = new Set<string>([...this.spotlitFrom(this.store.paths()), ...this.pins.list()]);
+        const open = this.app.workspace.getActiveFile()?.path;
 
-    private survives(path: string, ranges: OpacityRange[]): boolean {
-        const strength = this.store.opacityFor(path);
-
-        if (strength === undefined || this.keptFromFilter().includes(path)) {
-            return true;
+        if (open !== undefined) {
+            exempt.add(open);
         }
 
-        return withinRanges(Math.min(1, Math.max(0, strength)), ranges);
+        return exempt;
+    }
+
+    /**
+     * Which notes a set of ranges keeps, as a test built once and asked many
+     * times. The exemptions are worked out here rather than per note: finding
+     * the spotlit ones sorts the vault, and doing that once per note was what
+     * made every readout and every frame of a drag quadratic.
+     */
+    private survivorTest(ranges: OpacityRange[]): (path: string) => boolean {
+        const exempt = this.exemptFromFilter();
+
+        return (path) => keepsNote(path, this.store.opacityFor(path), ranges, exempt);
     }
 
     /** Adds the age section to a graph's own control panel, where it has one. */
-    private buildScrubber(renderer: GraphRenderer, kind: GraphKind, preview: { ranges: OpacityRange[] | null }): GraphScrubber | null {
+    private buildScrubber(renderer: GraphRenderer, kind: GraphKind, preview: Preview): GraphScrubber | null {
         const controls = controlsFor(this.app, renderer);
         if (!controls) {
             return null;
@@ -955,12 +948,13 @@ export default class PulsarGraphPlugin extends Plugin {
             ranges: () => this.settings.filterRanges,
             histogram: (buckets) => this.measureVault(buckets).spread,
             describe: (ranges) => this.describeRange(ranges),
+            describeHover: (ranges) => this.describeRange(ranges, false),
             onToggle: (enabled) => {
                 this.settings.filterEnabled = enabled;
                 void this.saveSettings();
             },
             onPreview: (ranges) => {
-                preview.ranges = ranges;
+                preview.keeps = ranges ? this.survivorTest(ranges) : null;
 
                 if (!ranges) {
                     // Whatever was hidden has to be drawn again, and only a
@@ -1194,13 +1188,13 @@ export default class PulsarGraphPlugin extends Plugin {
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
                 strengthOf: (path) => (this.settings.filterEnabled ? this.store.opacityFor(path) : undefined),
-                keep: this.keptFromFilter(),
+                keep: this.exemptFromFilter(),
                 counted: (dropped) => {
                     cut.dropped = dropped;
                 }
             })
         );
-        const preview: { ranges: OpacityRange[] | null } = { ranges: null };
+        const preview: Preview = { keeps: null };
         const fonts: { multiplier?: number } = {};
 
         // One body for the first install and every re-install after Obsidian
@@ -1219,8 +1213,8 @@ export default class PulsarGraphPlugin extends Plugin {
             holdPaintTint(renderer, paint);
             settleReleases(renderer, paint);
 
-            if (preview.ranges) {
-                previewFilter(renderer, (path) => this.survives(path, preview.ranges ?? []));
+            if (preview.keeps) {
+                previewFilter(renderer, preview.keeps);
             }
         };
 

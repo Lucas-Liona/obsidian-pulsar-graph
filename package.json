@@ -6,11 +6,13 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"build:profile": "node esbuild.config.mjs profile",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint . --max-warnings=0",
 		"lint:fix": "eslint . --fix",
 		"type-check": "tsc --noEmit && tsc --noEmit -p test",
-		"test": "vitest run"
+		"test": "vitest run",
+		"bench": "vitest bench --run --outputJson bench.json && node scripts/bench-table.mjs bench.json"
 	},
 	"keywords": [
 		"obsidian",

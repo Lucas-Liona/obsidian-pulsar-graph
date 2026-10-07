@@ -24,3 +24,4 @@ data.json
 # Pulsar's own edit history. Numbers about when notes were worked on,
 # kept per-machine and never synced, so it has no business in git either.
 history.json
+bench.json
