@@ -476,6 +476,51 @@ function wrapAsAnotherPlugin(renderer: FakeRenderer): { frames: number; builds: 
     return seen;
 }
 
+describe('graphs that close', () => {
+    const NONE = { renderCallback: 0, setData: 0, onNodeHover: 0, onNodeUnhover: 0 };
+
+    it('lets go of a graph when its leaf closes', async () => {
+        const world = vault();
+        world.workspace.openNote('other.md');
+        const plugin = await loadPlugin(world, { ...OLD_ONLY, ageLabels: 'titles' });
+        const global = world.workspace.openGraph();
+        await settle();
+        global.renderer.frames(5);
+
+        world.workspace.close(world.workspace.leafOf(global));
+        await settle();
+
+        expect(hooks(global.renderer)).toEqual(NONE);
+        await unloadPlugin(plugin);
+    });
+
+    // #98. After a programmatic detach, getLeavesOfType went on returning the
+    // leaf while the workspace had stopped walking it, so its renderer stayed
+    // attached, with every hook, and a refilter rebuilt it with the live ones.
+    it('lets go of a graph whose leaf is gone, though getLeavesOfType still returns it (#98)', async () => {
+        const world = vault();
+        world.workspace.openNote('centre.md');
+        const plugin = await loadPlugin(world, { ...OLD_ONLY, ageLabels: 'titles' });
+        const gone = world.workspace.openGraph();
+        const kept = world.workspace.openGraph();
+        await settle();
+
+        world.workspace.detachLingering(world.workspace.leafOf(gone));
+        await settle();
+        const builds = gone.renderer.built.length;
+
+        // A switch the filter cares about refilters every attached graph.
+        world.workspace.openNote('other.md');
+        await settle();
+
+        expect(hooks(gone.renderer)).toEqual(NONE);
+        expect(gone.renderer.built).toHaveLength(builds);
+        expect(kept.renderer.ids()).toEqual(OLD_NOTES);
+        expect(hooks(kept.renderer)).toEqual({ renderCallback: 1, setData: 1, onNodeHover: 1, onNodeUnhover: 1 });
+        await unloadPlugin(plugin);
+    });
+});
+
 describe('colour', () => {
     // AGENTS.md: "setData is what wipes node colour." Every rebuild resets each
     // node's colour from group data, and the hook on it is what puts the fade

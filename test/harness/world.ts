@@ -444,6 +444,8 @@ export class FakeWorkspace extends FakeEvents {
     /** How many times editors were asked to reconfigure. */
     optionUpdates = 0;
     private readonly leaves: FakeLeaf[] = [];
+    /** Closed leaves getLeavesOfType goes on returning; see detachLingering. */
+    private readonly lingering: FakeLeaf[] = [];
     private activeLeaf: FakeLeaf | null = null;
     private activeFile: TFile | null = null;
     private readonly waiting: Array<() => void> = [];
@@ -458,7 +460,7 @@ export class FakeWorkspace extends FakeEvents {
     }
 
     getLeavesOfType(type: string): FakeLeaf[] {
-        return this.leaves.filter((leaf) => leaf.view.getViewType() === type);
+        return [...this.leaves, ...this.lingering].filter((leaf) => leaf.view.getViewType() === type);
     }
 
     iterateAllLeaves(callback: (leaf: FakeLeaf) => unknown): void {
@@ -571,6 +573,15 @@ export class FakeWorkspace extends FakeEvents {
         if (this.layoutReady) {
             this.trigger('layout-change');
         }
+    }
+
+    /**
+     * What a programmatic `detach()` was seen to do (#98): the leaf closes and
+     * the workspace stops walking it, but getLeavesOfType goes on returning it.
+     */
+    detachLingering(leaf: FakeLeaf): void {
+        this.lingering.push(leaf);
+        this.close(leaf);
     }
 
     /**
