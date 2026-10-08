@@ -63,6 +63,17 @@ bar, fresh writing, link dots and the history view.
 - `npm run type-check` — `tsc --noEmit`, then the same over `test/`
 - `npm run bench` — vitest benchmarks over synthetic vaults of 1k, 10k and 50k
   notes, printed as mean ± sd per call by `scripts/bench-table.mjs`
+- `npm run bench:check` — the same benches, three runs, their median against
+  `bench/baseline.json` as a table; it exits non-zero when a bench's mean is
+  past the baseline's mean plus two of its sds *and* more than 5% slower, the
+  sd being the larger of the spread of single calls and the spread of the mean
+  between the baseline's runs. Local only: a baseline is only comparable on the
+  machine that recorded it, which it records and warns about, and a shared CI
+  runner is noisier than any regression worth catching. Even here the mean
+  moves between runs — 13% at the median bench and 24% at the worst across
+  three runs when the baseline was recorded (`noise` in the file).
+  `npm run bench:record` runs them three times and writes a new baseline: do it
+  on a quiet machine, and again after anything that changes the benches
 - `bench/performance.ipynb` — recomputes every figure in `docs/performance.md`
   from `bench/results/` and redraws its charts in `docs/assets/perf/`; run with
   `jupyter nbconvert --to notebook --execute --inplace`. `bench/live/` is the
@@ -70,9 +81,26 @@ bar, fresh writing, link dots and the history view.
   into them
 - `npm run build:profile` — the production bundle unminified with names kept,
   for a CPU profile that reads `describeRange` rather than `s`. Never released
-- `npm test` — vitest over `test/**/*.test.ts`. `obsidian` is declarations
-  only, so `test/obsidian-stub.ts` stands in for the few runtime values the
-  source imports; a renderer is faked with plain objects shaped like PIXI's.
+- `npm test` — vitest over `test/**/*.test.ts`, at two layers. `obsidian` is
+  declarations only, so `test/obsidian-stub.ts` stands in for the runtime
+  values the source imports. A module test drives one file from `src/`
+  directly. A plugin test (`test/plugin.test.ts`) loads the whole of
+  `PulsarGraphPlugin` into the fake Obsidian in `test/harness/` and drives it
+  the way a vault would: notes edited and deleted, leaves focused, graphs
+  opened, the plugin reloaded. The local graph losing its own centre (#122)
+  passed all 94 module tests and was caught at the second layer.
+
+The harness keeps to the facts under "Working with Obsidian's graph", and
+`test/harness.test.ts` holds it to them: `setData` keeps surviving nodes and
+wipes their colour, tints ease and stall the way Obsidian's do, the frame loop
+sleeps after 60 idle frames, and every wrapper put on a renderer or a view
+creator is counted. Where Obsidian's behaviour is not written down it chose,
+and says so in `test/harness/world.ts`; the graph has no controls, so the
+panel, the caption and anything else that needs a DOM is not covered. Time is
+`vi.useFakeTimers()`: `wait(ms)` runs the timers, and `settle()` lets queued
+promises and the repaint owed at the end of a task run. A known bug is written
+as what should happen and marked `it.fails` with the finding it comes from, so
+the day it is fixed vitest says so and it becomes an ordinary test.
 
 A vault checkout that has not been installed since the flat-config migration
 fails lint with `ERR_PACKAGE_PATH_NOT_EXPORTED` for `eslint/config` rather than
@@ -81,6 +109,12 @@ wholesale by every install, which was indentation and nothing else: npm writes
 it with `package.json`'s tabs, and it had been committed with two spaces. It is
 committed in npm's own format now, so an install that changes nothing leaves it
 alone.
+
+The `*.property.test.ts` files are property tests with `fast-check`, pinned to
+an exact version: each states what has to hold for every input — a newer note
+never drawn fainter, a filter that only ever takes nodes away, history that reads
+back exactly what it wrote — and a failure prints the smallest case it could
+shrink to, with a seed that replays it.
 
 ## Conventions
 
