@@ -503,6 +503,10 @@ class DurationControl {
 
             track.prepend(slider.sliderEl);
         });
+
+        // Obsidian writes a slider's raw value beside it, which here is only
+        // the index of a stop; the readout says what it means.
+        setting.controlEl.querySelector(':scope > .slider-value')?.remove();
     }
 }
 
