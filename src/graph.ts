@@ -391,6 +391,18 @@ export interface PaintState {
      * is permanent — at zero gap there is nothing left to step.
      */
     releasing: Map<string, Releasing>;
+    /**
+     * The theme's node colour as the last pass found it, which is what a node
+     * with no colour of its own was handed.
+     *
+     * Every node is given a colour here, so one that had none — no group, the
+     * theme's grey — carries that grey from then on, and the renderer never
+     * looks at the theme for it again. Switching from a dark theme to a light
+     * one left every such node in the dark theme's #b3b3b3 against a fill of
+     * #5c5c5c, measured, through any number of repaints. A colour equal to this
+     * one is read as "the theme's", and follows the theme when it changes.
+     */
+    fallback: number | null;
 }
 
 /** A tint owed to a node, and how many passes have found it already correct. */
@@ -417,7 +429,7 @@ const RELEASE_STABLE = 3;
 const RELEASE_LIMIT = 600;
 
 export function newPaint(): PaintState {
-    return { painted: new Map(), releasing: new Map() };
+    return { painted: new Map(), releasing: new Map(), fallback: null };
 }
 
 /**
@@ -655,6 +667,8 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         }
     }
 
+    const themed = followTheme(options.paint, fallbackRgb);
+
     releasePaint(renderer, options.paint, wanted);
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
@@ -663,7 +677,7 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
             continue;
         }
 
-        const currentRgb = node.color?.rgb ?? fallbackRgb;
+        const currentRgb = themed(node.color?.rgb);
         const target = wanted.get(path);
 
         if (target !== undefined) {
@@ -692,6 +706,32 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     // What each node was actually drawn at, so sizes and the tab dot agree with
     // the picture rather than with what the curve would have said.
     return held;
+}
+
+/**
+ * Carries everything that was wearing the theme's old node colour onto its new
+ * one: the colours painted nodes will be handed back, the ones owed to nodes
+ * being released, and — through the function returned — every other node's.
+ */
+function followTheme(paint: PaintState, fill: number): (rgb: number | undefined) => number {
+    const stale = paint.fallback !== null && paint.fallback !== fill ? paint.fallback : null;
+    paint.fallback = fill;
+
+    if (stale !== null) {
+        for (const marked of paint.painted.values()) {
+            if (marked.originalRgb === stale) {
+                marked.originalRgb = fill;
+            }
+        }
+
+        for (const owed of paint.releasing.values()) {
+            if (owed.rgb === stale) {
+                owed.rgb = fill;
+            }
+        }
+    }
+
+    return (rgb) => rgb === undefined || rgb === stale ? fill : rgb;
 }
 
 /**

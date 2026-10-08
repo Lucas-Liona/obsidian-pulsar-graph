@@ -118,6 +118,28 @@ describe('painted colours', () => {
         expect(node('new.md').color?.a).toBe(DEFAULT_SETTINGS.maxOpacity);
     });
 
+    // Every node is handed a colour here, so one with none of its own carried
+    // the dark theme's grey into a light one, and kept it through any number
+    // of repaints: #b3b3b3 against a fill of #5c5c5c, measured in the demo.
+    it('moves whatever wore the theme colour onto the new one when the theme changes', () => {
+        const { renderer, store, node } = setUp();
+        const paint = newPaint();
+        const LIGHT_GREY = 0x5c5c5c;
+        const ORANGE = 0xe0a050;
+
+        applyOpacity(renderer, store, options({ paint, pinned: new Set(['old.md']) }));
+
+        // The theme changes, and a rebuild has given one node a group colour.
+        renderer.colors = { fill: { rgb: LIGHT_GREY } };
+        node('middle.md').color = { a: 1, rgb: ORANGE };
+        applyOpacity(renderer, store, options({ paint }));
+
+        expect(node('new.md').color?.rgb).toBe(LIGHT_GREY);
+        expect(node('middle.md').color?.rgb).toBe(ORANGE);
+        expect(node('old.md').color?.rgb).toBe(LIGHT_GREY);
+        expect(paint.releasing.get('old.md')?.rgb).toBe(LIGHT_GREY);
+    });
+
     it('still lets an unpainted note past 1, which is what a high maximum is for', () => {
         const { renderer, store, node } = setUp();
 
