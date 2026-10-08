@@ -12,7 +12,7 @@ import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
 import { confirmTwice } from './confirm';
-import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, nearestStop } from './duration';
+import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, HALF_LIFE_STOPS, nearestStop, REPLAY_TRAIL_STOPS, SITTING_STOPS, SPOTLIGHT_WINDOW_STOPS, SPREAD_FLOOR_STOPS, STALE_TAB_STOPS, TAB_FADE_STOPS, WINDOW_STOPS } from './duration';
 
 export type NormalizeBy = 'vault' | 'window' | 'shown';
 
@@ -312,19 +312,36 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     intensityScale: 'rank'
 };
 
-/** A minute is twitchy; a day never arrives while you are looking. */
-const TAB_AFTER_RANGE = { lowest: 1, highest: 480, step: 1 };
+/** Seconds in each unit a duration setting is stored in. */
+const MINUTE_SECONDS = 60;
+const HOUR_SECONDS = 60 * MINUTE_SECONDS;
+const DAY_SECONDS = 24 * HOUR_SECONDS;
 
-const STALE_AFTER_RANGE = { lowest: 5, highest: 2880, step: 5 };
+/**
+ * A duration setting's bounds in the unit it is stored in, from the ends of
+ * its slider's stops, so the two cannot drift apart. Each key keeps the unit
+ * it always had and takes fractions, so an older version reads a value below
+ * its own floor as that floor rather than as anything broken.
+ */
+function boundsOf(stops: DurationStops, unitSeconds: number): { lowest: number; highest: number } {
+    return { lowest: stops[0] / unitSeconds, highest: stops[stops.length - 1] / unitSeconds };
+}
+
+/** A minute is twitchy; a day never arrives while you are looking. Minutes. */
+const TAB_AFTER_MINUTES = boundsOf(TAB_FADE_STOPS, MINUTE_SECONDS);
+
+/** Minutes. */
+const STALE_AFTER_MINUTES = boundsOf(STALE_TAB_STOPS, MINUTE_SECONDS);
 
 const TAB_FLOOR_RANGE = { lowest: 0.1, highest: 1, step: 0.05 };
 
 const STRENGTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
-/** A day at the short end, a year at the long one. */
-const WINDOW_RANGE = { lowest: 1, highest: 365, step: 1 };
+/** Six hours, which is "today", at the short end, a year at the long one. Days. */
+const WINDOW_DAYS = boundsOf(WINDOW_STOPS, DAY_SECONDS);
 
-const HALF_LIFE_RANGE = { lowest: 1, highest: 365, step: 1 };
+/** An hour, for today's work alone, to a year. Days. */
+const HALF_LIFE_DAYS = boundsOf(HALF_LIFE_STOPS, DAY_SECONDS);
 
 /** Stops short of 1, where a single fresh note would light the whole graph. */
 const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
@@ -333,8 +350,8 @@ const HOPS_RANGE = { lowest: 1, highest: 3, step: 1 };
 
 const WARMTH_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 
-/** Five minutes is one distracted pass; four hours is a long sitting. */
-const SESSION_RANGE = { lowest: 1, highest: 240, step: 1 };
+/** Five minutes is one distracted pass; four hours is a long sitting. Minutes. */
+const SESSION_MINUTES = boundsOf(SITTING_STOPS, MINUTE_SECONDS);
 
 const HISTORY_CAP_RANGE = { lowest: 10, highest: 1000, step: 10 };
 
@@ -364,16 +381,18 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
 /** How many of the most recently edited notes the spotlight covers. */
 const SPOTLIGHT_COUNT_RANGE = { lowest: 1, highest: 25, step: 1 };
 
-const SPOTLIGHT_WINDOW_RANGE = { lowest: 1, highest: 720, step: 5 };
+/** Up to a day, so "everything I worked on today" can be said. Minutes. */
+const SPOTLIGHT_WINDOW_MINUTES = boundsOf(SPOTLIGHT_WINDOW_STOPS, MINUTE_SECONDS);
 
-const REPLAY_TRAIL_RANGE = { lowest: 1, highest: 365, step: 1 };
+/** Days of vault time. */
+const REPLAY_TRAIL_DAYS = boundsOf(REPLAY_TRAIL_STOPS, DAY_SECONDS);
 
 
 /** What the newest note's own circle is multiplied by, on top of any sizing. */
 const SPOTLIGHT_SIZE_RANGE = { lowest: 1, highest: 5, step: 0.25 };
 
-/** How far the adaptive range is held open when what is shown covers no time. */
-const SPREAD_FLOOR_RANGE = { lowest: 1, highest: 168, step: 1 };
+/** How far the adaptive range is held open when what is shown covers no time. Hours. */
+const SPREAD_FLOOR_HOURS = boundsOf(SPREAD_FLOOR_STOPS, HOUR_SECONDS);
 
 /** What a title's font is multiplied by. Obsidian offers no control at all. */
 export const TITLE_SCALE_RANGE = { lowest: 0.5, highest: 2.5, step: 0.05 };
@@ -527,18 +546,18 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         enabled: parseBoolean(data.enabled, DEFAULT_SETTINGS.enabled),
         normalizeBy: parseNormalizeBy(data.normalizeBy),
         spotlightBy: SPOTLIGHT_BYS.find((by) => by === data.spotlightBy) ?? DEFAULT_SETTINGS.spotlightBy,
-        spotlightMinutes: clamp(parseNumber(data.spotlightMinutes, DEFAULT_SETTINGS.spotlightMinutes), SPOTLIGHT_WINDOW_RANGE.lowest, SPOTLIGHT_WINDOW_RANGE.highest),
+        spotlightMinutes: clamp(parseNumber(data.spotlightMinutes, DEFAULT_SETTINGS.spotlightMinutes), SPOTLIGHT_WINDOW_MINUTES.lowest, SPOTLIGHT_WINDOW_MINUTES.highest),
         replay: parseBoolean(data.replay, DEFAULT_SETTINGS.replay),
-        replayTrailDays: Math.round(clamp(parseNumber(data.replayTrailDays, DEFAULT_SETTINGS.replayTrailDays), REPLAY_TRAIL_RANGE.lowest, REPLAY_TRAIL_RANGE.highest)),
+        replayTrailDays: clamp(parseNumber(data.replayTrailDays, DEFAULT_SETTINGS.replayTrailDays), REPLAY_TRAIL_DAYS.lowest, REPLAY_TRAIL_DAYS.highest),
         graphFade: parseBoolean(data.graphFade, DEFAULT_SETTINGS.graphFade),
         tabBar: parseBoolean(data.tabBar, DEFAULT_SETTINGS.tabBar),
         collapsed: parseStrings(data.collapsed),
         localScope: parseLocalScope(data.localScope),
         localAnchor: parseBoolean(data.localAnchor, DEFAULT_SETTINGS.localAnchor),
         localLabels: parseBoolean(data.localLabels, DEFAULT_SETTINGS.localLabels),
-        windowDays: Math.round(clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_RANGE.lowest, WINDOW_RANGE.highest)),
+        windowDays: clamp(parseNumber(data.windowDays, DEFAULT_SETTINGS.windowDays), WINDOW_DAYS.lowest, WINDOW_DAYS.highest),
         ageScale: parseAgeScale(data.ageScale),
-        halfLifeDays: Math.round(clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_RANGE.lowest, HALF_LIFE_RANGE.highest)),
+        halfLifeDays: clamp(parseNumber(data.halfLifeDays, DEFAULT_SETTINGS.halfLifeDays), HALF_LIFE_DAYS.lowest, HALF_LIFE_DAYS.highest),
         fadeType: parseFadeType(data.fadeType),
         minOpacity: Math.min(minOpacity, maxOpacity),
         maxOpacity: Math.max(minOpacity, maxOpacity),
@@ -556,14 +575,14 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         pinMark: parseBoolean(data.pinMark, DEFAULT_SETTINGS.pinMark),
         pinColor: parseColor(data.pinColor, DEFAULT_SETTINGS.pinColor),
         pinStrength: clamp(parseNumber(data.pinStrength, DEFAULT_SETTINGS.pinStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
-        spreadFloorHours: clamp(parseNumber(data.spreadFloorHours, DEFAULT_SETTINGS.spreadFloorHours), SPREAD_FLOOR_RANGE.lowest, SPREAD_FLOOR_RANGE.highest),
+        spreadFloorHours: clamp(parseNumber(data.spreadFloorHours, DEFAULT_SETTINGS.spreadFloorHours), SPREAD_FLOOR_HOURS.lowest, SPREAD_FLOOR_HOURS.highest),
         spotlightStrength: clamp(parseNumber(data.spotlightStrength, DEFAULT_SETTINGS.spotlightStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         neighbourBleed: clamp(parseNumber(data.neighbourBleed, DEFAULT_SETTINGS.neighbourBleed), BLEED_RANGE.lowest, BLEED_RANGE.highest),
         neighbourHops: Math.round(clamp(parseNumber(data.neighbourHops, DEFAULT_SETTINGS.neighbourHops), HOPS_RANGE.lowest, HOPS_RANGE.highest)),
         clusterWarmth: clamp(parseNumber(data.clusterWarmth, DEFAULT_SETTINGS.clusterWarmth), WARMTH_RANGE.lowest, WARMTH_RANGE.highest),
         clusterBy: CLUSTER_MODES.find((mode) => mode === data.clusterBy) ?? DEFAULT_SETTINGS.clusterBy,
         sessionTrails: parseBoolean(data.sessionTrails, DEFAULT_SETTINGS.sessionTrails),
-        sessionGapMinutes: Math.round(clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_RANGE.lowest, SESSION_RANGE.highest)),
+        sessionGapMinutes: clamp(parseNumber(data.sessionGapMinutes, DEFAULT_SETTINGS.sessionGapMinutes), SESSION_MINUTES.lowest, SESSION_MINUTES.highest),
         trailColor: parseColor(data.trailColor, DEFAULT_SETTINGS.trailColor),
         trailStrength: clamp(parseNumber(data.trailStrength, DEFAULT_SETTINGS.trailStrength), STRENGTH_RANGE.lowest, STRENGTH_RANGE.highest),
         saved: parseSaved(data.saved),
@@ -584,12 +603,12 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         tabFade: TAB_MODES.find((mode) => mode === data.tabFade) ?? DEFAULT_SETTINGS.tabFade,
         tabFadeScope: TAB_SCOPES.find((scope) => scope === data.tabFadeScope) ?? DEFAULT_SETTINGS.tabFadeScope,
         tabFadeCurve: TAB_CURVES.find((curve) => curve === data.tabFadeCurve) ?? DEFAULT_SETTINGS.tabFadeCurve,
-        tabFadeAfter: Math.round(clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_RANGE.lowest, TAB_AFTER_RANGE.highest)),
+        tabFadeAfter: clamp(parseNumber(data.tabFadeAfter, DEFAULT_SETTINGS.tabFadeAfter), TAB_AFTER_MINUTES.lowest, TAB_AFTER_MINUTES.highest),
         tabFadeFloor: clamp(parseNumber(data.tabFadeFloor, DEFAULT_SETTINGS.tabFadeFloor), TAB_FLOOR_RANGE.lowest, TAB_FLOOR_RANGE.highest),
         tabDot: parseBoolean(data.tabDot, DEFAULT_SETTINGS.tabDot),
         staleTabs: parseBoolean(data.staleTabs, DEFAULT_SETTINGS.staleTabs),
         staleTabMark: STALE_MARKS.find((mark) => mark === data.staleTabMark) ?? DEFAULT_SETTINGS.staleTabMark,
-        staleTabAfter: Math.round(clamp(parseNumber(data.staleTabAfter, DEFAULT_SETTINGS.staleTabAfter), STALE_AFTER_RANGE.lowest, STALE_AFTER_RANGE.highest)),
+        staleTabAfter: clamp(parseNumber(data.staleTabAfter, DEFAULT_SETTINGS.staleTabAfter), STALE_AFTER_MINUTES.lowest, STALE_AFTER_MINUTES.highest),
         history: parseBoolean(data.history, DEFAULT_SETTINGS.history),
         historyCap: Math.round(clamp(parseNumber(data.historyCap, DEFAULT_SETTINGS.historyCap), HISTORY_CAP_RANGE.lowest, HISTORY_CAP_RANGE.highest)),
         intensityBlend: clamp(parseNumber(data.intensityBlend, DEFAULT_SETTINGS.intensityBlend), BLEND_RANGE.lowest, BLEND_RANGE.highest),
@@ -982,14 +1001,14 @@ export class PulsarSettingTab extends PluginSettingTab {
             });
 
         if (settings.ageScale === 'halflife') {
-            new NumberControl(
+            new DurationControl(
                 new Setting(containerEl)
                     .setName('Half-life')
-                    .setDesc('Days for a note to fade halfway. Twice that and it is a quarter as bright, and so on. Nothing else in the vault changes what a note is worth, so adding or deleting notes leaves every other brightness exactly where it was'),
-                HALF_LIFE_RANGE,
-                settings.halfLifeDays,
-                (value) => {
-                    settings.halfLifeDays = Math.round(value);
+                    .setDesc('How long a note takes to fade halfway. Twice that and it is a quarter as bright, and so on. Nothing else in the vault changes what a note is worth, so adding or deleting notes leaves every other brightness exactly where it was'),
+                HALF_LIFE_STOPS,
+                settings.halfLifeDays * DAY_SECONDS,
+                (seconds) => {
+                    settings.halfLifeDays = seconds / DAY_SECONDS;
                     this.save();
                 }
             );
@@ -1011,28 +1030,28 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
 
             if (settings.normalizeBy === 'shown' || settings.localScope === 'graph' || settings.localAnchor) {
-                new NumberControl(
+                new DurationControl(
                     new Setting(containerEl)
                         .setName('Never spread across less than')
-                        .setDesc('Hours. Narrow the notes being measured far enough and they cover almost no time, and a nine-minute-old note would be drawn as ancient. Below this the range just does not use its full width'),
-                    SPREAD_FLOOR_RANGE,
-                    settings.spreadFloorHours,
-                    (value) => {
-                        settings.spreadFloorHours = Math.round(value);
+                        .setDesc('Narrow the notes being measured far enough and they cover almost no time, and a nine-minute-old note would be drawn as ancient. Below this the range just does not use its full width'),
+                    SPREAD_FLOOR_STOPS,
+                    settings.spreadFloorHours * HOUR_SECONDS,
+                    (seconds) => {
+                        settings.spreadFloorHours = seconds / HOUR_SECONDS;
                         this.save();
                     }
                 );
             }
 
             if (settings.normalizeBy === 'window') {
-                new NumberControl(
+                new DurationControl(
                     new Setting(containerEl)
                         .setName('Window')
-                        .setDesc('How many days back the range covers. Anything older sits at minimum opacity'),
-                    WINDOW_RANGE,
-                    settings.windowDays,
-                    (value) => {
-                        settings.windowDays = Math.round(value);
+                        .setDesc('How far back the range covers. Anything older sits at minimum opacity'),
+                    WINDOW_STOPS,
+                    settings.windowDays * DAY_SECONDS,
+                    (seconds) => {
+                        settings.windowDays = seconds / DAY_SECONDS;
                         this.save();
                     }
                 );
@@ -1156,14 +1175,14 @@ export class PulsarSettingTab extends PluginSettingTab {
             return;
         }
 
-        new NumberControl(
+        new DurationControl(
             new Setting(containerEl)
                 .setName('Stays lit for')
-                .setDesc('Days of vault time, not of watching. A note is at full brightness as the wave reaches it and has faded to nothing this long behind it'),
-            REPLAY_TRAIL_RANGE,
-            settings.replayTrailDays,
-            (value) => {
-                settings.replayTrailDays = Math.round(value);
+                .setDesc('In vault time, not time spent watching. A note is at full brightness as the wave reaches it and has faded to nothing this long behind it'),
+            REPLAY_TRAIL_STOPS,
+            settings.replayTrailDays * DAY_SECONDS,
+            (seconds) => {
+                settings.replayTrailDays = seconds / DAY_SECONDS;
                 this.save();
             }
         );
@@ -1331,14 +1350,14 @@ export class PulsarSettingTab extends PluginSettingTab {
                 });
 
             if (settings.spotlightBy === 'window') {
-                new NumberControl(
+                new DurationControl(
                     new Setting(containerEl)
                         .setName('Touched within')
-                        .setDesc('Minutes. Every note worked on this recently is marked, however many that is — none at all, when you have been away longer than this'),
-                    SPOTLIGHT_WINDOW_RANGE,
-                    settings.spotlightMinutes,
-                    (value) => {
-                        settings.spotlightMinutes = Math.round(value);
+                        .setDesc('Every note worked on this recently is marked, however many that is — none at all, when you have been away longer than this'),
+                    SPOTLIGHT_WINDOW_STOPS,
+                    settings.spotlightMinutes * MINUTE_SECONDS,
+                    (seconds) => {
+                        settings.spotlightMinutes = seconds / MINUTE_SECONDS;
                         this.save();
                     }
                 );
@@ -1406,14 +1425,14 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.sessionTrails) {
-            new NumberControl(
+            new DurationControl(
                 new Setting(containerEl)
                     .setName('Counts as one sitting')
-                    .setDesc('How many minutes apart two notes can be saved and still be treated as worked on together'),
-                SESSION_RANGE,
-                settings.sessionGapMinutes,
-                (value) => {
-                    settings.sessionGapMinutes = Math.round(value);
+                    .setDesc('How far apart two notes can be saved and still be treated as worked on together'),
+                SITTING_STOPS,
+                settings.sessionGapMinutes * MINUTE_SECONDS,
+                (seconds) => {
+                    settings.sessionGapMinutes = seconds / MINUTE_SECONDS;
                     this.save();
                 }
             );
@@ -1685,14 +1704,14 @@ export class PulsarSettingTab extends PluginSettingTab {
                     });
                 });
 
-            new NumberControl(
+            new DurationControl(
                 new Setting(containerEl)
                     .setName('Faded after')
-                    .setDesc('Minutes of being ignored before a tab is as faint as it gets. Time spent in a note does not count against it'),
-                TAB_AFTER_RANGE,
-                settings.tabFadeAfter,
-                (value) => {
-                    settings.tabFadeAfter = Math.round(value);
+                    .setDesc('How long a tab is ignored before it is as faint as it gets. Time spent in a note does not count against it'),
+                TAB_FADE_STOPS,
+                settings.tabFadeAfter * MINUTE_SECONDS,
+                (seconds) => {
+                    settings.tabFadeAfter = seconds / MINUTE_SECONDS;
                     this.save();
                 }
             );
@@ -1739,14 +1758,14 @@ export class PulsarSettingTab extends PluginSettingTab {
                     });
                 });
 
-            new NumberControl(
+            new DurationControl(
                 new Setting(containerEl)
                     .setName('Marked after')
-                    .setDesc('Minutes of being ignored before a tab is marked. Time spent in a note does not count against it'),
-                STALE_AFTER_RANGE,
-                settings.staleTabAfter,
-                (value) => {
-                    settings.staleTabAfter = Math.round(value);
+                    .setDesc('How long a tab is ignored before it is marked. Time spent in a note does not count against it'),
+                STALE_TAB_STOPS,
+                settings.staleTabAfter * MINUTE_SECONDS,
+                (seconds) => {
+                    settings.staleTabAfter = seconds / MINUTE_SECONDS;
                     this.save();
                 }
             );
