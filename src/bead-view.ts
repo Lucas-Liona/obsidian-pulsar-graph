@@ -168,27 +168,29 @@ export class BeadView extends ItemView {
     private drawRail(root: HTMLElement, beads: readonly Bead[]): void {
         const now = Date.now();
         const rail = root.createDiv({ cls: 'pulsar-graph-history-rail' });
-        rail.style.height = `${RAIL_HEIGHT}px`;
 
-        const first = beads[0].start;
+        const first = beads[0].end;
         const last = beads[beads.length - 1].end;
-        const span = last - first;
         const usable = RAIL_HEIGHT - RAIL_INSET * 2;
+
+        // One sitting, or several ending inside one instant, has no span to
+        // draw across. A label at the bottom of an empty rail would suggest a
+        // gap that is not there, and so would the rail, so it is one bead
+        // high and says the one thing it knows.
+        const spans = last > first;
+        rail.style.height = `${spans ? RAIL_HEIGHT : RAIL_INSET * 2}px`;
+        rail.toggleClass('is-single', !spans);
 
         rail.createDiv({ cls: 'pulsar-graph-history-tick is-top', text: formatAge(last, now) });
 
-        // One sitting, or several inside one instant, has no span to draw
-        // across. Two identical labels at both ends of an empty rail would
-        // suggest a gap that is not there, so it says the one thing it knows.
-        if (span > 0) {
+        if (spans) {
             rail.createDiv({ cls: 'pulsar-graph-history-tick is-bottom', text: formatAge(first, now) });
         }
 
-        for (const bead of beads) {
-            // Placed by when the sitting ended. That is the same moment a
-            // note's own modification time records, so the topmost bead and the
-            // note's node in the graph are talking about the same thing.
-            const along = span > 0 ? (bead.end - first) / span : 1;
+        const placed = placeBeads(beads);
+
+        for (const [index, bead] of beads.entries()) {
+            const along = placed[index];
             const size = beadSize(bead);
 
             const dot = rail.createDiv({ cls: 'pulsar-graph-history-bead' });
@@ -200,6 +202,28 @@ export class BeadView extends ItemView {
             dot.setAttr('aria-label', describe(bead, now));
         }
     }
+}
+
+/**
+ * Where each bead falls on the rail, from 0 at the bottom to 1 at the top.
+ *
+ * A bead is placed by when its sitting ended. That is the same moment a note's
+ * own modification time records, so the topmost bead and the note's node in the
+ * graph are talking about the same thing — and it is why the rail is measured
+ * from the first sitting's end as well. Measured from its start, the bottom of
+ * every rail was a moment nothing was drawn at: a note with one forty-minute
+ * sitting got its bead at the top, an empty rail under it, and a label at the
+ * bottom for when that same sitting began.
+ */
+export function placeBeads(beads: readonly Bead[]): number[] {
+    if (beads.length === 0) {
+        return [];
+    }
+
+    const first = beads[0].end;
+    const span = beads[beads.length - 1].end - first;
+
+    return beads.map((bead) => span > 0 ? (bead.end - first) / span : 1);
 }
 
 /**

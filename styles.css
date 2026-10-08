@@ -627,6 +627,10 @@
     border-left: 1px solid var(--background-modifier-border);
 }
 
+.pulsar-graph-history-rail.is-single::before {
+    display: none;
+}
+
 .pulsar-graph-history-bead {
     position: absolute;
     left: 0;
