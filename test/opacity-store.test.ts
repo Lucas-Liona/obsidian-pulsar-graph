@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
 import { OpacityStore } from '../src/opacity-store';
-import { DEFAULT_SETTINGS } from '../src/settings';
+import { DEFAULT_SETTINGS, PulsarGraphSettings } from '../src/settings';
 import { fakeVault, seeded } from './vault';
 
 /** A store over fake files, with the settings the plugin ships with. */
@@ -44,5 +44,40 @@ describe('newestAmong', () => {
         const { mtimes } = fakeVault(50);
 
         expect(storeOf(mtimes).newestAmong(mtimes.keys(), 0)).toEqual([]);
+    });
+});
+
+describe('the edit-intensity blend', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const mtimes = new Map([['new.md', 10 * DAY], ['middle.md', 5 * DAY], ['old.md', 0]]);
+
+    function storeWith(blend: number, sittings: Record<string, number>): OpacityStore {
+        const settings: PulsarGraphSettings = { ...DEFAULT_SETTINGS, ageScale: 'even', fadeType: 'linear', minOpacity: 0, maxOpacity: 1, intensityBlend: blend };
+        const store = new OpacityStore(() => settings);
+        store.setSittingSource((path) => sittings[path] ?? 0);
+        store.build([...mtimes].map(([path, mtime]) => Object.assign(new TFile(), { path, extension: 'md', stat: { mtime, ctime: mtime, size: 1 } })));
+        store.refresh();
+        return store;
+    }
+
+    // A fresh install has no history at all. Blending a zero in for every note
+    // dimmed the whole graph by the blend.
+    it('leaves a vault with no history exactly as the blend at 0 draws it', () => {
+        const off = storeWith(0, {});
+        const on = storeWith(0.25, {});
+
+        for (const path of mtimes.keys()) {
+            expect(on.opacityFor(path)).toBeCloseTo(off.opacityFor(path) ?? NaN);
+        }
+
+        expect(on.opacityFor('new.md')).toBeCloseTo(1);
+    });
+
+    it('still moves a note that has sittings on record', () => {
+        const off = storeWith(0, { 'old.md': 9, 'middle.md': 1 });
+        const on = storeWith(0.5, { 'old.md': 9, 'middle.md': 1 });
+
+        expect(on.opacityFor('old.md')).toBeGreaterThan(off.opacityFor('old.md') ?? NaN);
+        expect(on.opacityFor('new.md')).toBeCloseTo(off.opacityFor('new.md') ?? NaN);
     });
 });
