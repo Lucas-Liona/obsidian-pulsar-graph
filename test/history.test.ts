@@ -5,11 +5,20 @@ import { EditHistory } from '../src/history';
 const CONFIG = 'config';
 const FOLDER = `${CONFIG}/plugins/pulsar-graph`;
 const FILE = `${FOLDER}/history.json`;
+const BACKUP = `${FOLDER}/history.backup.json`;
 
 /** A file adapter over a map, which can be told to fail. */
 function disk(initial: Record<string, string> = {}) {
     const files = new Map(Object.entries(initial));
-    const state = { failRead: false, failWriteTo: null as RegExp | null, written: [] as string[], hold: null as Promise<void> | null };
+    const state = {
+        failRead: false,
+        failWriteTo: null as RegExp | null,
+        /** The app dies writing this file: half of it lands, and nothing after it. */
+        crashIn: null as RegExp | null,
+        crashed: false,
+        written: [] as string[],
+        hold: null as Promise<void> | null
+    };
 
     const adapter = {
         exists: async (path: string) => files.has(path),
@@ -26,6 +35,16 @@ function disk(initial: Record<string, string> = {}) {
             return text;
         },
         write: async (path: string, text: string) => {
+            if (state.crashed) {
+                throw new Error('gone');
+            }
+
+            if (state.crashIn?.test(path)) {
+                state.crashed = true;
+                files.set(path, text.slice(0, Math.floor(text.length / 2)));
+                throw new Error('gone');
+            }
+
             if (state.failWriteTo?.test(path)) {
                 throw new Error('EACCES');
             }
@@ -151,7 +170,99 @@ describe('history file safety', () => {
         await done;
 
         expect(flushed).toBe(true);
-        expect(state.written).toEqual([FILE]);
+        expect(state.written).toEqual([BACKUP, FILE]);
+    });
+
+    it('writes the backup first, with the same contents', async () => {
+        const { files, state, history } = disk({ [FILE]: SAVED });
+        const h = history();
+
+        await h.load();
+        h.markSeen('b.md', 7);
+        await h.flush();
+
+        expect(state.written).toEqual([BACKUP, FILE]);
+        expect(files.get(BACKUP)).toBe(files.get(FILE));
+    });
+
+    // The case the backup exists for: quitting or crashing part way through
+    // writing the file itself left it cut short, and the next load used to
+    // start over.
+    it('loses nothing when a write of the file is cut short', async () => {
+        const { files, state, history } = disk({ [FILE]: SAVED, [BACKUP]: SAVED });
+        const before = history();
+        await before.load();
+
+        state.crashIn = /history\.json$/;
+        before.markSeen('b.md', 7);
+        await before.flush();
+        expect(() => stored(files.get(FILE))).toThrow();
+
+        state.crashIn = null;
+        state.crashed = false;
+        const after = history();
+        await after.load();
+
+        expect(after.sittings('a.md')).toBe(1);
+        expect([...files.keys()].some((path) => path.includes('damaged'))).toBe(false);
+
+        after.markSeen('c.md', 8);
+        await after.flush();
+
+        expect(stored(files.get(FILE)).opened).toEqual({ 'a.md': 5, 'b.md': 7, 'c.md': 8 });
+    });
+
+    it('keeps the file whole when a write of the backup is cut short', async () => {
+        const { files, state, history } = disk({ [FILE]: SAVED, [BACKUP]: SAVED });
+        const before = history();
+        await before.load();
+
+        state.crashIn = /backup/;
+        before.markSeen('b.md', 7);
+        await before.flush();
+
+        expect(files.get(FILE)).toBe(SAVED);
+
+        state.crashIn = null;
+        state.crashed = false;
+        const after = history();
+        await after.load();
+
+        expect(after.sittings('a.md')).toBe(1);
+    });
+
+    it('still keeps a damaged copy when the backup is no better', async () => {
+        const damaged = SAVED.slice(0, 30);
+        const { files, history } = disk({ [FILE]: damaged, [BACKUP]: SAVED.slice(0, 20) });
+        const h = history();
+
+        await h.load();
+
+        expect(h.sittings('a.md')).toBe(0);
+        const copies = [...files.keys()].filter((path) => path.includes('damaged'));
+        expect(copies.map((path) => files.get(path))).toEqual([damaged]);
+    });
+
+    // A write never removes the file, so a missing one was removed on purpose.
+    it('starts again rather than bringing back a file that was removed', async () => {
+        const { history } = disk({ [BACKUP]: SAVED });
+        const h = history();
+
+        await h.load();
+
+        expect(h.sittings('a.md')).toBe(0);
+    });
+
+    it('still writes the file when the backup cannot be written', async () => {
+        const { files, state, history } = disk({ [FILE]: SAVED });
+        state.failWriteTo = /backup/;
+        const h = history();
+
+        await h.load();
+        h.markSeen('b.md', 7);
+        await h.flush();
+
+        expect(stored(files.get(FILE)).opened).toEqual({ 'a.md': 5, 'b.md': 7 });
     });
 
     it('starts a new history when there is no file yet', async () => {
