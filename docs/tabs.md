@@ -11,7 +11,9 @@ looking at, so a sidebar tab that joined in appeared to change at random.
 **Show a dot beside each tab** puts a small filled circle next to the title, at
 that note's brightness in the graph. It's the cheapest way to have the idea in
 front of you without opening the graph at all, and it reads at a glance where a
-date doesn't. If the spotlight is on, the newest note's dot takes its colour.
+date doesn't. Hover it for the date in words ("Edited 5 days ago"), as with
+the dot after a link. If the spotlight is on, the newest note's dot takes its
+colour.
 
 Your tab bar is usually a pile of things you opened once. **Fade tabs** dims one
 the longer it goes untouched, so it reads as attention instead.

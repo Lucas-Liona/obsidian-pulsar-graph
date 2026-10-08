@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A tab's dot says when its note was edited**, on hover, the way a link's
+  dot does: "Edited 5 days ago". The dot used to let the pointer pass through
+  it, so there was nothing to hover; a click on it still lands on the tab.
+
 ### Changed
 
 - **A new install starts with most features on**, so the first look shows what
@@ -56,6 +62,13 @@
   so a version from before reads a value below its own floor as that floor.
 
 ### Fixed
+
+- **The note history's rail ends at its oldest bead.** It ran from when the
+  first sitting began, but each bead is drawn where its sitting ended, so the
+  bottom of every rail was a label with no bead at it: a note with one sitting
+  had its bead at the top of an empty line, labelled "4 hours ago" at both
+  ends, and in a longer history the oldest bead floated above the bottom by
+  its own length. A note with one sitting is now that bead, with no line.
 
 - **How long a sitting is can be set again.** *Counts as one sitting* decides
   how the edit history counts sittings, but it was only shown with *Trace what
