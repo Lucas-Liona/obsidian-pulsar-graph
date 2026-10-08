@@ -11,6 +11,26 @@
   start at a minute. A duration set before this keeps its value until the
   slider is moved.
 
+### Fixed
+
+- **How long a sitting is can be set again.** *Counts as one sitting* decides
+  how the edit history counts sittings, but it was only shown with *Trace what
+  was written together* on, which is off by default. It is listed under
+  History now, and with the trails when History is off.
+
+- **The caption's switch is always there.** *Say so on the graph* draws a line
+  on every graph, filter or not, but its switch was only shown with the filter
+  on, so the only way to turn the caption off was to turn the filter on first.
+
+- **Brightest in the graph's own panel goes as high as the setting.** It
+  stopped at 6 while *Maximum opacity* goes to 12, so a value above 6 jumped
+  down the moment the panel's slider was touched.
+
+- **The docs and settings say what the spotlight and status bar do.** The
+  spotlight was described as painting "the single" newest note, though it can
+  cover up to 25 or a time window, and the tabs page said the status bar age
+  was off by default, which it has not been since 1.15.0.
+
 ## [1.42.0] - 2026-10-08
 
 ### Fixed
