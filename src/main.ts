@@ -12,7 +12,7 @@ import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
-import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkListener, setInkOptions, unpinInk } from './ink';
+import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkColours, setInkListener, setInkOptions, unpinInk } from './ink';
 import { LinkDotSource, LinkLook, linkDotsExtension, ReadingDots, refreshLinkDots } from './link-dots';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
@@ -557,9 +557,7 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private clearInkProperties(): void {
-        for (const property of ['--pulsar-ink', '--pulsar-ink-pin', '--pulsar-ink-dim']) {
-            document.body.style.removeProperty(property);
-        }
+        setInkColours(null, this.editors());
     }
 
     /** What has been recorded so far, for the settings tab and the statistics. */
@@ -815,9 +813,11 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private syncInk(): void {
-        document.body.style.setProperty('--pulsar-ink', this.settings.inkColor);
-        document.body.style.setProperty('--pulsar-ink-pin', this.settings.inkPinColor);
-        document.body.style.setProperty('--pulsar-ink-dim', `${Math.round((1 - this.settings.inkDim) * 100)}%`);
+        setInkColours({
+            '--pulsar-ink': this.settings.inkColor,
+            '--pulsar-ink-pin': this.settings.inkPinColor,
+            '--pulsar-ink-dim': `${Math.round((1 - this.settings.inkDim) * 100)}%`
+        }, this.editors());
 
         setInkOptions({
             enabled: this.settings.ink,
