@@ -652,6 +652,7 @@ export class World {
     readonly workspace: FakeWorkspace;
     readonly app: App;
     private readonly groups: ColourGroup[];
+    private dark = true;
 
     constructor(options: WorldOptions) {
         this.groups = options.groups ?? [];
@@ -669,8 +670,16 @@ export class World {
             vault: this.vault,
             workspace: this.workspace,
             metadataCache: this.vault.metadataCache,
-            viewRegistry: this.registry
+            viewRegistry: this.registry,
+            // Public since 1.10. Obsidian's default theme is the dark one.
+            isDarkMode: () => this.dark
         } as unknown as App;
+    }
+
+    /** Switches theme as Obsidian does: the answer changes, then the workspace says so. */
+    setTheme(theme: 'dark' | 'light'): void {
+        this.dark = theme === 'dark';
+        this.workspace.trigger('css-change');
     }
 
     get adapter(): FakeAdapter {

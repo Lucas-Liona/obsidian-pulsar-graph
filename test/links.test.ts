@@ -84,6 +84,18 @@ describe('LinkShading', () => {
             expect(links[0].line.alpha).toBeCloseTo(0.6 * 0.4);
         });
 
+        // Each end is read at no more than 1, so a maximum above 1 never reaches
+        // a link: on a light theme it would lighten the line into the page.
+        it('never draws a link past the line alpha, however bright its ends', () => {
+            const { links, shading, frame } = world({ 'a.md': 3, 'b.md': 2.5, 'c.md': 3 });
+            shading.setMode('uniform');
+
+            frame();
+
+            expect(links[0].line.alpha).toBeCloseTo(0.6);
+            expect(links[1].line.alpha).toBeCloseTo(0.6);
+        });
+
         it('leaves a link with neither end graded to the renderer', () => {
             const { links, shading, frame } = world({ 'a.md': 0.2, 'b.md': 0.4 });
             shading.setMode('uniform');
