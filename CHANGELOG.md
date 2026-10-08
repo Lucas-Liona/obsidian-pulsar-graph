@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.40.0] - 2026-10-07
+
+### Added
+
+- **A dot after each link**, off by default, under Elsewhere → *Links in
+  notes*. Every link to a note that exists gets a dot at the brightness that
+  note has in the graph, in the pin colour if it is pinned, and hovering it
+  says when the note was last edited. It works in reading view and in the
+  editor. Links to notes not yet written, web links, embeds and anything in code
+  get no dot. In a test note of 30 links, a keystroke cost 0.988 ± 0.326 ms with
+  dots on and 1.021 ± 0.377 ms with them off; reading view spends
+  0.24 ± 0.09 ms per render adding them.
+
+- **Fresh writing has a status bar item of its own**: a paint bucket and the
+  number of characters in the open note that still look lit. It follows the text
+  as it cools instead of updating once a minute. Click it to cool this note's
+  writing; right-click to cool or unpin. The tooltip counts pinned characters,
+  and a note with only pins left shows the bucket alone. New command: *Unpin
+  writing in this note*.
+
+- **A Clear and reset section**, last in the settings, holds the three actions
+  that cannot be undone: *Forget everything recorded*, *Reset all settings* and
+  *Unpin every note*, moved there from History, Presets and Pins. Each needs a
+  second click within 4 seconds, and is greyed out when there is nothing to act
+  on. Deleting a saved preset also asks twice.
+
+### Changed
+
+- **Cooling fresh writing keeps pins.** Clicking the status bar item, the *Cool
+  fresh writing* command and *Start again* all used to erase pinned writing as
+  well.
+
+- **Resetting settings keeps pinned notes**, along with saved presets and which
+  sections are folded. A reset used to empty the saved pin list without
+  touching the one the graph draws from. Pins have their own button now.
+
+### Fixed
+
+- **A tab counts as ignored from when it was left.** The attention clock
+  stamped a note only when it was opened, so a note sat in for twenty minutes
+  read as twenty minutes ignored the moment it was left: its tab faded, it could
+  be marked stale, and the next session started from the same time. With tab
+  fading on, a tab left after 20 minutes was drawn at 0.567 in 1.39.0 and is now
+  drawn at full strength. Leaving for the graph or an empty tab, switching
+  Pulsar off and quitting all count as leaving.
+
+- **A load reconfigures no editor it does not need to.** Every load had Obsidian
+  reconfigure every open editor twice, whether fresh writing was on or not. Now
+  a load reconfigures none while fresh writing and link dots are both off, and
+  one otherwise. One reconfiguration measured 51 ms in a real vault.
+
 ## [1.39.0] - 2026-10-07
 
 Performance, from profiling 1.38.0 in a real vault, the demo vault and a
