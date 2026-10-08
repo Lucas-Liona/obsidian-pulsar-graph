@@ -30,22 +30,48 @@ export interface TrailOptions {
  * newer note to the older one.
  */
 export class LinkShading {
-    private readonly ramps = new Map<string, GraphTexture>();
+    /** Indexed by `rampIndex`, so a frame never builds a string to look one up. */
+    private readonly ramps: (GraphTexture | undefined)[] = [];
     private plainTexture: GraphTexture | undefined;
     private mode: LinkRecency = 'off';
     private trails: TrailOptions | null = null;
     private gradientsWork = true;
 
+    /**
+     * What each link was worked out to, by its place in the renderer's list.
+     *
+     * A link's brightness only moves when the notes' do, and this runs on every
+     * frame over every link: 43,515 of them in the 20,000-note bench vault,
+     * each needing two lookups by path and a ramp. So it is worked out once per
+     * revision and read back from here; the frame only writes it. A slot is
+     * trusted only while it still holds the same link, so a rebuild that
+     * reuses the array, or puts a different link at an index, is caught link
+     * by link rather than by watching the array.
+     */
+    private seen: (GraphLink | undefined)[] = [];
+    /** The generation each slot was worked out in; a new revision is a new generation. */
+    private seenIn = new Uint32Array(0);
+    private generation = 1;
+    private high = new Float64Array(0);
+    private ramp: (GraphTexture | undefined)[] = [];
+    private revision: unknown = undefined;
+
     constructor(
         private readonly renderer: GraphRenderer,
         private readonly opacityOf: (id: string) => number | undefined,
-        private readonly mtimeOf: (id: string) => number | undefined
+        private readonly mtimeOf: (id: string) => number | undefined,
+        /**
+         * Anything that changes whenever `opacityOf` might answer differently.
+         * Compared by identity once a frame.
+         */
+        private readonly revisionOf: () => unknown
     ) {}
 
     setMode(mode: LinkRecency): void {
         if (mode !== this.mode) {
             this.mode = mode;
             this.restoreTextures();
+            this.forget();
         }
     }
 
@@ -65,9 +91,36 @@ export class LinkShading {
             return;
         }
 
-        const highlight = this.renderer.getHighlightNode?.() ?? null;
+        const links = this.renderer.links ?? [];
+        const revision = this.revisionOf();
 
-        for (const link of this.renderer.links ?? []) {
+        if (links.length !== this.seen.length) {
+            this.seen = new Array<GraphLink | undefined>(links.length);
+            this.seenIn = new Uint32Array(links.length);
+            this.high = new Float64Array(links.length);
+            this.ramp = new Array<GraphTexture | undefined>(links.length);
+        }
+
+        if (revision !== this.revision) {
+            this.revision = revision;
+            this.nextGeneration();
+        }
+
+        // What the renderer would have drawn a link at, recomputed rather than
+        // read back: its own value is eased a tenth of the way per frame, so
+        // scaling that would compound into something far darker than intended.
+        // The same for every link but the hovered node's, so worked out once.
+        const highlight = this.renderer.getHighlightNode?.() ?? null;
+        const colors = this.renderer.colors;
+        const lineAlpha = colors?.line?.a ?? 1;
+        const attachedAlpha = colors?.lineHighlight?.a ?? 1;
+        const otherAlpha = highlight === null ? lineAlpha : DIMMED * lineAlpha;
+        const trailTint = this.trails
+            ? blendRgb(colors?.line?.rgb ?? 0x888888, this.trails.rgb, this.trails.strength)
+            : 0;
+
+        for (let index = 0; index < links.length; index++) {
+            const link = links[index];
             const line = link.line;
             if (!link.rendered || !line) {
                 continue;
@@ -76,29 +129,68 @@ export class LinkShading {
             if (this.trails && this.wasWorkedOnTogether(link)) {
                 // Mixed with the colour links are normally drawn in, so a trail
                 // reads as a warmer line rather than as a stripe of neon.
-                line.tint = blendRgb(this.renderer.colors?.line?.rgb ?? 0x888888, this.trails.rgb, this.trails.strength);
+                line.tint = trailTint;
             }
 
             if (this.mode === 'off') {
                 continue;
             }
 
-            const source = this.strengthOf(link.source?.id);
-            const target = this.strengthOf(link.target?.id);
+            if (this.seen[index] !== link || this.seenIn[index] !== this.generation) {
+                this.workOut(index, link, line);
+            }
 
-            if (source === undefined && target === undefined) {
+            const high = this.high[index];
+            if (Number.isNaN(high)) {
                 continue;
             }
 
-            const low = Math.min(source ?? 1, target ?? 1);
-            const high = Math.max(source ?? 0, target ?? 0);
+            const attached = highlight !== null && (link.source === highlight || link.target === highlight);
+            line.alpha = (attached ? attachedAlpha : otherAlpha) * high;
 
-            line.alpha = this.baseAlphaFor(link, highlight) * high;
-
-            if (this.mode === 'gradient' && high > 0) {
-                this.paintRamp(line, low / high, (source ?? 1) < (target ?? 1));
+            const ramp = this.ramp[index];
+            if (ramp && line.texture !== ramp) {
+                this.plainTexture ??= line.texture;
+                line.texture = ramp;
             }
         }
+    }
+
+    /**
+     * One link's brightness and ramp, from its two ends. A link with neither
+     * end graded, such as one to an unresolved note, is left to the renderer.
+     */
+    private workOut(index: number, link: GraphLink, line: NonNullable<GraphLink['line']>): void {
+        this.seen[index] = link;
+        this.seenIn[index] = this.generation;
+        this.ramp[index] = undefined;
+
+        const source = this.strengthOf(link.source?.id);
+        const target = this.strengthOf(link.target?.id);
+
+        if (source === undefined && target === undefined) {
+            this.high[index] = Number.NaN;
+            return;
+        }
+
+        const low = Math.min(source ?? 1, target ?? 1);
+        const high = Math.max(source ?? 0, target ?? 0);
+        this.high[index] = high;
+
+        if (this.mode === 'gradient' && high > 0) {
+            this.ramp[index] = this.rampFor(line, low / high, (source ?? 1) < (target ?? 1));
+        }
+    }
+
+    /** Drops everything worked out, for the next frame to start again. */
+    private forget(): void {
+        this.revision = undefined;
+        this.nextGeneration();
+    }
+
+    /** Leaves every slot stale without touching the arrays. Zero is never a generation. */
+    private nextGeneration(): void {
+        this.generation = (this.generation + 1) >>> 0 || 1;
     }
 
     /**
@@ -120,20 +212,8 @@ export class LinkShading {
 
     destroy(): void {
         this.restoreTextures();
-        this.ramps.clear();
-    }
-
-    /**
-     * What the renderer would have drawn this link at, recomputed rather than
-     * read back. Its own value is eased a tenth of the way per frame, so
-     * scaling that would compound into something far darker than intended.
-     */
-    private baseAlphaFor(link: GraphLink, highlight: unknown): number {
-        const colors = this.renderer.colors;
-        const attached = highlight !== null && (link.source === highlight || link.target === highlight);
-        const color = attached ? colors?.lineHighlight : colors?.line;
-
-        return (highlight !== null && !attached ? DIMMED : 1) * (color?.a ?? 1);
+        this.ramps.length = 0;
+        this.forget();
     }
 
     /** Nodes with no modification time, such as unresolved links, are skipped. */
@@ -147,32 +227,24 @@ export class LinkShading {
     }
 
     /**
-     * Stretches a ramp along the link so it reads brightest at the newer end.
+     * The ramp that stretched along a link reads brightest at its newer end.
      *
      * The sprite's own x axis runs from source to target, so the ramp only has
      * to know which way round the two ends are. Quantizing the ratio keeps the
      * number of textures at sixteen however many links there are.
      */
-    private paintRamp(line: NonNullable<GraphLink['line']>, ratio: number, ascending: boolean): void {
+    private rampFor(line: NonNullable<GraphLink['line']>, ratio: number, ascending: boolean): GraphTexture | undefined {
         if (!this.gradientsWork) {
-            return;
+            return undefined;
         }
 
         const step = Math.round(Math.min(1, Math.max(0, ratio)) * (RAMP_STEPS - 1));
-        const key = `${step}-${ascending ? 'up' : 'down'}`;
+        const index = step * 2 + (ascending ? 1 : 0);
 
-        const ramp = this.ramps.get(key) ?? this.buildRamp(key, step / (RAMP_STEPS - 1), ascending, line);
-        if (!ramp) {
-            return;
-        }
-
-        if (line.texture !== ramp) {
-            this.plainTexture ??= line.texture;
-            line.texture = ramp;
-        }
+        return this.ramps[index] ?? this.buildRamp(index, step / (RAMP_STEPS - 1), ascending, line);
     }
 
-    private buildRamp(key: string, low: number, ascending: boolean, line: NonNullable<GraphLink['line']>): GraphTexture | undefined {
+    private buildRamp(index: number, low: number, ascending: boolean, line: NonNullable<GraphLink['line']>): GraphTexture | undefined {
         const build = (line.texture?.constructor as GraphTextureFactory | undefined)?.from;
 
         try {
@@ -194,7 +266,7 @@ export class LinkShading {
             context.fillRect(0, 0, RAMP_WIDTH, 1);
 
             const texture = build.call(line.texture?.constructor, canvas);
-            this.ramps.set(key, texture);
+            this.ramps[index] = texture;
 
             return texture;
         } catch {

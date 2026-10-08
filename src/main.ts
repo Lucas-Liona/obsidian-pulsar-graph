@@ -1824,7 +1824,23 @@ export default class PulsarGraphPlugin extends Plugin {
         labels.setMode(this.labelMode(kind));
 
         const paint = newPaint();
-        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
+        // A token that changes whenever strengthOf could answer differently:
+        // the store's opacities moved, or this graph's pooled ones were
+        // replaced. The links read it once a frame.
+        let token = {};
+        let tokenFrom: { byPath: Map<string, number> | null; revision: number } = { byPath: null, revision: -1 };
+        const linkRevision = (): unknown => {
+            const revision = this.store.revision();
+
+            if (pooled.byPath !== tokenFrom.byPath || revision !== tokenFrom.revision) {
+                tokenFrom = { byPath: pooled.byPath, revision };
+                token = {};
+            }
+
+            return token;
+        };
+
+        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id), linkRevision);
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
             ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
