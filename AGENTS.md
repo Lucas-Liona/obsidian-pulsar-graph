@@ -18,30 +18,39 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 
 | File | Holds |
 |---|---|
-| `main.ts` | Plugin lifecycle only: settings, events, attaching to graphs |
+| `main.ts` | Plugin lifecycle, events and commands, attaching to graphs, and the glue between parts: the panel's quick controls, captions, filter exemptions, both status bar items |
 | `settings.ts` | The settings type, defaults, parsing and the settings tab |
 | `settings-layout.ts` | The collapsible containers the settings tab is built from |
-| `presets.ts` | The named preset list |
+| `confirm.ts` | The second click anything irreversible waits for |
+| `presets.ts` | The built-in presets, and what a saved or pasted one carries |
 | `fade.ts` | The three curves, as pure functions of a 0–1 recency |
 | `opacity-store.ts` | mtime and opacity caches, the range being measured against, the rank order |
-| `graph.ts` | Obsidian's undocumented graph internals, node colour, neighbour and group pooling |
+| `graph.ts` | Obsidian's undocumented graph internals, node colour and size, neighbour and group pooling |
 | `age-label.ts` | The age drawn above a node |
 | `links.ts` | Age and session trails carried into the links |
+| `link-dots.ts` | The dot after each link in a note, in editing and reading view |
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
 | `pins.ts` | The notes held bright whatever their dates say |
+| `history.ts` | The edit history: sittings per note, in `history.json` and its backup |
+| `file-recovery.ts` | Core File Recovery's snapshot times, read as earlier history; never their contents |
 | `bead-view.ts` | A note's sittings, drawn down the sidebar |
-| `tabs.ts` | Attention time, and fading the tab bar by it |
+| `tabs.ts` | Attention time, and the tab bar's fade, dot and stale marks |
+| `ink.ts` | Fresh writing: the editor extension that colours new text and cools it |
 | `stats.ts` | What the settings are doing to this vault |
+| `stats-text.ts` | The separator between figures, and writing them out |
 | `filter.ts` | Which notes survive, applied before the renderer sees them |
-| `range-bar.ts` | The unit line with a handle at each end, over the vault's own spread |
-| `graph-controls.ts` | The Age section inside the graph's own panel, and the caption across the top |
+| `range-stats.ts` | Which notes a set of ranges keeps, and the line describing them |
+| `range-bar.ts` | The age filter's bar: ranges with a handle at each end, over the vault's own spread |
+| `density.ts` | The smooth curve and axis drawn over the range bar's histogram |
+| `graph-controls.ts` | The Pulsar section inside the graph's own panel, and the caption across the top |
 
 Works on the global and local graph views. Local and offline only.
 
-Release artifacts: `main.js`, `manifest.json` and `styles.css`. Almost everything
-the plugin draws goes through Obsidian's own renderer rather than CSS; the
-stylesheet covers the settings tab's curve preview.
+Release artifacts: `main.js`, `manifest.json` and `styles.css`. Everything the
+plugin draws in a graph goes through Obsidian's own renderer rather than CSS; the
+stylesheet covers the rest: the settings tab, the range bar and caption, the tab
+bar, fresh writing, link dots and the history view.
 
 ## Commands
 
