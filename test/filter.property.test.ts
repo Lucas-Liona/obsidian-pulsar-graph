@@ -32,18 +32,18 @@ const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 describe('rangeOntoCurve', () => {
     // The migration's promise: a range saved on the old axis — raw opacity,
     // clamped to 1 — selects exactly the same notes once moved onto the curve.
+    // A minimum equal to the maximum is included: every note sits at the top
+    // of a curve with no length, and a range that kept them all used to come
+    // out keeping none.
     //
-    // Two kinds of input are left out, both degenerate:
-    // - a minimum equal to the maximum, where every note is drawn the same and
-    //   the curve has no length to put a range on;
-    // - a range lying wholly above a maximum below 1, which kept nothing on
-    //   the old axis and comes out as [1, 1] — and parseRanges drops any range
-    //   that is not strictly wider than a point, so it never reaches a filter.
+    // A range that kept no note is left out. It comes out as a point, which
+    // parseRanges drops, since the curve has no stretch that keeps nothing;
+    // filter-axis.test.ts says what becomes of it.
     it('keeps the same notes the old axis kept', () => {
-        fc.assert(fc.property(ends, fc.record({ from: fine(1), to: fine(1) }), unit, ({ min, max }, old, where) => {
-            fc.pre(max > min);
-            fc.pre(!(max < 1 && Math.min(old.from, old.to) > max));
+        // Equal ends often, since they would almost never come up by chance.
+        const either = fc.oneof(ends, fine(1).map((both) => ({ min: both, max: both })));
 
+        fc.assert(fc.property(either, fc.record({ from: fine(1), to: fine(1) }), unit, ({ min, max }, old, where) => {
             const moved = rangeOntoCurve(old, min, max);
             fc.pre(moved.to > moved.from);
 
