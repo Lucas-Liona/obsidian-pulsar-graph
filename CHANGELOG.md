@@ -2,15 +2,11 @@
 
 ## [Unreleased]
 
-### Removed
+### Added
 
-- **Pinned writing.** *Pin this writing*, *Unpin writing in this note* and the
-  *Pinned colour* setting are gone, along with the status bar's right-click
-  menu, which only existed to unpin. A pin lived in the open editor alone and
-  was lost when the note closed, and Obsidian's own highlighting
-  (`==like this==`) marks text to come back to better: it is saved in the
-  note and can be searched. Pinning a note in the graph is unchanged. A hotkey
-  set on either command is dropped with it.
+- **A tab's dot says when its note was edited**, on hover, the way a link's
+  dot does: "Edited 5 days ago". The dot used to let the pointer pass through
+  it, so there was nothing to hover; a click on it still lands on the tab.
 
 ### Changed
 
@@ -37,6 +33,16 @@
 
   Each is stored in the unit it always was, as a fraction where it needs one,
   so a version from before reads a value below its own floor as that floor.
+
+### Removed
+
+- **Pinned writing.** *Pin this writing*, *Unpin writing in this note* and the
+  *Pinned colour* setting are gone, along with the status bar's right-click
+  menu, which only existed to unpin. A pin lived in the open editor alone and
+  was lost when the note closed, and Obsidian's own highlighting
+  (`==like this==`) marks text to come back to better: it is saved in the
+  note and can be searched. Pinning a note in the graph is unchanged. A hotkey
+  set on either command is dropped with it.
 
 ### Fixed
 

@@ -682,6 +682,10 @@ export default class PulsarGraphPlugin extends Plugin {
             floor: this.settings.tabFadeFloor,
             dotColor: (path) => this.dotColor(path, lit),
             graphStrength: (path) => this.store.opacityFor(path),
+            edited: (path) => {
+                const mtime = this.store.mtimeFor(path);
+                return mtime === undefined ? undefined : editedAgo(mtime);
+            },
             stale: this.settings.staleTabs ? this.settings.staleTabAfter : null,
             staleMark: this.settings.staleTabMark
         });
@@ -896,7 +900,7 @@ export default class PulsarGraphPlugin extends Plugin {
         return {
             strength,
             colour: pinned && this.settings.pinMark ? this.settings.pinColor : null,
-            age: `Edited ${formatAge(mtime, Date.now())}`
+            age: editedAgo(mtime)
         };
     }
 
@@ -2034,6 +2038,11 @@ export default class PulsarGraphPlugin extends Plugin {
 
         repaint(renderer);
     }
+}
+
+/** What a note's dot says when hovered, in a tab or after a link. */
+function editedAgo(mtime: number): string {
+    return `Edited ${formatAge(mtime, Date.now())}`;
 }
 
 /** Turns a '#rrggbb' setting into the packed number the renderer tints with. */

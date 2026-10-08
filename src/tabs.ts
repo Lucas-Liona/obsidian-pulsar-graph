@@ -1,4 +1,4 @@
-import { App, WorkspaceLeaf } from 'obsidian';
+import { App, setTooltip, WorkspaceLeaf } from 'obsidian';
 
 /** The tab a leaf is drawn in. Not part of the public type, but always there. */
 interface LeafWithTab extends WorkspaceLeaf {
@@ -153,6 +153,8 @@ export interface TabFadeOptions {
     floor: number;
     /** A note's brightness in the graph, for keeping the two in step. */
     graphStrength: (path: string) => number | undefined;
+    /** When a note was edited, in words, for hovering its dot. */
+    edited: (path: string) => string | undefined;
     /** Minutes of being ignored before a tab is marked as closeable. */
     stale: number | null;
     /** What that mark looks like. */
@@ -345,6 +347,14 @@ export class TabFading {
             dot.style.removeProperty('background-color');
         } else {
             dot.style.backgroundColor = colour;
+        }
+
+        // Said when hovered, as a link's dot does. Only written when it
+        // differs, since a single tab switch runs three passes over every tab.
+        const edited = options.edited(path) ?? '';
+
+        if (dot.getAttribute('aria-label') !== edited) {
+            setTooltip(dot, edited);
         }
 
         this.dots.add(dot);
