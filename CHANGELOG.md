@@ -101,6 +101,20 @@
   cover up to 25 or a time window, and the tabs page said the status bar age
   was off by default, which it has not been since 1.15.0.
 
+### Performance
+
+- **Ageing the links costs a fraction of what it did.** Each link's
+  brightness and ramp were worked out from its two notes on every frame: in
+  the 20,000-note bench vault, 43,515 links and two lookups each, with nothing
+  having changed. They're worked out once per change now. Applying link ages
+  went from 22.2 ± 3.8 and 29.6 ± 5.5 ms a frame to 5.9 ± 1.1 and 6.5 ± 1.1
+  ms, and a note switch no longer works out every link again. (#143)
+
+- **Tracing what was written together does the same.** Whether a link's two
+  notes were saved within a sitting of each other was asked on every frame,
+  for every link, though it only changes when a note is saved. It is worked
+  out with the rest of the link, once per change.
+
 ## [1.42.0] - 2026-10-08
 
 ### Fixed
