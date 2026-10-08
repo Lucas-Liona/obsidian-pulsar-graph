@@ -766,6 +766,12 @@ export default class PulsarGraphPlugin extends Plugin {
      * nobody presses a second time.
      */
     async togglePin(path: string): Promise<void> {
+        // A settings tab or a menu left over from before a reload; the pins
+        // are the live instance's now.
+        if (this.unloaded) {
+            return;
+        }
+
         const pinned = this.pins.toggle(path);
 
         new Notice(pinned
@@ -776,11 +782,19 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     async unpin(path: string): Promise<void> {
+        if (this.unloaded) {
+            return;
+        }
+
         this.pins.remove(path);
         await this.saveSettings();
     }
 
     async unpinAll(): Promise<void> {
+        if (this.unloaded) {
+            return;
+        }
+
         this.pins.clear();
         await this.saveSettings();
     }
@@ -933,6 +947,13 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     async saveSettings(): Promise<void> {
+        // A settings tab left open across a reload belongs to the instance
+        // that was unloaded, and saving from it wrote that instance's settings
+        // over everything the live one had saved since, pins included.
+        if (this.unloaded) {
+            return;
+        }
+
         await this.saveData(this.settings);
         await this.syncRunning();
 

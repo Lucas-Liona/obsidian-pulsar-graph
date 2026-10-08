@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type PulsarGraphPlugin from '../src/main';
 import type { PulsarGraphSettings } from '../src/settings';
-import { clearNotices, createWorld, dataPath, historyPath, loadPlugin, settle, unloadPlugin, wait, type FakeGraphView, type FakeRenderer, type NoteSpec, type World, type WorldOptions } from './harness';
+import { clearNotices, createWorld, dataPath, historyPath, loadPlugin, notices, settle, unloadPlugin, wait, type FakeGraphView, type FakeRenderer, type NoteSpec, type World, type WorldOptions } from './harness';
 
 // The whole plugin, loaded into the fake Obsidian in ./harness, as a user's
 // vault would load it. Module tests each check one file; these check what the
@@ -431,22 +431,28 @@ describe('reloading', () => {
         await unloadPlugin(second);
     });
 
-    // Review finding 14. Saving goes straight to data.json before anything
-    // checks whether this instance has been unloaded, so a settings tab left
-    // open across a reload writes the old settings over the new ones — the
-    // pin made since included.
-    it.fails('never lets an unloaded instance write over the settings (review finding 14)', async () => {
+    // Review finding 14. Saving went straight to data.json before anything
+    // checked whether this instance had been unloaded, so a settings tab left
+    // open across a reload wrote the old settings over the new ones — the pin
+    // made since included.
+    it('never lets an unloaded instance write over the settings (review finding 14)', async () => {
         const world = vault();
         const first = await loadPlugin(world, {});
         await unloadPlugin(first);
 
         const second = await loadPlugin(world);
         await second.togglePin('other.md');
+        const saved = world.adapter.files.get(dataPath(world));
+        clearNotices();
 
         first.settings.maxOpacity = 2;
         await first.saveSettings();
+        await first.togglePin('oldest.md');
+        await first.unpinAll();
 
         expect(storedPins(world)).toEqual(['other.md']);
+        expect(world.adapter.files.get(dataPath(world))).toBe(saved);
+        expect(notices()).toEqual([]);
         await unloadPlugin(second);
     });
 });
