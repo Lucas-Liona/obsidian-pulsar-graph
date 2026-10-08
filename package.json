@@ -12,7 +12,9 @@
 		"lint:fix": "eslint . --fix",
 		"type-check": "tsc --noEmit && tsc --noEmit -p test",
 		"test": "vitest run",
-		"bench": "vitest bench --run --outputJson bench.json && node scripts/bench-table.mjs bench.json"
+		"bench": "vitest bench --run --outputJson bench.json && node scripts/bench-table.mjs bench.json",
+		"bench:check": "node scripts/bench-check.mjs",
+		"bench:record": "node scripts/bench-check.mjs --record"
 	},
 	"keywords": [
 		"obsidian",
