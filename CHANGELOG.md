@@ -11,6 +11,23 @@
   start at a minute. A duration set before this keeps its value until the
   slider is moved.
 
+- **Every other length of time is set the same way**: *Faded after*, *Marked
+  after*, *Touched within*, *Counts as one sitting*, *Never spread across less
+  than*, *Window*, *Half-life* and *Stays lit for* are each a slider of round
+  steps, written with their unit ("45 min", "6 h", "14 d") and marked where the
+  unit changes, instead of a bare number whose unit was only in the
+  description. Three reach further:
+  - **a window can be six hours**, and a half-life an hour, so "today" can be
+    the whole range; both stopped at a day;
+  - **the spotlight's window reaches a day**, so it can mark everything
+    touched today; it stopped at 12 hours, and its slider moved in fives from
+    1, so it never landed on its own default of 30;
+  - **the spread floor goes down to 15 minutes**, for a local graph of one
+    afternoon; it stopped at an hour.
+
+  Each is stored in the unit it always was, as a fraction where it needs one,
+  so a version from before reads a value below its own floor as that floor.
+
 ### Fixed
 
 - **How long a sitting is can be set again.** *Counts as one sitting* decides

@@ -1,4 +1,5 @@
 import { formatAge } from './age';
+import { formatDuration } from './duration';
 import { GraphRenderer } from './graph';
 import { Coverage } from './history';
 import { OpacityStore } from './opacity-store';
@@ -151,7 +152,7 @@ function describeGraph(store: OpacityStore, settings: PulsarGraphSettings, rende
     return [
         { label: 'In the open graph', value: joinStats(`${nodes.length} nodes`, `${links.length} links`) },
         { label: 'Islands of linked notes', value: joinStats(`${islands.count}`, `largest holds ${islands.largest}`) },
-        { label: `Written together, within ${settings.sessionGapMinutes}m`, value: `${together} of ${links.length} links` }
+        { label: `Written together, within ${formatDuration(settings.sessionGapMinutes * 60)}`, value: `${together} of ${links.length} links` }
     ];
 }
 
