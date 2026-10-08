@@ -68,6 +68,10 @@ export class OpacityStore {
 
     /** Every note's sitting count in order, for ranking edit intensity. */
     private intensityRanking: number[] = [];
+    /** How many notes have no sitting on record, all ranked below the rest. */
+    private unrecorded = 0;
+    /** Whether any note has a sitting on record, without which nothing is blended. */
+    private anyRecorded = false;
 
     /** How many sittings a note has on record. Zero until a history exists. */
     private sittings: (path: string) => number = () => 0;
@@ -111,6 +115,8 @@ export class OpacityStore {
         this.opacities.clear();
         this.ranking = [];
         this.intensityRanking = [];
+        this.unrecorded = 0;
+        this.anyRecorded = false;
         this.recalculateRange();
     }
 
@@ -583,12 +589,15 @@ export class OpacityStore {
         // which is every note for the first weeks after the history is switched
         // on. At a blend of 0 this is exactly the old behaviour.
         //
-        // And only for a note with something on record. Blending a zero in for
-        // the rest still dimmed every note by the blend until the history had
-        // anything to say: at 0.25 the newest note of a fresh install reached
-        // three quarters of the range and no further. A note with no record is
-        // judged by its date alone, which is all there is to judge it by.
-        if (intensityBlend > 0 && path !== undefined && this.sittings(path) > 0) {
+        // And not at all while nothing is on record. Every note's intensity is
+        // then 0, and blending that in dimmed the whole graph by the blend: at
+        // 0.25 the newest note of a fresh install reached three quarters of the
+        // range and no further. Once anything is on record, every note is
+        // blended, so of two notes the same age the one returned to more is
+        // never the dimmer. Blending only the notes with a record broke that:
+        // ranked among themselves, the ones with a single sitting came last, at
+        // 0, and were dimmed below notes with no record at all.
+        if (intensityBlend > 0 && path !== undefined && this.anyRecorded) {
             shaped = (1 - intensityBlend) * shaped + intensityBlend * this.intensityOf(path);
         }
 
@@ -616,14 +625,15 @@ export class OpacityStore {
         const { intensityScale } = this.getSettings();
 
         if (intensityScale === 'rank') {
-            const places = this.intensityRanking.length;
+            // Every note with no record ranks below every note with one.
+            const places = this.intensityRanking.length + this.unrecorded;
 
             if (places <= 1) {
                 return 1;
             }
 
             let low = 0;
-            let high = places;
+            let high = this.intensityRanking.length;
 
             while (low < high) {
                 const middle = (low + high) >> 1;
@@ -635,7 +645,7 @@ export class OpacityStore {
                 }
             }
 
-            return low / (places - 1);
+            return (this.unrecorded + low) / (places - 1);
         }
 
         const busiest = this.intensityRanking.at(-1) ?? count;
@@ -655,20 +665,30 @@ export class OpacityStore {
     private rebuildIntensityRanking(): void {
         if (this.getSettings().intensityBlend <= 0) {
             this.intensityRanking = [];
+            this.unrecorded = 0;
+            this.anyRecorded = false;
             return;
         }
 
+        // The notes with no record are counted rather than sorted in: they all
+        // rank first, so a note with one sitting ranks above every one of them
+        // rather than last among the recorded.
         const counts: number[] = [];
+        let unrecorded = 0;
 
         for (const path of this.mtimes.keys()) {
             const count = this.sittings(path);
 
             if (count > 0) {
                 counts.push(count);
+            } else {
+                unrecorded++;
             }
         }
 
         this.intensityRanking = counts.sort((a, b) => a - b);
+        this.unrecorded = unrecorded;
+        this.anyRecorded = counts.length > 0;
     }
 
     /**

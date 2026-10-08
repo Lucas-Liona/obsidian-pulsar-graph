@@ -80,11 +80,13 @@
   the theme now, and so does the colour a pinned or spotlit note is handed
   back.
 
-- **Blending in edit intensity no longer dims notes with nothing on record.**
-  A note with no sittings counted as the least worked-on of all, so while the
-  history was new every note was dimmed by the blend: at 0.25, the newest note
-  reached three quarters of the range and no further. A note with no record is
-  judged by its date alone now, and one with sittings is blended as before.
+- **Blending in edit intensity no longer dims a vault with no history.**
+  With nothing on record every note's intensity was 0, so the blend dimmed
+  the whole graph: at 0.25, the newest note reached three quarters of the
+  range and no further. The blend now waits until anything is on record. A
+  note's sittings are also ranked against every note, a note with no record
+  counting as 0, so of two notes the same age the one returned to more is
+  never the dimmer.
 
 - **The note history's rail ends at its oldest bead.** It ran from when the
   first sitting began, but each bead is drawn where its sitting ended, so the
@@ -110,6 +112,27 @@
   spotlight was described as painting "the single" newest note, though it can
   cover up to 25 or a time window, and the tabs page said the status bar age
   was off by default, which it has not been since 1.15.0.
+
+### Performance
+
+- **Ageing the links costs a fraction of what it did.** Each link's
+  brightness and ramp were worked out from its two notes on every frame: in
+  the 20,000-note bench vault, 43,515 links and two lookups each, with nothing
+  having changed. They're worked out once per change now. Applying link ages
+  went from 22.2 ± 3.8 and 29.6 ± 5.5 ms a frame to 5.9 ± 1.1 and 6.5 ± 1.1
+  ms, and a note switch no longer works out every link again. (#143)
+
+- **Tracing what was written together does the same.** Whether a link's two
+  notes were saved within a sitting of each other was asked on every frame,
+  for every link, though it only changes when a note is saved. It is worked
+  out with the rest of the link, once per change.
+
+- **Neighbour glow takes about half the time it did.** It looked each note's
+  neighbours up by path, on every repaint, a note switch included: 65 ms a
+  pass on a graph of 20,000 notes and 43,515 links, offline. It now walks the
+  list of links once, by position: 15 to 19 ms on the same graph. In the
+  20,000-note bench vault a repaint with glow on went from 57 and 50 ms to 37
+  and 38 ms, and every note's value is the same, at one, two and three links.
 
 ## [1.42.0] - 2026-10-08
 

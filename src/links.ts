@@ -54,6 +54,13 @@ export class LinkShading {
     private generation = 1;
     private high = new Float64Array(0);
     private ramp: (GraphTexture | undefined)[] = [];
+    /**
+     * 1 where a link's two notes were saved within a sitting of each other.
+     * Worked out with the rest, once per revision: asked every frame, it was
+     * two lookups by path for each of 43,515 links in the bench vault, for an
+     * answer that only changes when a note is saved.
+     */
+    private together = new Uint8Array(0);
     private revision: unknown = undefined;
 
     constructor(
@@ -82,7 +89,15 @@ export class LinkShading {
      * writing it, so switching trails off needs nothing undone.
      */
     setTrails(trails: TrailOptions | null): void {
+        // Only which links are trails needs working out again, and only when
+        // trails come or go or the sitting changes length. The colour and its
+        // strength are read on every frame.
+        const recount = (trails === null) !== (this.trails === null) || trails?.gapMs !== this.trails?.gapMs;
         this.trails = trails;
+
+        if (recount) {
+            this.forget();
+        }
     }
 
     /** Runs after a frame, where the renderer has just set every link's alpha. */
@@ -99,6 +114,7 @@ export class LinkShading {
             this.seenIn = new Uint32Array(links.length);
             this.high = new Float64Array(links.length);
             this.ramp = new Array<GraphTexture | undefined>(links.length);
+            this.together = new Uint8Array(links.length);
         }
 
         if (revision !== this.revision) {
@@ -126,7 +142,11 @@ export class LinkShading {
                 continue;
             }
 
-            if (this.trails && this.wasWorkedOnTogether(link)) {
+            if (this.seen[index] !== link || this.seenIn[index] !== this.generation) {
+                this.workOut(index, link, line);
+            }
+
+            if (this.together[index] === 1) {
                 // Mixed with the colour links are normally drawn in, so a trail
                 // reads as a warmer line rather than as a stripe of neon.
                 line.tint = trailTint;
@@ -134,10 +154,6 @@ export class LinkShading {
 
             if (this.mode === 'off') {
                 continue;
-            }
-
-            if (this.seen[index] !== link || this.seenIn[index] !== this.generation) {
-                this.workOut(index, link, line);
             }
 
             const high = this.high[index];
@@ -157,13 +173,20 @@ export class LinkShading {
     }
 
     /**
-     * One link's brightness and ramp, from its two ends. A link with neither
-     * end graded, such as one to an unresolved note, is left to the renderer.
+     * One link's brightness, ramp and trail, from its two ends. A link with
+     * neither end graded, such as one to an unresolved note, is left to the
+     * renderer.
      */
     private workOut(index: number, link: GraphLink, line: NonNullable<GraphLink['line']>): void {
         this.seen[index] = link;
         this.seenIn[index] = this.generation;
         this.ramp[index] = undefined;
+        this.together[index] = this.trails !== null && this.wasWorkedOnTogether(link) ? 1 : 0;
+
+        if (this.mode === 'off') {
+            this.high[index] = Number.NaN;
+            return;
+        }
 
         const source = this.strengthOf(link.source?.id);
         const target = this.strengthOf(link.target?.id);
