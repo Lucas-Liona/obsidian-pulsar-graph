@@ -178,4 +178,32 @@ describe('OpacityStore', () => {
             }
         }));
     });
+
+    // Edit intensity is meant to lift what you return to. Of two notes the same
+    // age, the one with more sittings on record must never come out dimmer,
+    // whatever the blend, the scale it is measured on, or how few notes have a
+    // record at all.
+    it('never draws a note with more sittings below one the same age with fewer', () => {
+        const notes = fc.array(fc.tuple(fc.integer({ min: 0, max: 400 }), fc.integer({ min: 0, max: 30 })), { minLength: 2, maxLength: 30 });
+        const blend = fc.integer({ min: 1, max: 20 }).map((step) => step / 20);
+        const scale = fc.constantFrom<'even' | 'rank' | 'log'>('even', 'rank', 'log');
+
+        fc.assert(fc.property(notes, blend, scale, (list, intensityBlend, intensityScale) => {
+            const chosen: PulsarGraphSettings = { ...DEFAULT_SETTINGS, ageScale: 'even', fadeType: 'linear', minOpacity: 0, maxOpacity: 1, intensityBlend, intensityScale };
+            const store = new OpacityStore(() => chosen);
+            const counts = new Map(list.map(([, count], index) => [`n${index}.md`, count]));
+            store.setSittingSource((path) => counts.get(path) ?? 0);
+            store.build(list.map(([age], index) => Object.assign(new TFile(), { path: `n${index}.md`, extension: 'md', stat: { mtime: NOW - age * DAY, ctime: NOW - age * DAY, size: 1 } })));
+            store.refresh();
+
+            for (const [a, [ageA, countA]] of list.entries()) {
+                for (const [b, [ageB, countB]] of list.entries()) {
+                    if (ageA === ageB && countA > countB) {
+                        expect(store.opacityFor(`n${a}.md`) ?? NaN).toBeGreaterThanOrEqual((store.opacityFor(`n${b}.md`) ?? NaN) - SLACK);
+                    }
+                }
+            }
+        }));
+    });
 });
+
