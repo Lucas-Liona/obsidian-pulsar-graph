@@ -1,0 +1,347 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 410" width="1200" height="410" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="A graph whose timelapse has run, at rest, 1.38.0">
+<text x="10" y="22" font-size="15" font-weight="600" fill="#1f2328">A graph whose timelapse has run, at rest, 1.38.0</text>
+<text x="10" y="41" font-size="11.5" fill="#59636e">65 s of a settled demo graph after a timelapse. Pulsar woke the renderer on every identical setData, so it never stopped drawing.</text>
+<rect x="10" y="386" width="11" height="11" rx="2" fill="#3dbd70"/>
+<text x="26" y="395.5" font-size="11" fill="#59636e">Pulsar</text>
+<rect x="80.6" y="386" width="11" height="11" rx="2" fill="#c4ead2"/>
+<text x="96.6" y="395.5" font-size="11" fill="#59636e">Pulsar hook passing through</text>
+<rect x="279.29999999999995" y="386" width="11" height="11" rx="2" fill="#d0d7de"/>
+<text x="295.29999999999995" y="395.5" font-size="11" fill="#59636e">Obsidian and PIXI</text>
+<rect x="416.99999999999994" y="386" width="11" height="11" rx="2" fill="#b6c2d9"/>
+<text x="432.99999999999994" y="395.5" font-size="11" fill="#59636e">Node and Electron</text>
+<rect x="554.6999999999999" y="386" width="11" height="11" rx="2" fill="#e6dcc8"/>
+<text x="570.6999999999999" y="395.5" font-size="11" fill="#59636e">Browser built-ins and the harness</text>
+<rect x="789.9999999999999" y="386" width="11" height="11" rx="2" fill="#eaeef2"/>
+<text x="805.9999999999999" y="395.5" font-size="11" fill="#59636e">VM: (program), garbage collection</text>
+<g><title>(anonymous) [plugin:pulsar-graph] — 221.21 ms per second at rest (69.3%)</title><rect x="10.0" y="64" width="816.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="13.0" y="76" font-size="10.5" fill="#1f2328">(anonymous)</text>
+</g>
+<g><title>renderCallback [app.js] — 218.33 ms per second at rest (68.4%)</title><rect x="10.0" y="81" width="806.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="93" font-size="10.5" fill="#1f2328">renderCallback</text>
+</g>
+<g><title>render [pixi.min.js] — 140.05 ms per second at rest (43.9%)</title><rect x="10.0" y="98" width="516.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="110" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 140.05 ms per second at rest (43.9%)</title><rect x="10.0" y="115" width="516.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="127" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 139.46 ms per second at rest (43.7%)</title><rect x="10.0" y="132" width="514.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="144" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 114.99 ms per second at rest (36.0%)</title><rect x="10.0" y="149" width="424.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="161" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 114.53 ms per second at rest (35.9%)</title><rect x="10.0" y="166" width="422.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="178" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 110.72 ms per second at rest (34.7%)</title><rect x="10.0" y="183" width="408.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="195" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>_render [pixi.min.js] — 97.95 ms per second at rest (30.7%)</title><rect x="10.0" y="200" width="361.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="212" font-size="10.5" fill="#1f2328">_render</text>
+</g>
+<g><title>_renderDirect [pixi.min.js] — 82.24 ms per second at rest (25.7%)</title><rect x="10.0" y="217" width="303.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="229" font-size="10.5" fill="#1f2328">_renderDirect</text>
+</g>
+<g><title>bind [pixi.min.js] — 52.93 ms per second at rest (16.6%)</title><rect x="10.0" y="234" width="195.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="246" font-size="10.5" fill="#1f2328">bind</text>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 19.56 ms per second at rest (6.1%)</title><rect x="10.0" y="251" width="71.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="263" font-size="10.5" fill="#1f2328">syncUnifo…</text>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 18.91 ms per second at rest (5.9%)</title><rect x="10.0" y="268" width="69.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="280" font-size="10.5" fill="#1f2328">syncUnifo…</text>
+</g>
+<g><title>(anonymous) — 17.76 ms per second at rest (5.6%)</title><rect x="10.0" y="285" width="65.0" height="15.5" rx="1.5" fill="#eaeef2"/>
+<text x="13.0" y="297" font-size="10.5" fill="#1f2328">(anonymo…</text>
+</g>
+<g><title>uniformMatrix3fv — 4.19 ms per second at rest (1.3%)</title><rect x="10.0" y="302" width="14.9" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>uniform4f — 4.15 ms per second at rest (1.3%)</title><rect x="25.5" y="302" width="14.7" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>toArray [pixi.min.js] — 4.09 ms per second at rest (1.3%)</title><rect x="40.8" y="302" width="14.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 0.91 ms per second at rest (0.3%)</title><rect x="55.9" y="302" width="2.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>getGlProgram [pixi.min.js] — 0.42 ms per second at rest (0.1%)</title><rect x="55.9" y="319" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bindVertexArray — 11.08 ms per second at rest (3.5%)</title><rect x="82.3" y="251" width="40.3" height="15.5" rx="1.5" fill="#e6dcc8"/>
+<text x="85.3" y="263" font-size="10.5" fill="#1f2328">bind…</text>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 9.82 ms per second at rest (3.1%)</title><rect x="123.2" y="251" width="35.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="126.2" y="263" font-size="10.5" fill="#1f2328">upd…</text>
+</g>
+<g><title>update [pixi.min.js] — 7.40 ms per second at rest (2.3%)</title><rect x="123.2" y="268" width="26.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="126.2" y="280" font-size="10.5" fill="#1f2328">up…</text>
+</g>
+<g><title>add [pixi.min.js] — 2.98 ms per second at rest (0.9%)</title><rect x="159.5" y="251" width="10.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>remove [pixi.min.js] — 2.38 ms per second at rest (0.7%)</title><rect x="159.5" y="268" width="8.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_renderDrawCallDirect [pixi.min.js] — 14.05 ms per second at rest (4.4%)</title><rect x="205.6" y="234" width="51.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="208.6" y="246" font-size="10.5" fill="#1f2328">_rende…</text>
+</g>
+<g><title>draw [pixi.min.js] — 7.71 ms per second at rest (2.4%)</title><rect x="205.6" y="251" width="27.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="208.6" y="263" font-size="10.5" fill="#1f2328">dr…</text>
+</g>
+<g><title>drawElements — 4.77 ms per second at rest (1.5%)</title><rect x="205.6" y="268" width="17.0" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bind [pixi.min.js] — 0.99 ms per second at rest (0.3%)</title><rect x="234.0" y="251" width="3.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setValue [pixi.min.js] — 5.54 ms per second at rest (1.7%)</title><rect x="257.4" y="234" width="19.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 5.49 ms per second at rest (1.7%)</title><rect x="257.4" y="251" width="19.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>premultiply [pixi.min.js] — 4.00 ms per second at rest (1.3%)</title><rect x="277.9" y="234" width="14.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>refreshInt [pixi.min.js] — 3.66 ms per second at rest (1.1%)</title><rect x="277.9" y="251" width="12.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_clamp [pixi.min.js] — 2.71 ms per second at rest (0.9%)</title><rect x="277.9" y="268" width="9.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [pixi.min.js] — 0.98 ms per second at rest (0.3%)</title><rect x="277.9" y="285" width="3.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>toArray [pixi.min.js] — 1.06 ms per second at rest (0.3%)</title><rect x="292.7" y="234" width="3.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set [pixi.min.js] — 0.57 ms per second at rest (0.2%)</title><rect x="296.6" y="234" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush [pixi.min.js] — 9.92 ms per second at rest (3.1%)</title><rect x="313.8" y="217" width="36.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="316.8" y="229" font-size="10.5" fill="#1f2328">flu…</text>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 9.91 ms per second at rest (3.1%)</title><rect x="313.8" y="234" width="36.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="316.8" y="246" font-size="10.5" fill="#1f2328">set…</text>
+</g>
+<g><title>stop [pixi.min.js] — 9.90 ms per second at rest (3.1%)</title><rect x="313.8" y="251" width="36.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="316.8" y="263" font-size="10.5" fill="#1f2328">stop</text>
+</g>
+<g><title>flush [pixi.min.js] — 9.90 ms per second at rest (3.1%)</title><rect x="313.8" y="268" width="36.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="316.8" y="280" font-size="10.5" fill="#1f2328">flu…</text>
+</g>
+<g><title>buildTexturesAndDrawCalls [pixi.min.js] — 5.96 ms per second at rest (1.9%)</title><rect x="313.8" y="285" width="21.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>buildDrawCalls [pixi.min.js] — 5.31 ms per second at rest (1.7%)</title><rect x="313.8" y="302" width="19.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>packInterleavedGeometry [pixi.min.js] — 4.42 ms per second at rest (1.4%)</title><rect x="313.8" y="319" width="15.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setValue [pixi.min.js] — 0.35 ms per second at rest (0.1%)</title><rect x="313.8" y="336" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 0.35 ms per second at rest (0.1%)</title><rect x="313.8" y="353" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>toPremultiplied [pixi.min.js] — 0.33 ms per second at rest (0.1%)</title><rect x="315.2" y="336" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateGeometry [pixi.min.js] — 3.12 ms per second at rest (1.0%)</title><rect x="335.8" y="285" width="10.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 2.93 ms per second at rest (0.9%)</title><rect x="335.8" y="302" width="10.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 2.87 ms per second at rest (0.9%)</title><rect x="335.8" y="319" width="10.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bufferSubData — 2.22 ms per second at rest (0.7%)</title><rect x="335.8" y="336" width="7.6" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bindBuffer — 0.52 ms per second at rest (0.2%)</title><rect x="344.1" y="336" width="1.3" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>drawBatches [pixi.min.js] — 0.38 ms per second at rest (0.1%)</title><rect x="347.4" y="285" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateBatches [pixi.min.js] — 2.37 ms per second at rest (0.7%)</title><rect x="350.5" y="217" width="8.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 6.92 ms per second at rest (2.2%)</title><rect x="371.9" y="200" width="25.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="374.9" y="212" font-size="10.5" fill="#1f2328">re…</text>
+</g>
+<g><title>_render [pixi.min.js] — 5.49 ms per second at rest (1.7%)</title><rect x="371.9" y="217" width="19.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 2.46 ms per second at rest (0.8%)</title><rect x="371.9" y="234" width="8.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>start [pixi.min.js] — 2.36 ms per second at rest (0.7%)</title><rect x="371.9" y="251" width="8.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bind [pixi.min.js] — 1.79 ms per second at rest (0.6%)</title><rect x="371.9" y="268" width="6.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 0.61 ms per second at rest (0.2%)</title><rect x="371.9" y="285" width="1.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 0.51 ms per second at rest (0.2%)</title><rect x="371.9" y="302" width="1.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) — 0.46 ms per second at rest (0.1%)</title><rect x="371.9" y="319" width="1.1" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>bindVertexArray — 0.37 ms per second at rest (0.1%)</title><rect x="374.2" y="285" width="0.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>render [pixi.min.js] — 2.15 ms per second at rest (0.7%)</title><rect x="381.0" y="234" width="7.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>calculateVertices [pixi.min.js] — 0.31 ms per second at rest (0.1%)</title><rect x="389.0" y="234" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 15.54 ms per second at rest (4.9%)</title><rect x="434.8" y="149" width="56.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="437.8" y="161" font-size="10.5" fill="#1f2328">updateT…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 14.80 ms per second at rest (4.6%)</title><rect x="434.8" y="166" width="54.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="437.8" y="178" font-size="10.5" fill="#1f2328">update…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 12.14 ms per second at rest (3.8%)</title><rect x="434.8" y="183" width="44.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="437.8" y="195" font-size="10.5" fill="#1f2328">updat…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 3.58 ms per second at rest (1.1%)</title><rect x="434.8" y="200" width="12.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear [pixi.min.js] — 3.37 ms per second at rest (1.1%)</title><rect x="492.2" y="149" width="11.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear [pixi.min.js] — 3.00 ms per second at rest (0.9%)</title><rect x="492.2" y="166" width="10.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear — 2.54 ms per second at rest (0.8%)</title><rect x="492.2" y="183" width="8.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>clearColor — 0.34 ms per second at rest (0.1%)</title><rect x="501.6" y="183" width="0.6" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bind [pixi.min.js] — 2.26 ms per second at rest (0.7%)</title><rect x="504.7" y="149" width="7.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 1.41 ms per second at rest (0.4%)</title><rect x="504.7" y="166" width="4.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 1.34 ms per second at rest (0.4%)</title><rect x="504.7" y="183" width="4.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 1.23 ms per second at rest (0.4%)</title><rect x="504.7" y="200" width="3.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) — 1.12 ms per second at rest (0.4%)</title><rect x="504.7" y="217" width="3.5" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>uniformMatrix3fv — 1.01 ms per second at rest (0.3%)</title><rect x="504.7" y="234" width="3.1" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>setMaskStack [pixi.min.js] — 0.55 ms per second at rest (0.2%)</title><rect x="509.9" y="166" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setMaskStack [pixi.min.js] — 0.54 ms per second at rest (0.2%)</title><rect x="509.9" y="183" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>getStackLength [pixi.min.js] — 0.52 ms per second at rest (0.2%)</title><rect x="509.9" y="200" width="1.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>emit [pixi.min.js] — 2.18 ms per second at rest (0.7%)</title><rect x="513.1" y="149" width="7.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>postrender [pixi.min.js] — 1.94 ms per second at rest (0.6%)</title><rect x="513.1" y="166" width="6.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush — 1.89 ms per second at rest (0.6%)</title><rect x="513.1" y="183" width="6.4" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>(anonymous) [app.js] — 65.72 ms per second at rest (20.6%)</title><rect x="527.5" y="98" width="242.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="530.5" y="110" font-size="10.5" fill="#1f2328">(anonymous)</text>
+</g>
+<g><title>set x [pixi.min.js] — 22.58 ms per second at rest (7.1%)</title><rect x="527.5" y="115" width="82.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="530.5" y="127" font-size="10.5" fill="#1f2328">set x</text>
+</g>
+<g><title>set x [pixi.min.js] — 8.93 ms per second at rest (2.8%)</title><rect x="527.5" y="132" width="32.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="530.5" y="144" font-size="10.5" fill="#1f2328">set…</text>
+</g>
+<g><title>uZ [app.js] — 4.63 ms per second at rest (1.4%)</title><rect x="610.9" y="115" width="16.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.06 ms per second at rest (1.0%)</title><rect x="628.0" y="115" width="10.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get tint [pixi.min.js] — 2.50 ms per second at rest (0.8%)</title><rect x="639.3" y="115" width="8.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get value [pixi.min.js] — 2.32 ms per second at rest (0.7%)</title><rect x="639.3" y="132" width="8.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>requestAnimationFrame — 1.59 ms per second at rest (0.5%)</title><rect x="648.5" y="115" width="5.3" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>set tint [pixi.min.js] — 0.80 ms per second at rest (0.2%)</title><rect x="654.4" y="115" width="2.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setValue [pixi.min.js] — 0.40 ms per second at rest (0.1%)</title><rect x="654.4" y="132" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 0.40 ms per second at rest (0.1%)</title><rect x="654.4" y="149" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>dZ [app.js] — 0.75 ms per second at rest (0.2%)</title><rect x="657.3" y="115" width="2.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.69 ms per second at rest (0.2%)</title><rect x="660.1" y="115" width="2.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.34 ms per second at rest (0.1%)</title><rect x="660.1" y="132" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set [pixi.min.js] — 0.67 ms per second at rest (0.2%)</title><rect x="662.7" y="115" width="1.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set width [pixi.min.js] — 0.64 ms per second at rest (0.2%)</title><rect x="665.2" y="115" width="1.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get x [pixi.min.js] — 0.40 ms per second at rest (0.1%)</title><rect x="665.2" y="132" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set rotation [pixi.min.js] — 0.64 ms per second at rest (0.2%)</title><rect x="667.5" y="115" width="1.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set rotation [pixi.min.js] — 0.64 ms per second at rest (0.2%)</title><rect x="667.5" y="132" width="1.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set height [pixi.min.js] — 0.46 ms per second at rest (0.1%)</title><rect x="669.9" y="115" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set y [pixi.min.js] — 0.43 ms per second at rest (0.1%)</title><rect x="671.6" y="115" width="1.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set y [pixi.min.js] — 0.32 ms per second at rest (0.1%)</title><rect x="671.6" y="132" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get width [pixi.min.js] — 0.36 ms per second at rest (0.1%)</title><rect x="673.2" y="115" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>pZ [app.js] — 0.31 ms per second at rest (0.1%)</title><rect x="674.5" y="115" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>hZ [app.js] — 0.31 ms per second at rest (0.1%)</title><rect x="675.7" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>sized.getSize [plugin:pulsar-graph] — 0.27 ms per second at rest (0.1%)</title><rect x="676.8" y="115" width="0.4" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>sortChildren [pixi.min.js] — 5.08 ms per second at rest (1.6%)</title><rect x="770.3" y="98" width="18.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Ru [pixi.min.js] — 1.15 ms per second at rest (0.4%)</title><rect x="770.3" y="115" width="3.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 1.78 ms per second at rest (0.6%)</title><rect x="816.6" y="81" width="6.0" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>holdPaintTint [plugin:pulsar-graph] — 0.74 ms per second at rest (0.2%)</title><rect x="816.6" y="98" width="2.1" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>(program) — 83.39 ms per second at rest (26.1%)</title><rect x="827.3" y="64" width="307.5" height="15.5" rx="1.5" fill="#eaeef2"/>
+<text x="830.3" y="76" font-size="10.5" fill="#1f2328">(program)</text>
+</g>
+<g><title>a [app.js] — 13.21 ms per second at rest (4.1%)</title><rect x="1135.4" y="64" width="48.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1138.4" y="76" font-size="10.5" fill="#1f2328">a</text>
+</g>
+<g><title>(anonymous) [app.js] — 13.01 ms per second at rest (4.1%)</title><rect x="1135.4" y="81" width="47.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1138.4" y="93" font-size="10.5" fill="#1f2328">(anon…</text>
+</g>
+<g><title>(anonymous) [app.js] — 12.29 ms per second at rest (3.8%)</title><rect x="1135.4" y="98" width="44.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1138.4" y="110" font-size="10.5" fill="#1f2328">(anon…</text>
+</g>
+<g><title>(anonymous) [app.js] — 11.59 ms per second at rest (3.6%)</title><rect x="1135.4" y="115" width="42.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1138.4" y="127" font-size="10.5" fill="#1f2328">(ano…</text>
+</g>
+<g><title>(anonymous) [app.js] — 11.22 ms per second at rest (3.5%)</title><rect x="1135.4" y="132" width="40.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1138.4" y="144" font-size="10.5" fill="#1f2328">(ano…</text>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 6.77 ms per second at rest (2.1%)</title><rect x="1135.4" y="149" width="24.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1138.4" y="161" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>filterGraphData.ranges [plugin:pulsar-graph] — 4.73 ms per second at rest (1.5%)</title><rect x="1135.4" y="166" width="16.9" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 4.58 ms per second at rest (1.4%)</title><rect x="1135.4" y="183" width="16.3" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyOpacity [plugin:pulsar-graph] — 2.34 ms per second at rest (0.7%)</title><rect x="1135.4" y="200" width="8.1" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>warmByGroup [plugin:pulsar-graph] — 0.96 ms per second at rest (0.3%)</title><rect x="1135.4" y="217" width="3.0" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>groupByComponent [plugin:pulsar-graph] — 0.40 ms per second at rest (0.1%)</title><rect x="1135.4" y="234" width="0.9" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>poolNeighbours [plugin:pulsar-graph] — 0.69 ms per second at rest (0.2%)</title><rect x="1139.0" y="217" width="2.0" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>set [plugin:pulsar-graph] — 1.19 ms per second at rest (0.4%)</title><rect x="1144.1" y="200" width="3.8" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>writeStats [plugin:pulsar-graph] — 1.14 ms per second at rest (0.4%)</title><rect x="1144.1" y="217" width="3.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.72 ms per second at rest (0.2%)</title><rect x="1144.1" y="234" width="2.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>removeChild — 0.68 ms per second at rest (0.2%)</title><rect x="1144.1" y="251" width="1.9" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 0.37 ms per second at rest (0.1%)</title><rect x="1146.7" y="234" width="0.8" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.37 ms per second at rest (0.1%)</title><rect x="1146.7" y="251" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.35 ms per second at rest (0.1%)</title><rect x="1146.7" y="268" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.34 ms per second at rest (0.1%)</title><rect x="1146.7" y="285" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>captionFor [plugin:pulsar-graph] — 0.43 ms per second at rest (0.1%)</title><rect x="1148.5" y="200" width="1.0" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>describeRange [plugin:pulsar-graph] — 0.39 ms per second at rest (0.1%)</title><rect x="1148.5" y="217" width="0.8" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.50 ms per second at rest (0.5%)</title><rect x="1152.9" y="166" width="5.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.47 ms per second at rest (0.1%)</title><rect x="1152.9" y="183" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 0.29 ms per second at rest (0.1%)</title><rect x="1158.4" y="166" width="0.5" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>SC [app.js] — 2.18 ms per second at rest (0.7%)</title><rect x="1160.4" y="149" width="7.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>requestAnimationFrame — 1.69 ms per second at rest (0.5%)</title><rect x="1160.4" y="166" width="5.7" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.87 ms per second at rest (0.6%)</title><rect x="1168.5" y="149" width="6.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Lx [app.js] — 0.40 ms per second at rest (0.1%)</title><rect x="1168.5" y="166" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Ll [app.js] — 0.35 ms per second at rest (0.1%)</title><rect x="1168.5" y="183" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.35 ms per second at rest (0.1%)</title><rect x="1169.9" y="166" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(garbage collector) — 1.18 ms per second at rest (0.4%)</title><rect x="1184.2" y="64" width="3.8" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+</svg>

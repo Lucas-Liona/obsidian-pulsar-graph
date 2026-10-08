@@ -74,6 +74,11 @@ bar, fresh writing, link dots and the history view.
   three runs when the baseline was recorded (`noise` in the file).
   `npm run bench:record` runs them three times and writes a new baseline: do it
   on a quiet machine, and again after anything that changes the benches
+- `bench/performance.ipynb` — recomputes every figure in `docs/performance.md`
+  from `bench/results/` and redraws its charts in `docs/assets/perf/`; run with
+  `jupyter nbconvert --to notebook --execute --inplace`. `bench/live/` is the
+  harness that recorded the results, and `bench/extract.py` turns its raw runs
+  into them
 - `npm run build:profile` — the production bundle unminified with names kept,
   for a CPU profile that reads `describeRange` rather than `s`. Never released
 - `npm test` — vitest over `test/**/*.test.ts`, at two layers. `obsidian` is
@@ -324,7 +329,7 @@ There is a `probe` skill in `.claude/skills/` holding this loop in full.
 
 Anything published — the README, the directory listing, a release note, a short —
 comes from the **demo vault at `~/pulsar-demo-vault`**, never from a real one. It
-exists for this: 74 notes, titles only, with modification times deliberately
+exists for this: 112 notes, titles only, with modification times deliberately
 spread across a year so the fade has something to show. Its note titles were
 audited and are all generic; keep them that way, because a vault anyone can
 download must say nothing about whoever made it.

@@ -1,0 +1,8 @@
+profile,source_label,vault,build,event,events,busy_ms,idle_ms,duration_s
+demo-switch-on,B-switch-on,demo,1.38.0,note switch,32,4598.8,15889.4,20.68
+demo-switch-off,B-switch-off,demo,Pulsar off,note switch,32,3819,16512.9,20.48
+demo-timelapse-on,B-idle-on,demo,1.38.0,second at rest,65,20759.8,44249,65.18
+demo-timelapse-off,B-idle-off,demo,Pulsar off,second at rest,65,2682.6,62321.4,65.18
+demo-load,B-load,demo,1.38.0,plugin load,11,8222.8,14816.9,23.17
+bench-switch,P20k-fixAB-in,bench 20k,#109,note switch,14,12469.8,3239.3,19.71
+bench-frame,P-20k-his-frame,bench 20k,1.38.0,frame,131,1401.4,1.8,1.6

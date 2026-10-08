@@ -1,0 +1,37 @@
+label,vault,build,step,calls_per_sample,n,mean_ms,sd_ms,median_ms
+A-components,demo,1.38.0,updateStatusBar,40,30,0.001,0.001,0
+A-components,demo,1.38.0,paintTabs,20,30,0.036,0.016,0.03
+A-components,demo,1.38.0,refreshBeadViews,11,30,0.238,0.042,0.227
+A-components,demo,1.38.0,syncRenderers,11,30,0.254,0.052,0.255
+A-components,demo,1.38.0,spotlitFrom,40,30,0.008,0.004,0.008
+A-components,demo,1.38.0,refilter,3,30,0.504,0.166,0.533
+1k-defaults-components,bench 1k,1.38.0,updateStatusBar,40,30,0.006,0.003,0.005
+1k-defaults-components,bench 1k,1.38.0,paintTabs,21,30,0.002,0.004,0
+1k-defaults-components,bench 1k,1.38.0,refreshBeadViews,40,30,0.002,0.003,0.002
+1k-defaults-components,bench 1k,1.38.0,syncRenderers,3,30,0.713,0.159,0.733
+1k-defaults-components,bench 1k,1.38.0,spotlitFrom,40,30,0,0,0
+1k-defaults-components,bench 1k,1.38.0,refilter,1,30,1.413,0.373,1.4
+1k-his-components,bench 1k,1.38.0,updateStatusBar,40,30,0.006,0.003,0.005
+1k-his-components,bench 1k,1.38.0,paintTabs,11,30,0.056,0.017,0.055
+1k-his-components,bench 1k,1.38.0,refreshBeadViews,40,30,0.001,0.002,0
+1k-his-components,bench 1k,1.38.0,syncRenderers,2,30,0.923,0.301,0.9
+1k-his-components,bench 1k,1.38.0,spotlitFrom,40,30,0.021,0.005,0.02
+1k-his-components,bench 1k,1.38.0,refilter,2,30,1.255,0.241,1.25
+5k-defaults-components,bench 5k,1.38.0,updateStatusBar,40,30,0.005,0.002,0.005
+5k-defaults-components,bench 5k,1.38.0,paintTabs,40,30,0.001,0.002,0
+5k-defaults-components,bench 5k,1.38.0,refreshBeadViews,40,30,0.001,0.001,0
+5k-defaults-components,bench 5k,1.38.0,syncRenderers,1,30,4.463,1.416,4.2
+5k-defaults-components,bench 5k,1.38.0,spotlitFrom,40,30,0,0,0
+5k-defaults-components,bench 5k,1.38.0,refilter,1,30,14.183,1.703,14
+20k-defaults-components,bench 20k,1.38.0,updateStatusBar,40,20,0.008,0.004,0.008
+20k-defaults-components,bench 20k,1.38.0,paintTabs,40,20,0.001,0.002,0
+20k-defaults-components,bench 20k,1.38.0,refreshBeadViews,40,20,0.001,0.001,0.002
+20k-defaults-components,bench 20k,1.38.0,syncRenderers,1,20,23.195,1.753,22.9
+20k-defaults-components,bench 20k,1.38.0,spotlitFrom,40,20,0,0.001,0
+20k-defaults-components,bench 20k,1.38.0,refilter,1,20,84.15,4.345,84.5
+20k-his-components,bench 20k,1.38.0,updateStatusBar,40,20,0.006,0.003,0.005
+20k-his-components,bench 20k,1.38.0,paintTabs,2,20,1.057,0.471,0.95
+20k-his-components,bench 20k,1.38.0,refreshBeadViews,20,20,0.001,0.002,0
+20k-his-components,bench 20k,1.38.0,syncRenderers,1,20,28.105,2.323,28.7
+20k-his-components,bench 20k,1.38.0,spotlitFrom,4,20,0.565,0.102,0.575
+20k-his-components,bench 20k,1.38.0,refilter,1,20,45.84,9.147,44.1

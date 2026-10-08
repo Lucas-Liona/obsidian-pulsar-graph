@@ -1,0 +1,61 @@
+label,build,mode,load,editors,calls,calls_ms,enable_ms
+RR-uo-first-138,1.38.0,defaults,1,6,2,10.8,55.5
+RR-uo-first-138,1.38.0,defaults,2,6,2,9.7,53.3
+RR-uo-first-138,1.38.0,defaults,3,6,2,10.1,56.7
+RR-uo-first-138,1.38.0,defaults,4,6,2,8.1,50.9
+RR-uo-first-138,1.38.0,defaults,5,6,2,7.7,70.9
+RR-uo-first-138,1.38.0,defaults,6,6,2,9.7,63.8
+RR-uo-first-138,1.38.0,defaults,7,6,2,7.8,52.3
+RR-uo-first-138,1.38.0,defaults,8,6,2,9.5,52.6
+RR-uo-first-138,1.38.0,defaults,9,6,2,8.9,50.9
+RR-uo-first-138,1.38.0,defaults,10,6,2,9.3,53.7
+RR-uo-first-139,1.39.0,defaults,1,6,2,10.2,62.6
+RR-uo-first-139,1.39.0,defaults,2,6,2,9,83.2
+RR-uo-first-139,1.39.0,defaults,3,6,2,9.2,54.7
+RR-uo-first-139,1.39.0,defaults,4,6,2,7.5,49.7
+RR-uo-first-139,1.39.0,defaults,5,6,2,7.9,52.7
+RR-uo-first-139,1.39.0,defaults,6,6,2,8.7,50.1
+RR-uo-first-139,1.39.0,defaults,7,6,2,7.5,47.4
+RR-uo-first-139,1.39.0,defaults,8,6,2,8.9,53.4
+RR-uo-first-139,1.39.0,defaults,9,6,2,8.8,82.3
+RR-uo-first-139,1.39.0,defaults,10,6,2,8,45.9
+RR-uo-first-140,1.40.0,defaults,1,6,0,0,51.1
+RR-uo-first-140,1.40.0,defaults,2,6,0,0,45
+RR-uo-first-140,1.40.0,defaults,3,6,0,0,42.8
+RR-uo-first-140,1.40.0,defaults,4,6,0,0,44.6
+RR-uo-first-140,1.40.0,defaults,5,6,0,0,46.2
+RR-uo-first-140,1.40.0,defaults,6,6,0,0,43.7
+RR-uo-first-140,1.40.0,defaults,7,6,0,0,51.3
+RR-uo-first-140,1.40.0,defaults,8,6,0,0,43.6
+RR-uo-first-140,1.40.0,defaults,9,6,0,0,43.2
+RR-uo-first-140,1.40.0,defaults,10,6,0,0,42
+RR-uo-own-138,1.38.0,fresh writing on,1,6,2,7.7,57.5
+RR-uo-own-138,1.38.0,fresh writing on,2,6,2,6.1,78.9
+RR-uo-own-138,1.38.0,fresh writing on,3,6,2,7.8,59.7
+RR-uo-own-138,1.38.0,fresh writing on,4,6,2,8.5,64
+RR-uo-own-138,1.38.0,fresh writing on,5,6,2,6.9,69.5
+RR-uo-own-138,1.38.0,fresh writing on,6,6,2,7,54.9
+RR-uo-own-138,1.38.0,fresh writing on,7,6,2,6.8,65.9
+RR-uo-own-138,1.38.0,fresh writing on,8,6,2,7,54.4
+RR-uo-own-138,1.38.0,fresh writing on,9,6,2,7.8,58.7
+RR-uo-own-138,1.38.0,fresh writing on,10,6,2,6.4,56.9
+RR-uo-own-139,1.39.0,fresh writing on,1,6,2,8.1,69.1
+RR-uo-own-139,1.39.0,fresh writing on,2,6,2,8.4,63.4
+RR-uo-own-139,1.39.0,fresh writing on,3,6,2,8,66.7
+RR-uo-own-139,1.39.0,fresh writing on,4,6,2,8.7,66.5
+RR-uo-own-139,1.39.0,fresh writing on,5,6,2,9.1,68.3
+RR-uo-own-139,1.39.0,fresh writing on,6,6,2,8.6,65.9
+RR-uo-own-139,1.39.0,fresh writing on,7,6,2,9.2,74.1
+RR-uo-own-139,1.39.0,fresh writing on,8,6,2,7.7,89.6
+RR-uo-own-139,1.39.0,fresh writing on,9,6,2,9.2,66.1
+RR-uo-own-139,1.39.0,fresh writing on,10,6,2,7.5,66.5
+RR-uo-own-140,1.40.0,fresh writing on,1,6,1,16.3,72.9
+RR-uo-own-140,1.40.0,fresh writing on,2,6,1,15.2,66.9
+RR-uo-own-140,1.40.0,fresh writing on,3,6,1,15.3,60.9
+RR-uo-own-140,1.40.0,fresh writing on,4,6,1,12.3,60.9
+RR-uo-own-140,1.40.0,fresh writing on,5,6,1,13.3,60.8
+RR-uo-own-140,1.40.0,fresh writing on,6,6,1,14.2,66.3
+RR-uo-own-140,1.40.0,fresh writing on,7,6,1,15.3,66.8
+RR-uo-own-140,1.40.0,fresh writing on,8,6,1,17.8,70.8
+RR-uo-own-140,1.40.0,fresh writing on,9,6,1,13.9,63.5
+RR-uo-own-140,1.40.0,fresh writing on,10,6,1,13.8,61.3

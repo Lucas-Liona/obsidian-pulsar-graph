@@ -1,0 +1,861 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 546" width="1200" height="546" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Loading the plugin in the demo vault, 1.38.0">
+<text x="10" y="22" font-size="15" font-weight="600" fill="#1f2328">Loading the plugin in the demo vault, 1.38.0</text>
+<text x="10" y="41" font-size="11.5" fill="#59636e">11 loads with the demo’s settings: attaching to graphs, building the panel section, registering editor extensions.</text>
+<rect x="10" y="522" width="11" height="11" rx="2" fill="#3dbd70"/>
+<text x="26" y="531.5" font-size="11" fill="#59636e">Pulsar</text>
+<rect x="80.6" y="522" width="11" height="11" rx="2" fill="#c4ead2"/>
+<text x="96.6" y="531.5" font-size="11" fill="#59636e">Pulsar hook passing through</text>
+<rect x="279.29999999999995" y="522" width="11" height="11" rx="2" fill="#d0d7de"/>
+<text x="295.29999999999995" y="531.5" font-size="11" fill="#59636e">Obsidian and PIXI</text>
+<rect x="416.99999999999994" y="522" width="11" height="11" rx="2" fill="#b6c2d9"/>
+<text x="432.99999999999994" y="531.5" font-size="11" fill="#59636e">Node and Electron</text>
+<rect x="554.6999999999999" y="522" width="11" height="11" rx="2" fill="#e6dcc8"/>
+<text x="570.6999999999999" y="531.5" font-size="11" fill="#59636e">Browser built-ins and the harness</text>
+<rect x="789.9999999999999" y="522" width="11" height="11" rx="2" fill="#eaeef2"/>
+<text x="805.9999999999999" y="531.5" font-size="11" fill="#59636e">VM: (program), garbage collection</text>
+<g><title>(anonymous) [plugin:pulsar-graph] — 343.29 ms per plugin load (45.9%)</title><rect x="10.0" y="64" width="541.3" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="13.0" y="76" font-size="10.5" fill="#1f2328">(anonymous)</text>
+</g>
+<g><title>renderCallback [app.js] — 334.55 ms per plugin load (44.8%)</title><rect x="10.0" y="81" width="527.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="93" font-size="10.5" fill="#1f2328">renderCallback</text>
+</g>
+<g><title>render [pixi.min.js] — 213.72 ms per plugin load (28.6%)</title><rect x="10.0" y="98" width="336.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="110" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 213.72 ms per plugin load (28.6%)</title><rect x="10.0" y="115" width="336.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="127" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 213.38 ms per plugin load (28.5%)</title><rect x="10.0" y="132" width="336.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="144" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 176.43 ms per plugin load (23.6%)</title><rect x="10.0" y="149" width="277.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="161" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 175.95 ms per plugin load (23.5%)</title><rect x="10.0" y="166" width="277.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="178" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 170.38 ms per plugin load (22.8%)</title><rect x="10.0" y="183" width="268.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="195" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>_render [pixi.min.js] — 149.07 ms per plugin load (19.9%)</title><rect x="10.0" y="200" width="234.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="212" font-size="10.5" fill="#1f2328">_render</text>
+</g>
+<g><title>_renderDirect [pixi.min.js] — 124.66 ms per plugin load (16.7%)</title><rect x="10.0" y="217" width="196.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="229" font-size="10.5" fill="#1f2328">_renderDirect</text>
+</g>
+<g><title>bind [pixi.min.js] — 79.74 ms per plugin load (10.7%)</title><rect x="10.0" y="234" width="125.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="246" font-size="10.5" fill="#1f2328">bind</text>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 27.89 ms per plugin load (3.7%)</title><rect x="10.0" y="251" width="43.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="263" font-size="10.5" fill="#1f2328">syncU…</text>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 26.81 ms per plugin load (3.6%)</title><rect x="10.0" y="268" width="41.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="13.0" y="280" font-size="10.5" fill="#1f2328">sync…</text>
+</g>
+<g><title>(anonymous) — 24.48 ms per plugin load (3.3%)</title><rect x="10.0" y="285" width="38.0" height="15.5" rx="1.5" fill="#eaeef2"/>
+<text x="13.0" y="297" font-size="10.5" fill="#1f2328">(ano…</text>
+</g>
+<g><title>uniform4f — 6.84 ms per plugin load (0.9%)</title><rect x="10.0" y="302" width="10.2" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>toArray [pixi.min.js] — 5.52 ms per plugin load (0.7%)</title><rect x="20.8" y="302" width="8.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>uniformMatrix3fv — 4.99 ms per plugin load (0.7%)</title><rect x="29.5" y="302" width="7.3" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 1.07 ms per plugin load (0.1%)</title><rect x="37.4" y="302" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bindVertexArray — 17.86 ms per plugin load (2.4%)</title><rect x="54.0" y="251" width="27.6" height="15.5" rx="1.5" fill="#e6dcc8"/>
+<text x="57.0" y="263" font-size="10.5" fill="#1f2328">bi…</text>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 15.75 ms per plugin load (2.1%)</title><rect x="82.2" y="251" width="24.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 11.30 ms per plugin load (1.5%)</title><rect x="82.2" y="268" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>add [pixi.min.js] — 3.97 ms per plugin load (0.5%)</title><rect x="107.1" y="251" width="5.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>remove [pixi.min.js] — 3.06 ms per plugin load (0.4%)</title><rect x="107.1" y="268" width="4.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_renderDrawCallDirect [pixi.min.js] — 21.05 ms per plugin load (2.8%)</title><rect x="135.9" y="234" width="32.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="138.9" y="246" font-size="10.5" fill="#1f2328">_re…</text>
+</g>
+<g><title>draw [pixi.min.js] — 10.83 ms per plugin load (1.4%)</title><rect x="135.9" y="251" width="16.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>drawElements — 6.80 ms per plugin load (0.9%)</title><rect x="135.9" y="268" width="10.1" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bind [pixi.min.js] — 1.55 ms per plugin load (0.2%)</title><rect x="153.0" y="251" width="1.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setValue [pixi.min.js] — 8.93 ms per plugin load (1.2%)</title><rect x="169.1" y="234" width="13.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 8.82 ms per plugin load (1.2%)</title><rect x="169.1" y="251" width="13.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>premultiply [pixi.min.js] — 6.69 ms per plugin load (0.9%)</title><rect x="183.2" y="234" width="10.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>refreshInt [pixi.min.js] — 5.95 ms per plugin load (0.8%)</title><rect x="183.2" y="251" width="8.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_clamp [pixi.min.js] — 4.57 ms per plugin load (0.6%)</title><rect x="183.2" y="268" width="6.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [pixi.min.js] — 2.07 ms per plugin load (0.3%)</title><rect x="183.2" y="285" width="2.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>toArray [pixi.min.js] — 1.77 ms per plugin load (0.2%)</title><rect x="193.8" y="234" width="2.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set [pixi.min.js] — 0.87 ms per plugin load (0.1%)</title><rect x="196.6" y="234" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush [pixi.min.js] — 16.21 ms per plugin load (2.2%)</title><rect x="206.8" y="217" width="25.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="209.8" y="229" font-size="10.5" fill="#1f2328">fl…</text>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 16.21 ms per plugin load (2.2%)</title><rect x="206.8" y="234" width="25.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="209.8" y="246" font-size="10.5" fill="#1f2328">se…</text>
+</g>
+<g><title>stop [pixi.min.js] — 16.21 ms per plugin load (2.2%)</title><rect x="206.8" y="251" width="25.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="209.8" y="263" font-size="10.5" fill="#1f2328">st…</text>
+</g>
+<g><title>flush [pixi.min.js] — 16.21 ms per plugin load (2.2%)</title><rect x="206.8" y="268" width="25.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="209.8" y="280" font-size="10.5" fill="#1f2328">fl…</text>
+</g>
+<g><title>buildTexturesAndDrawCalls [pixi.min.js] — 9.31 ms per plugin load (1.2%)</title><rect x="206.8" y="285" width="14.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>buildDrawCalls [pixi.min.js] — 8.73 ms per plugin load (1.2%)</title><rect x="206.8" y="302" width="13.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>packInterleavedGeometry [pixi.min.js] — 7.33 ms per plugin load (1.0%)</title><rect x="206.8" y="319" width="11.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setValue [pixi.min.js] — 1.16 ms per plugin load (0.2%)</title><rect x="206.8" y="336" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 1.16 ms per plugin load (0.2%)</title><rect x="206.8" y="353" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateGeometry [pixi.min.js] — 5.20 ms per plugin load (0.7%)</title><rect x="221.5" y="285" width="7.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 5.00 ms per plugin load (0.7%)</title><rect x="221.5" y="302" width="7.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 4.89 ms per plugin load (0.7%)</title><rect x="221.5" y="319" width="7.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bufferSubData — 4.05 ms per plugin load (0.5%)</title><rect x="221.5" y="336" width="5.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bindBuffer — 0.72 ms per plugin load (0.1%)</title><rect x="227.9" y="336" width="0.5" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>drawBatches [pixi.min.js] — 0.84 ms per plugin load (0.1%)</title><rect x="229.7" y="285" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateBatches [pixi.min.js] — 2.82 ms per plugin load (0.4%)</title><rect x="232.4" y="217" width="3.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 13.10 ms per plugin load (1.8%)</title><rect x="245.3" y="200" width="20.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_render [pixi.min.js] — 10.46 ms per plugin load (1.4%)</title><rect x="245.3" y="217" width="15.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 4.78 ms per plugin load (0.6%)</title><rect x="245.3" y="234" width="6.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>start [pixi.min.js] — 4.72 ms per plugin load (0.6%)</title><rect x="245.3" y="251" width="6.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bind [pixi.min.js] — 3.52 ms per plugin load (0.5%)</title><rect x="245.3" y="268" width="5.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 1.28 ms per plugin load (0.2%)</title><rect x="245.3" y="285" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 1.18 ms per plugin load (0.2%)</title><rect x="245.3" y="302" width="1.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) — 1.02 ms per plugin load (0.1%)</title><rect x="245.3" y="319" width="1.0" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>bindVertexArray — 0.67 ms per plugin load (0.1%)</title><rect x="247.3" y="285" width="0.5" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>render [pixi.min.js] — 4.48 ms per plugin load (0.6%)</title><rect x="252.9" y="234" width="6.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>calculateVertices [pixi.min.js] — 0.70 ms per plugin load (0.1%)</title><rect x="259.9" y="234" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 22.98 ms per plugin load (3.1%)</title><rect x="288.5" y="149" width="35.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="291.5" y="161" font-size="10.5" fill="#1f2328">upd…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 21.99 ms per plugin load (2.9%)</title><rect x="288.5" y="166" width="34.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="291.5" y="178" font-size="10.5" fill="#1f2328">upd…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 18.53 ms per plugin load (2.5%)</title><rect x="288.5" y="183" width="28.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="291.5" y="195" font-size="10.5" fill="#1f2328">up…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 6.25 ms per plugin load (0.8%)</title><rect x="288.5" y="200" width="9.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear [pixi.min.js] — 4.60 ms per plugin load (0.6%)</title><rect x="324.8" y="149" width="6.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear [pixi.min.js] — 3.98 ms per plugin load (0.5%)</title><rect x="324.8" y="166" width="5.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear — 3.45 ms per plugin load (0.5%)</title><rect x="324.8" y="183" width="4.9" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>emit [pixi.min.js] — 4.25 ms per plugin load (0.6%)</title><rect x="332.0" y="149" width="6.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>postrender [pixi.min.js] — 3.81 ms per plugin load (0.5%)</title><rect x="332.0" y="166" width="5.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush — 3.75 ms per plugin load (0.5%)</title><rect x="332.0" y="183" width="5.3" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>bind [pixi.min.js] — 3.24 ms per plugin load (0.4%)</title><rect x="338.7" y="149" width="4.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 1.68 ms per plugin load (0.2%)</title><rect x="338.7" y="166" width="2.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 1.42 ms per plugin load (0.2%)</title><rect x="338.7" y="183" width="1.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 1.12 ms per plugin load (0.1%)</title><rect x="338.7" y="200" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) — 1.01 ms per plugin load (0.1%)</title><rect x="338.7" y="217" width="1.0" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>uniformMatrix3fv — 0.88 ms per plugin load (0.1%)</title><rect x="338.7" y="234" width="0.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>setMaskStack [pixi.min.js] — 0.93 ms per plugin load (0.1%)</title><rect x="341.4" y="166" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setMaskStack [pixi.min.js] — 0.88 ms per plugin load (0.1%)</title><rect x="341.4" y="183" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>getStackLength [pixi.min.js] — 0.88 ms per plugin load (0.1%)</title><rect x="341.4" y="200" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 101.50 ms per plugin load (13.6%)</title><rect x="347.4" y="98" width="159.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="350.4" y="110" font-size="10.5" fill="#1f2328">(anonymous)</text>
+</g>
+<g><title>set x [pixi.min.js] — 35.39 ms per plugin load (4.7%)</title><rect x="347.4" y="115" width="55.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="350.4" y="127" font-size="10.5" fill="#1f2328">set x</text>
+</g>
+<g><title>set x [pixi.min.js] — 15.05 ms per plugin load (2.0%)</title><rect x="347.4" y="132" width="23.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>uZ [app.js] — 6.93 ms per plugin load (0.9%)</title><rect x="403.2" y="115" width="10.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.61 ms per plugin load (0.8%)</title><rect x="414.2" y="115" width="8.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get tint [pixi.min.js] — 4.21 ms per plugin load (0.6%)</title><rect x="423.0" y="115" width="6.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get value [pixi.min.js] — 3.73 ms per plugin load (0.5%)</title><rect x="423.0" y="132" width="5.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>requestAnimationFrame — 2.53 ms per plugin load (0.3%)</title><rect x="429.6" y="115" width="3.4" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>dZ [app.js] — 1.65 ms per plugin load (0.2%)</title><rect x="433.6" y="115" width="2.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set tint [pixi.min.js] — 1.55 ms per plugin load (0.2%)</title><rect x="436.3" y="115" width="1.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set rotation [pixi.min.js] — 0.92 ms per plugin load (0.1%)</title><rect x="438.7" y="115" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set rotation [pixi.min.js] — 0.92 ms per plugin load (0.1%)</title><rect x="438.7" y="132" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set [pixi.min.js] — 0.73 ms per plugin load (0.1%)</title><rect x="440.2" y="115" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.72 ms per plugin load (0.1%)</title><rect x="441.3" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set width [pixi.min.js] — 0.67 ms per plugin load (0.1%)</title><rect x="442.4" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>sortChildren [pixi.min.js] — 8.58 ms per plugin load (1.1%)</title><rect x="507.6" y="98" width="12.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Ru [pixi.min.js] — 1.64 ms per plugin load (0.2%)</title><rect x="507.6" y="115" width="2.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get zIndex [pixi.min.js] — 0.78 ms per plugin load (0.1%)</title><rect x="510.2" y="115" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [plugin:pulsar-graph] — 3.58 ms per plugin load (0.5%)</title><rect x="538.1" y="81" width="5.0" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>renderCallback [app.js] — 3.33 ms per plugin load (0.4%)</title><rect x="538.1" y="98" width="4.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 1.99 ms per plugin load (0.3%)</title><rect x="538.1" y="115" width="2.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 1.99 ms per plugin load (0.3%)</title><rect x="538.1" y="132" width="2.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 1.89 ms per plugin load (0.3%)</title><rect x="538.1" y="149" width="2.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.67 ms per plugin load (0.1%)</title><rect x="541.2" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 3.34 ms per plugin load (0.4%)</title><rect x="543.7" y="81" width="4.7" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>holdPaintTint [plugin:pulsar-graph] — 1.52 ms per plugin load (0.2%)</title><rect x="543.7" y="98" width="1.8" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>(program) — 198.57 ms per plugin load (26.6%)</title><rect x="551.9" y="64" width="312.8" height="15.5" rx="1.5" fill="#eaeef2"/>
+<text x="554.9" y="76" font-size="10.5" fill="#1f2328">(program)</text>
+</g>
+<g><title>renderCallback [app.js] — 74.93 ms per plugin load (10.0%)</title><rect x="865.3" y="64" width="117.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="76" font-size="10.5" fill="#1f2328">renderCallback</text>
+</g>
+<g><title>render [pixi.min.js] — 47.88 ms per plugin load (6.4%)</title><rect x="865.3" y="81" width="75.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="93" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 47.88 ms per plugin load (6.4%)</title><rect x="865.3" y="98" width="75.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="110" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 47.59 ms per plugin load (6.4%)</title><rect x="865.3" y="115" width="74.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="127" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 39.35 ms per plugin load (5.3%)</title><rect x="865.3" y="132" width="61.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="144" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 39.19 ms per plugin load (5.2%)</title><rect x="865.3" y="149" width="61.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="161" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>render [pixi.min.js] — 37.50 ms per plugin load (5.0%)</title><rect x="865.3" y="166" width="58.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="178" font-size="10.5" fill="#1f2328">render</text>
+</g>
+<g><title>_render [pixi.min.js] — 32.25 ms per plugin load (4.3%)</title><rect x="865.3" y="183" width="50.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="195" font-size="10.5" fill="#1f2328">_render</text>
+</g>
+<g><title>_renderDirect [pixi.min.js] — 26.65 ms per plugin load (3.6%)</title><rect x="865.3" y="200" width="41.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="212" font-size="10.5" fill="#1f2328">_ren…</text>
+</g>
+<g><title>bind [pixi.min.js] — 16.90 ms per plugin load (2.3%)</title><rect x="865.3" y="217" width="26.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="868.3" y="229" font-size="10.5" fill="#1f2328">bi…</text>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 5.08 ms per plugin load (0.7%)</title><rect x="865.3" y="234" width="7.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 4.98 ms per plugin load (0.7%)</title><rect x="865.3" y="251" width="7.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) — 4.64 ms per plugin load (0.6%)</title><rect x="865.3" y="268" width="6.7" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>toArray [pixi.min.js] — 1.76 ms per plugin load (0.2%)</title><rect x="865.3" y="285" width="2.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>uniformMatrix3fv — 1.40 ms per plugin load (0.2%)</title><rect x="868.1" y="285" width="1.6" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 3.50 ms per plugin load (0.5%)</title><rect x="873.4" y="234" width="4.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 2.32 ms per plugin load (0.3%)</title><rect x="873.4" y="251" width="3.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bindVertexArray — 3.45 ms per plugin load (0.5%)</title><rect x="878.9" y="234" width="4.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>add [pixi.min.js] — 1.56 ms per plugin load (0.2%)</title><rect x="884.3" y="234" width="1.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>remove [pixi.min.js] — 1.25 ms per plugin load (0.2%)</title><rect x="884.3" y="251" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_renderDrawCallDirect [pixi.min.js] — 4.85 ms per plugin load (0.6%)</title><rect x="892.0" y="217" width="7.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>draw [pixi.min.js] — 2.55 ms per plugin load (0.3%)</title><rect x="892.0" y="234" width="3.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>drawElements — 1.77 ms per plugin load (0.2%)</title><rect x="892.0" y="251" width="2.2" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>setValue [pixi.min.js] — 2.22 ms per plugin load (0.3%)</title><rect x="899.7" y="217" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set value [pixi.min.js] — 2.22 ms per plugin load (0.3%)</title><rect x="899.7" y="234" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush [pixi.min.js] — 3.64 ms per plugin load (0.5%)</title><rect x="907.4" y="200" width="5.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 3.59 ms per plugin load (0.5%)</title><rect x="907.4" y="217" width="5.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>stop [pixi.min.js] — 3.59 ms per plugin load (0.5%)</title><rect x="907.4" y="234" width="5.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush [pixi.min.js] — 3.59 ms per plugin load (0.5%)</title><rect x="907.4" y="251" width="5.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>buildTexturesAndDrawCalls [pixi.min.js] — 2.27 ms per plugin load (0.3%)</title><rect x="907.4" y="268" width="3.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>buildDrawCalls [pixi.min.js] — 2.11 ms per plugin load (0.3%)</title><rect x="907.4" y="285" width="2.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>packInterleavedGeometry [pixi.min.js] — 1.70 ms per plugin load (0.2%)</title><rect x="907.4" y="302" width="2.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateGeometry [pixi.min.js] — 1.17 ms per plugin load (0.2%)</title><rect x="911.0" y="268" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 0.93 ms per plugin load (0.1%)</title><rect x="911.0" y="285" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>update [pixi.min.js] — 0.93 ms per plugin load (0.1%)</title><rect x="911.0" y="302" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bufferSubData — 0.72 ms per plugin load (0.1%)</title><rect x="911.0" y="319" width="0.5" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>updateBatches [pixi.min.js] — 0.72 ms per plugin load (0.1%)</title><rect x="913.2" y="200" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 3.05 ms per plugin load (0.4%)</title><rect x="916.2" y="183" width="4.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>_render [pixi.min.js] — 2.31 ms per plugin load (0.3%)</title><rect x="916.2" y="200" width="3.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 1.13 ms per plugin load (0.2%)</title><rect x="916.2" y="217" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>start [pixi.min.js] — 1.07 ms per plugin load (0.1%)</title><rect x="916.2" y="234" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>bind [pixi.min.js] — 0.95 ms per plugin load (0.1%)</title><rect x="916.2" y="251" width="0.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 0.87 ms per plugin load (0.1%)</title><rect x="918.0" y="217" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 5.24 ms per plugin load (0.7%)</title><rect x="927.5" y="132" width="7.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 4.92 ms per plugin load (0.7%)</title><rect x="927.5" y="149" width="7.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 4.35 ms per plugin load (0.6%)</title><rect x="927.5" y="166" width="6.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 1.14 ms per plugin load (0.2%)</title><rect x="927.5" y="183" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>emit [pixi.min.js] — 1.08 ms per plugin load (0.1%)</title><rect x="935.7" y="132" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>postrender [pixi.min.js] — 0.98 ms per plugin load (0.1%)</title><rect x="935.7" y="149" width="1.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>flush — 0.98 ms per plugin load (0.1%)</title><rect x="935.7" y="166" width="1.0" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>clear [pixi.min.js] — 0.99 ms per plugin load (0.1%)</title><rect x="937.4" y="132" width="1.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear [pixi.min.js] — 0.78 ms per plugin load (0.1%)</title><rect x="937.4" y="149" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>clear — 0.68 ms per plugin load (0.1%)</title><rect x="937.4" y="166" width="0.5" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>(anonymous) [app.js] — 23.52 ms per plugin load (3.1%)</title><rect x="940.9" y="81" width="36.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="943.9" y="93" font-size="10.5" fill="#1f2328">(an…</text>
+</g>
+<g><title>set x [pixi.min.js] — 8.59 ms per plugin load (1.1%)</title><rect x="940.9" y="98" width="13.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>set x [pixi.min.js] — 3.61 ms per plugin load (0.5%)</title><rect x="940.9" y="115" width="5.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>uZ [app.js] — 1.57 ms per plugin load (0.2%)</title><rect x="954.5" y="98" width="1.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.16 ms per plugin load (0.2%)</title><rect x="957.0" y="98" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get tint [pixi.min.js] — 0.77 ms per plugin load (0.1%)</title><rect x="958.8" y="98" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get value [pixi.min.js] — 0.73 ms per plugin load (0.1%)</title><rect x="958.8" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>sortChildren [pixi.min.js] — 1.31 ms per plugin load (0.2%)</title><rect x="978.1" y="81" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>a [app.js] — 47.10 ms per plugin load (6.3%)</title><rect x="983.6" y="64" width="73.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="76" font-size="10.5" fill="#1f2328">a</text>
+</g>
+<g><title>(anonymous) [app.js] — 46.74 ms per plugin load (6.3%)</title><rect x="983.6" y="81" width="73.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="93" font-size="10.5" fill="#1f2328">(anonymou…</text>
+</g>
+<g><title>(anonymous) [app.js] — 44.98 ms per plugin load (6.0%)</title><rect x="983.6" y="98" width="70.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="110" font-size="10.5" fill="#1f2328">(anonymou…</text>
+</g>
+<g><title>(anonymous) [app.js] — 43.29 ms per plugin load (5.8%)</title><rect x="983.6" y="115" width="67.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="127" font-size="10.5" fill="#1f2328">(anonymo…</text>
+</g>
+<g><title>(anonymous) [app.js] — 42.00 ms per plugin load (5.6%)</title><rect x="983.6" y="132" width="65.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="144" font-size="10.5" fill="#1f2328">(anonymo…</text>
+</g>
+<g><title>y [app.js] — 18.81 ms per plugin load (2.5%)</title><rect x="983.6" y="149" width="29.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="161" font-size="10.5" fill="#1f2328">y</text>
+</g>
+<g><title>(anonymous) [app.js] — 18.76 ms per plugin load (2.5%)</title><rect x="983.6" y="166" width="29.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="178" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 18.76 ms per plugin load (2.5%)</title><rect x="983.6" y="183" width="29.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="195" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 18.76 ms per plugin load (2.5%)</title><rect x="983.6" y="200" width="29.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="212" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 18.76 ms per plugin load (2.5%)</title><rect x="983.6" y="217" width="29.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="986.6" y="229" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>t [app.js] — 15.55 ms per plugin load (2.1%)</title><rect x="983.6" y="234" width="23.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 15.55 ms per plugin load (2.1%)</title><rect x="983.6" y="251" width="23.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 15.55 ms per plugin load (2.1%)</title><rect x="983.6" y="268" width="23.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 15.45 ms per plugin load (2.1%)</title><rect x="983.6" y="285" width="23.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>n [app.js] — 15.30 ms per plugin load (2.0%)</title><rect x="983.6" y="302" width="23.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.33 ms per plugin load (0.2%)</title><rect x="1008.2" y="234" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>y [app.js] — 1.24 ms per plugin load (0.2%)</title><rect x="1008.2" y="251" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.24 ms per plugin load (0.2%)</title><rect x="1008.2" y="268" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.24 ms per plugin load (0.2%)</title><rect x="1008.2" y="285" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.24 ms per plugin load (0.2%)</title><rect x="1008.2" y="302" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.24 ms per plugin load (0.2%)</title><rect x="1008.2" y="319" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.88 ms per plugin load (0.1%)</title><rect x="1008.2" y="336" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 1.09 ms per plugin load (0.1%)</title><rect x="1010.3" y="234" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 0.79 ms per plugin load (0.1%)</title><rect x="1012.0" y="234" width="0.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>BeadView [plugin:pulsar-graph] — 0.79 ms per plugin load (0.1%)</title><rect x="1012.0" y="251" width="0.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>t [app.js] — 0.79 ms per plugin load (0.1%)</title><rect x="1012.0" y="268" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 11.61 ms per plugin load (1.6%)</title><rect x="1013.3" y="149" width="17.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>filterGraphData.ranges [plugin:pulsar-graph] — 8.25 ms per plugin load (1.1%)</title><rect x="1013.3" y="166" width="12.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 8.04 ms per plugin load (1.1%)</title><rect x="1013.3" y="183" width="12.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyOpacity [plugin:pulsar-graph] — 3.97 ms per plugin load (0.5%)</title><rect x="1013.3" y="200" width="5.7" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>poolNeighbours [plugin:pulsar-graph] — 1.70 ms per plugin load (0.2%)</title><rect x="1013.3" y="217" width="2.1" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>warmByGroup [plugin:pulsar-graph] — 1.29 ms per plugin load (0.2%)</title><rect x="1016.0" y="217" width="1.4" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>groupByComponent [plugin:pulsar-graph] — 0.67 ms per plugin load (0.1%)</title><rect x="1016.0" y="234" width="0.5" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>set [plugin:pulsar-graph] — 2.35 ms per plugin load (0.3%)</title><rect x="1019.6" y="200" width="3.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>writeStats [plugin:pulsar-graph] — 2.05 ms per plugin load (0.3%)</title><rect x="1019.6" y="217" width="2.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 1.27 ms per plugin load (0.2%)</title><rect x="1019.6" y="234" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>removeChild — 1.16 ms per plugin load (0.2%)</title><rect x="1019.6" y="251" width="1.2" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 0.72 ms per plugin load (0.1%)</title><rect x="1021.6" y="234" width="0.5" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.66 ms per plugin load (0.1%)</title><rect x="1021.6" y="251" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.66 ms per plugin load (0.1%)</title><rect x="1021.6" y="268" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>captionFor [plugin:pulsar-graph] — 0.74 ms per plugin load (0.1%)</title><rect x="1023.3" y="200" width="0.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>describeRange [plugin:pulsar-graph] — 0.74 ms per plugin load (0.1%)</title><rect x="1023.3" y="217" width="0.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.09 ms per plugin load (0.3%)</title><rect x="1026.3" y="166" width="2.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 0.76 ms per plugin load (0.1%)</title><rect x="1029.6" y="166" width="0.6" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.09 ms per plugin load (0.7%)</title><rect x="1031.6" y="149" width="7.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Lx [app.js] — 1.02 ms per plugin load (0.1%)</title><rect x="1031.6" y="166" width="1.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>Ll [app.js] — 0.88 ms per plugin load (0.1%)</title><rect x="1031.6" y="183" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.71 ms per plugin load (0.1%)</title><rect x="1033.3" y="166" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>SC [app.js] — 3.99 ms per plugin load (0.5%)</title><rect x="1039.7" y="149" width="5.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>requestAnimationFrame — 3.30 ms per plugin load (0.4%)</title><rect x="1039.7" y="166" width="4.6" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>begin [plugin:pulsar-graph] — 42.88 ms per plugin load (5.7%)</title><rect x="1058.0" y="64" width="67.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="76" font-size="10.5" fill="#1f2328">begin</text>
+</g>
+<g><title>(anonymous) [app.js] — 25.73 ms per plugin load (3.4%)</title><rect x="1058.0" y="81" width="40.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1061.0" y="93" font-size="10.5" fill="#1f2328">(ano…</text>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 20.75 ms per plugin load (2.8%)</title><rect x="1058.0" y="98" width="32.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="110" font-size="10.5" fill="#1f2328">(an…</text>
+</g>
+<g><title>syncRenderers [plugin:pulsar-graph] — 18.11 ms per plugin load (2.4%)</title><rect x="1058.0" y="115" width="28.0" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="127" font-size="10.5" fill="#1f2328">sy…</text>
+</g>
+<g><title>attach [plugin:pulsar-graph] — 16.97 ms per plugin load (2.3%)</title><rect x="1058.0" y="132" width="26.2" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="144" font-size="10.5" fill="#1f2328">at…</text>
+</g>
+<g><title>buildPanel [plugin:pulsar-graph] — 16.60 ms per plugin load (2.2%)</title><rect x="1058.0" y="149" width="25.6" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="161" font-size="10.5" fill="#1f2328">bu…</text>
+</g>
+<g><title>PulsarPanel [plugin:pulsar-graph] — 16.49 ms per plugin load (2.2%)</title><rect x="1058.0" y="166" width="25.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="178" font-size="10.5" fill="#1f2328">Pu…</text>
+</g>
+<g><title>build [plugin:pulsar-graph] — 16.49 ms per plugin load (2.2%)</title><rect x="1058.0" y="183" width="25.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1061.0" y="195" font-size="10.5" fill="#1f2328">bu…</text>
+</g>
+<g><title>buildControl [plugin:pulsar-graph] — 9.45 ms per plugin load (1.3%)</title><rect x="1058.0" y="200" width="14.3" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>e.addDropdown [app.js] — 8.56 ms per plugin load (1.1%)</title><rect x="1058.0" y="217" width="12.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 8.05 ms per plugin load (1.1%)</title><rect x="1058.0" y="234" width="12.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>t.setValue [app.js] — 7.95 ms per plugin load (1.1%)</title><rect x="1058.0" y="251" width="11.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t.resizeToFit [app.js] — 7.90 ms per plugin load (1.1%)</title><rect x="1058.0" y="268" width="11.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>renderAge [plugin:pulsar-graph] — 6.37 ms per plugin load (0.9%)</title><rect x="1072.9" y="200" width="9.5" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>setRanges [plugin:pulsar-graph] — 6.32 ms per plugin load (0.8%)</title><rect x="1072.9" y="217" width="9.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>build [plugin:pulsar-graph] — 6.32 ms per plugin load (0.8%)</title><rect x="1072.9" y="234" width="9.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>buildHistogram [plugin:pulsar-graph] — 5.29 ms per plugin load (0.7%)</title><rect x="1072.9" y="251" width="7.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>smoothCounts [plugin:pulsar-graph] — 3.36 ms per plugin load (0.4%)</title><rect x="1072.9" y="268" width="4.7" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>kernel [plugin:pulsar-graph] — 2.78 ms per plugin load (0.4%)</title><rect x="1072.9" y="285" width="3.8" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>position [plugin:pulsar-graph] — 0.80 ms per plugin load (0.1%)</title><rect x="1081.2" y="251" width="0.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 1.09 ms per plugin load (0.1%)</title><rect x="1084.7" y="132" width="1.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyOpacity [plugin:pulsar-graph] — 0.80 ms per plugin load (0.1%)</title><rect x="1084.7" y="149" width="0.7" height="15.5" rx="1.5" fill="#3dbd70"/>
+</g>
+<g><title>refreshBeadViews [plugin:pulsar-graph] — 2.15 ms per plugin load (0.3%)</title><rect x="1086.5" y="115" width="2.8" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="132" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="149" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="166" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="183" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="200" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="217" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="234" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 2.05 ms per plugin load (0.3%)</title><rect x="1086.5" y="251" width="2.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="98" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="115" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="132" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="149" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="166" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="183" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="200" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="217" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.63 ms per plugin load (0.4%)</title><rect x="1090.7" y="234" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.42 ms per plugin load (0.3%)</title><rect x="1090.7" y="251" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.26 ms per plugin load (0.2%)</title><rect x="1090.7" y="268" width="1.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.16 ms per plugin load (0.2%)</title><rect x="1090.7" y="285" width="1.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.69 ms per plugin load (0.1%)</title><rect x="1090.7" y="302" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get [app.js] — 1.06 ms per plugin load (0.1%)</title><rect x="1092.7" y="268" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.06 ms per plugin load (0.1%)</title><rect x="1092.7" y="285" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>yw [app.js] — 2.30 ms per plugin load (0.3%)</title><rect x="1094.9" y="98" width="3.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>descriptor.get [remote.js] — 0.96 ms per plugin load (0.1%)</title><rect x="1094.9" y="115" width="0.9" height="15.5" rx="1.5" fill="#b6c2d9"/>
+</g>
+<g><title>sendSync [renderer_init] — 0.91 ms per plugin load (0.1%)</title><rect x="1094.9" y="132" width="0.8" height="15.5" rx="1.5" fill="#b6c2d9"/>
+</g>
+<g><title>sendSync — 0.91 ms per plugin load (0.1%)</title><rect x="1094.9" y="149" width="0.8" height="15.5" rx="1.5" fill="#e6dcc8"/>
+</g>
+<g><title>getCurrentWebContents [remote.js] — 0.68 ms per plugin load (0.1%)</title><rect x="1096.4" y="115" width="0.5" height="15.5" rx="1.5" fill="#b6c2d9"/>
+</g>
+<g><title>syncInk [plugin:pulsar-graph] — 17.10 ms per plugin load (2.3%)</title><rect x="1098.6" y="81" width="26.4" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1101.6" y="93" font-size="10.5" fill="#1f2328">sy…</text>
+</g>
+<g><title>setInkOptions [plugin:pulsar-graph] — 16.99 ms per plugin load (2.3%)</title><rect x="1098.6" y="98" width="26.2" height="15.5" rx="1.5" fill="#c4ead2"/>
+<text x="1101.6" y="110" font-size="10.5" fill="#1f2328">se…</text>
+</g>
+<g><title>(anonymous) [app.js] — 16.99 ms per plugin load (2.3%)</title><rect x="1098.6" y="115" width="26.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="127" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 16.94 ms per plugin load (2.3%)</title><rect x="1098.6" y="132" width="26.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="144" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 16.69 ms per plugin load (2.2%)</title><rect x="1098.6" y="149" width="25.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="161" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 16.35 ms per plugin load (2.2%)</title><rect x="1098.6" y="166" width="25.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="178" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 16.13 ms per plugin load (2.2%)</title><rect x="1098.6" y="183" width="24.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="195" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) [app.js] — 15.98 ms per plugin load (2.1%)</title><rect x="1098.6" y="200" width="24.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+<text x="1101.6" y="212" font-size="10.5" fill="#1f2328">(a…</text>
+</g>
+<g><title>(anonymous) — 11.41 ms per plugin load (1.5%)</title><rect x="1125.7" y="64" width="17.4" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>t.disablePlugin [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="81" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>y [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="98" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="115" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="132" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="149" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="166" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t.unloadPlugin [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="183" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>y [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="200" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="217" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="234" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="251" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="268" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 11.31 ms per plugin load (1.5%)</title><rect x="1125.7" y="285" width="17.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 10.19 ms per plugin load (1.4%)</title><rect x="1125.7" y="302" width="15.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t.unregisterView [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="319" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="336" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="353" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="370" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>a [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="387" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="404" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>y [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="421" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="438" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="455" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="472" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.12 ms per plugin load (0.7%)</title><rect x="1125.7" y="489" width="7.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t.unregisterEditorExtension [app.js] — 4.96 ms per plugin load (0.7%)</title><rect x="1133.7" y="319" width="7.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 4.96 ms per plugin load (0.7%)</title><rect x="1133.7" y="336" width="7.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="353" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="370" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="387" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="404" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="421" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="438" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="455" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="472" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.00 ms per plugin load (0.4%)</title><rect x="1133.7" y="489" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>yw [app.js] — 1.96 ms per plugin load (0.3%)</title><rect x="1138.5" y="353" width="2.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>onunload [plugin:pulsar-graph] — 1.12 ms per plugin load (0.1%)</title><rect x="1141.7" y="302" width="1.2" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>releaseGraphs [plugin:pulsar-graph] — 1.01 ms per plugin load (0.1%)</title><rect x="1141.7" y="319" width="1.0" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>onload [plugin:pulsar-graph] — 6.17 ms per plugin load (0.8%)</title><rect x="1143.7" y="64" width="9.1" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.89 ms per plugin load (0.8%)</title><rect x="1143.7" y="81" width="8.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.89 ms per plugin load (0.8%)</title><rect x="1143.7" y="98" width="8.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 5.67 ms per plugin load (0.8%)</title><rect x="1143.7" y="115" width="8.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.69 ms per plugin load (0.5%)</title><rect x="1143.7" y="132" width="5.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.69 ms per plugin load (0.5%)</title><rect x="1143.7" y="149" width="5.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.38 ms per plugin load (0.3%)</title><rect x="1143.7" y="166" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.38 ms per plugin load (0.3%)</title><rect x="1143.7" y="183" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.32 ms per plugin load (0.3%)</title><rect x="1143.7" y="200" width="3.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.23 ms per plugin load (0.3%)</title><rect x="1143.7" y="217" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.23 ms per plugin load (0.3%)</title><rect x="1143.7" y="234" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.23 ms per plugin load (0.3%)</title><rect x="1143.7" y="251" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.23 ms per plugin load (0.3%)</title><rect x="1143.7" y="268" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.12 ms per plugin load (0.3%)</title><rect x="1143.7" y="285" width="2.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>get [app.js] — 1.10 ms per plugin load (0.1%)</title><rect x="1143.7" y="302" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.10 ms per plugin load (0.1%)</title><rect x="1143.7" y="319" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.91 ms per plugin load (0.1%)</title><rect x="1145.4" y="302" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.83 ms per plugin load (0.1%)</title><rect x="1145.4" y="319" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>a [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="166" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="183" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>y [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="200" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="217" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="234" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="251" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.32 ms per plugin load (0.2%)</title><rect x="1147.4" y="268" width="1.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 0.83 ms per plugin load (0.1%)</title><rect x="1147.4" y="285" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [app.js] — 0.78 ms per plugin load (0.1%)</title><rect x="1147.4" y="302" width="0.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>yw [app.js] — 1.98 ms per plugin load (0.3%)</title><rect x="1149.5" y="132" width="2.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>getCurrentWebContents [remote.js] — 0.71 ms per plugin load (0.1%)</title><rect x="1149.5" y="149" width="0.5" height="15.5" rx="1.5" fill="#b6c2d9"/>
+</g>
+<g><title>sendSync [renderer_init] — 0.71 ms per plugin load (0.1%)</title><rect x="1149.5" y="166" width="0.5" height="15.5" rx="1.5" fill="#b6c2d9"/>
+</g>
+<g><title>(garbage collector) — 5.45 ms per plugin load (0.7%)</title><rect x="1153.4" y="64" width="8.0" height="15.5" rx="1.5" fill="#eaeef2"/>
+</g>
+<g><title>r [app.js] — 3.71 ms per plugin load (0.5%)</title><rect x="1162.0" y="64" width="5.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.71 ms per plugin load (0.5%)</title><rect x="1162.0" y="81" width="5.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.65 ms per plugin load (0.5%)</title><rect x="1162.0" y="98" width="5.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>u [app.js] — 2.76 ms per plugin load (0.4%)</title><rect x="1162.0" y="115" width="3.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 2.19 ms per plugin load (0.3%)</title><rect x="1162.0" y="132" width="2.9" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.85 ms per plugin load (0.1%)</title><rect x="1166.4" y="115" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="132" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="149" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="166" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="183" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="200" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 0.80 ms per plugin load (0.1%)</title><rect x="1166.4" y="217" width="0.7" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t [plugin:pulsar-graph] — 3.40 ms per plugin load (0.5%)</title><rect x="1167.8" y="64" width="4.8" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>renderCallback [app.js] — 3.20 ms per plugin load (0.4%)</title><rect x="1167.8" y="81" width="4.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 2.31 ms per plugin load (0.3%)</title><rect x="1167.8" y="98" width="3.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 2.31 ms per plugin load (0.3%)</title><rect x="1167.8" y="115" width="3.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>render [pixi.min.js] — 2.26 ms per plugin load (0.3%)</title><rect x="1167.8" y="132" width="3.0" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>u [app.js] — 3.28 ms per plugin load (0.4%)</title><rect x="1173.2" y="64" width="4.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>c [app.js] — 3.23 ms per plugin load (0.4%)</title><rect x="1173.2" y="81" width="4.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.23 ms per plugin load (0.4%)</title><rect x="1173.2" y="98" width="4.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.65 ms per plugin load (0.4%)</title><rect x="1173.2" y="115" width="3.6" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.50 ms per plugin load (0.3%)</title><rect x="1173.2" y="132" width="3.3" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.39 ms per plugin load (0.3%)</title><rect x="1173.2" y="149" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 1.16 ms per plugin load (0.2%)</title><rect x="1173.2" y="166" width="1.2" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>syncRenderers [plugin:pulsar-graph] — 0.84 ms per plugin load (0.1%)</title><rect x="1173.2" y="183" width="0.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 0.84 ms per plugin load (0.1%)</title><rect x="1173.2" y="200" width="0.7" height="15.5" rx="1.5" fill="#c4ead2"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.07 ms per plugin load (0.1%)</title><rect x="1175.0" y="166" width="1.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.92 ms per plugin load (0.1%)</title><rect x="1175.0" y="183" width="0.8" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.64 ms per plugin load (0.1%)</title><rect x="1175.0" y="200" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.64 ms per plugin load (0.1%)</title><rect x="1175.0" y="217" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.64 ms per plugin load (0.1%)</title><rect x="1175.0" y="234" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.95 ms per plugin load (0.4%)</title><rect x="1178.4" y="64" width="4.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.50 ms per plugin load (0.3%)</title><rect x="1178.4" y="81" width="3.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.40 ms per plugin load (0.3%)</title><rect x="1178.4" y="98" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.69 ms per plugin load (0.1%)</title><rect x="1178.4" y="115" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.69 ms per plugin load (0.1%)</title><rect x="1178.4" y="132" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.69 ms per plugin load (0.1%)</title><rect x="1178.4" y="149" width="0.5" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>r [enhance.js] — 2.38 ms per plugin load (0.3%)</title><rect x="1183.0" y="64" width="3.2" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.69 ms per plugin load (0.2%)</title><rect x="1183.0" y="81" width="2.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>t.resizeToFit [app.js] — 1.69 ms per plugin load (0.2%)</title><rect x="1183.0" y="98" width="2.1" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>n [app.js] — 0.64 ms per plugin load (0.1%)</title><rect x="1186.8" y="64" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.64 ms per plugin load (0.1%)</title><rect x="1186.8" y="81" width="0.4" height="15.5" rx="1.5" fill="#d0d7de"/>
+</g>
+</svg>

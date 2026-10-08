@@ -1,0 +1,401 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 393" width="1200" height="393" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="A note switch at 20,000 notes, the build with #109">
+<text x="10" y="22" font-size="15" font-weight="600" fill="#e6edf3">A note switch at 20,000 notes, the build with #109</text>
+<text x="10" y="41" font-size="11.5" fill="#9198a1">14 switches, 4,168 drawn. Two paints per switch: under syncRenderers (the one #111 removed) and under the data hook after Obsidian rebuilds.</text>
+<rect x="10" y="369" width="11" height="11" rx="2" fill="#2e9d5c"/>
+<text x="26" y="378.5" font-size="11" fill="#9198a1">Pulsar</text>
+<rect x="80.6" y="369" width="11" height="11" rx="2" fill="#1f3d2b"/>
+<text x="96.6" y="378.5" font-size="11" fill="#9198a1">Pulsar hook passing through</text>
+<rect x="279.29999999999995" y="369" width="11" height="11" rx="2" fill="#3d444d"/>
+<text x="295.29999999999995" y="378.5" font-size="11" fill="#9198a1">Obsidian and PIXI</text>
+<rect x="416.99999999999994" y="369" width="11" height="11" rx="2" fill="#36435c"/>
+<text x="432.99999999999994" y="378.5" font-size="11" fill="#9198a1">Node and Electron</text>
+<rect x="554.6999999999999" y="369" width="11" height="11" rx="2" fill="#4d4436"/>
+<text x="570.6999999999999" y="378.5" font-size="11" fill="#9198a1">Browser built-ins and the harness</text>
+<rect x="789.9999999999999" y="369" width="11" height="11" rx="2" fill="#262c36"/>
+<text x="805.9999999999999" y="378.5" font-size="11" fill="#9198a1">VM: (program), garbage collection</text>
+<g><title>(anonymous) [plugin:pulsar-graph] — 648.00 ms per note switch (72.8%)</title><rect x="10.0" y="64" width="857.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="13.0" y="76" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 554.88 ms per note switch (62.3%)</title><rect x="10.0" y="81" width="734.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="13.0" y="93" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 289.76 ms per note switch (32.5%)</title><rect x="10.0" y="98" width="383.3" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="13.0" y="110" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>sized.getSize [plugin:pulsar-graph] — 67.18 ms per note switch (7.5%)</title><rect x="10.0" y="115" width="88.4" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="13.0" y="127" font-size="10.5" fill="#e6edf3">sized.getSize</text>
+</g>
+<g><title>(anonymous) [app.js] — 13.12 ms per note switch (1.5%)</title><rect x="10.0" y="132" width="16.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>get tint [pixi.min.js] — 22.60 ms per note switch (2.5%)</title><rect x="99.0" y="115" width="29.3" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="102.0" y="127" font-size="10.5" fill="#e6edf3">ge…</text>
+</g>
+<g><title>get value [pixi.min.js] — 21.99 ms per note switch (2.5%)</title><rect x="99.0" y="132" width="28.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="102.0" y="144" font-size="10.5" fill="#e6edf3">ge…</text>
+</g>
+<g><title>(anonymous) [app.js] — 12.00 ms per note switch (1.3%)</title><rect x="128.9" y="115" width="15.3" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>dZ [app.js] — 11.86 ms per note switch (1.3%)</title><rect x="144.8" y="115" width="15.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>uZ [app.js] — 11.60 ms per note switch (1.3%)</title><rect x="160.6" y="115" width="14.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>pZ [app.js] — 2.93 ms per note switch (0.3%)</title><rect x="175.9" y="115" width="3.3" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>hZ [app.js] — 2.21 ms per note switch (0.2%)</title><rect x="179.8" y="115" width="2.3" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>uZ [app.js] — 1.25 ms per note switch (0.1%)</title><rect x="179.8" y="132" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>set x [pixi.min.js] — 1.99 ms per note switch (0.2%)</title><rect x="182.7" y="115" width="2.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>set x [pixi.min.js] — 1.07 ms per note switch (0.1%)</title><rect x="182.7" y="132" width="0.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>set tint [pixi.min.js] — 0.95 ms per note switch (0.1%)</title><rect x="185.4" y="115" width="0.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>render [pixi.min.js] — 123.94 ms per note switch (13.9%)</title><rect x="393.9" y="98" width="163.6" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="110" font-size="10.5" fill="#e6edf3">render</text>
+</g>
+<g><title>render [pixi.min.js] — 123.94 ms per note switch (13.9%)</title><rect x="393.9" y="115" width="163.6" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="127" font-size="10.5" fill="#e6edf3">render</text>
+</g>
+<g><title>render [pixi.min.js] — 123.85 ms per note switch (13.9%)</title><rect x="393.9" y="132" width="163.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="144" font-size="10.5" fill="#e6edf3">render</text>
+</g>
+<g><title>render [pixi.min.js] — 61.62 ms per note switch (6.9%)</title><rect x="393.9" y="149" width="81.0" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="161" font-size="10.5" fill="#e6edf3">render</text>
+</g>
+<g><title>render [pixi.min.js] — 60.22 ms per note switch (6.8%)</title><rect x="393.9" y="166" width="79.2" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="178" font-size="10.5" fill="#e6edf3">render</text>
+</g>
+<g><title>render [pixi.min.js] — 32.17 ms per note switch (3.6%)</title><rect x="393.9" y="183" width="42.0" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="396.9" y="195" font-size="10.5" fill="#e6edf3">rend…</text>
+</g>
+<g><title>_render [pixi.min.js] — 9.79 ms per note switch (1.1%)</title><rect x="393.9" y="200" width="12.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>_renderDirect [pixi.min.js] — 5.56 ms per note switch (0.6%)</title><rect x="393.9" y="217" width="6.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bind [pixi.min.js] — 4.03 ms per note switch (0.5%)</title><rect x="393.9" y="234" width="4.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bindVertexArray — 1.57 ms per note switch (0.2%)</title><rect x="393.9" y="251" width="1.5" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+<g><title>syncUniformGroup [pixi.min.js] — 1.31 ms per note switch (0.1%)</title><rect x="395.9" y="251" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>syncUniforms [pixi.min.js] — 1.31 ms per note switch (0.1%)</title><rect x="395.9" y="268" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) — 1.19 ms per note switch (0.1%)</title><rect x="395.9" y="285" width="1.0" height="15.5" rx="1.5" fill="#262c36"/>
+</g>
+<g><title>_renderDrawCallDirect [pixi.min.js] — 0.96 ms per note switch (0.1%)</title><rect x="399.2" y="234" width="0.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>flush [pixi.min.js] — 2.67 ms per note switch (0.3%)</title><rect x="401.2" y="217" width="2.9" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>setObjectRenderer [pixi.min.js] — 2.67 ms per note switch (0.3%)</title><rect x="401.2" y="234" width="2.9" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>stop [pixi.min.js] — 2.67 ms per note switch (0.3%)</title><rect x="401.2" y="251" width="2.9" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>flush [pixi.min.js] — 2.62 ms per note switch (0.3%)</title><rect x="401.2" y="268" width="2.9" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateGeometry [pixi.min.js] — 1.37 ms per note switch (0.2%)</title><rect x="401.2" y="285" width="1.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 1.32 ms per note switch (0.1%)</title><rect x="401.2" y="302" width="1.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>update [pixi.min.js] — 1.32 ms per note switch (0.1%)</title><rect x="401.2" y="319" width="1.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bufferSubData — 1.05 ms per note switch (0.1%)</title><rect x="401.2" y="336" width="0.8" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+<g><title>_render [pixi.min.js] — 0.85 ms per note switch (0.1%)</title><rect x="404.8" y="217" width="0.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>render [pixi.min.js] — 2.68 ms per note switch (0.3%)</title><rect x="406.8" y="200" width="3.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>_render [pixi.min.js] — 1.28 ms per note switch (0.1%)</title><rect x="406.8" y="217" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 47.79 ms per note switch (5.4%)</title><rect x="475.5" y="149" width="62.7" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="478.5" y="161" font-size="10.5" fill="#e6edf3">updateTr…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 46.30 ms per note switch (5.2%)</title><rect x="475.5" y="166" width="60.7" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="478.5" y="178" font-size="10.5" fill="#e6edf3">updateT…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 28.05 ms per note switch (3.1%)</title><rect x="475.5" y="183" width="36.6" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="478.5" y="195" font-size="10.5" fill="#e6edf3">upd…</text>
+</g>
+<g><title>updateTransform [pixi.min.js] — 4.05 ms per note switch (0.5%)</title><rect x="475.5" y="200" width="4.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateTransform [pixi.min.js] — 0.98 ms per note switch (0.1%)</title><rect x="475.5" y="217" width="0.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>flush [pixi.min.js] — 9.76 ms per note switch (1.1%)</title><rect x="538.8" y="149" width="12.3" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>drawBatches [pixi.min.js] — 6.01 ms per note switch (0.7%)</title><rect x="538.8" y="166" width="7.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bindAndClearTexArray [pixi.min.js] — 5.85 ms per note switch (0.7%)</title><rect x="538.8" y="183" width="7.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bind [pixi.min.js] — 5.73 ms per note switch (0.6%)</title><rect x="538.8" y="200" width="7.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bindTexture — 2.19 ms per note switch (0.2%)</title><rect x="538.8" y="217" width="2.3" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+<g><title>activeTexture — 0.96 ms per note switch (0.1%)</title><rect x="541.7" y="217" width="0.7" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+<g><title>buildTexturesAndDrawCalls [pixi.min.js] — 2.74 ms per note switch (0.3%)</title><rect x="546.8" y="166" width="3.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>buildDrawCalls [pixi.min.js] — 2.00 ms per note switch (0.2%)</title><rect x="546.8" y="183" width="2.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>packInterleavedGeometry [pixi.min.js] — 1.59 ms per note switch (0.2%)</title><rect x="546.8" y="200" width="1.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateGeometry [pixi.min.js] — 0.81 ms per note switch (0.1%)</title><rect x="550.4" y="166" width="0.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>updateBuffers [pixi.min.js] — 0.77 ms per note switch (0.1%)</title><rect x="550.4" y="183" width="0.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>bind [pixi.min.js] — 1.64 ms per note switch (0.2%)</title><rect x="551.7" y="149" width="1.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>update [pixi.min.js] — 0.82 ms per note switch (0.1%)</title><rect x="551.7" y="166" width="0.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>clear [pixi.min.js] — 1.48 ms per note switch (0.2%)</title><rect x="553.9" y="149" width="1.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>clear [pixi.min.js] — 1.27 ms per note switch (0.1%)</title><rect x="553.9" y="166" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>clear — 1.23 ms per note switch (0.1%)</title><rect x="553.9" y="183" width="1.0" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+<g><title>sortChildren [pixi.min.js] — 49.27 ms per note switch (5.5%)</title><rect x="558.1" y="98" width="64.7" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="561.1" y="110" font-size="10.5" fill="#e6edf3">sortChil…</text>
+</g>
+<g><title>Ru [pixi.min.js] — 22.09 ms per note switch (2.5%)</title><rect x="558.1" y="115" width="28.7" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="561.1" y="127" font-size="10.5" fill="#e6edf3">Ru</text>
+</g>
+<g><title>get zIndex [pixi.min.js] — 5.51 ms per note switch (0.6%)</title><rect x="558.1" y="132" width="6.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 91.27 ms per note switch (10.2%)</title><rect x="745.1" y="81" width="120.3" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="748.1" y="93" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>sync [plugin:pulsar-graph] — 90.90 ms per note switch (10.2%)</title><rect x="745.1" y="98" width="119.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="748.1" y="110" font-size="10.5" fill="#e6edf3">sync</text>
+</g>
+<g><title>strengthOf [plugin:pulsar-graph] — 29.20 ms per note switch (3.3%)</title><rect x="745.1" y="115" width="38.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="748.1" y="127" font-size="10.5" fill="#e6edf3">stre…</text>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 20.64 ms per note switch (2.3%)</title><rect x="745.1" y="132" width="26.7" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="748.1" y="144" font-size="10.5" fill="#e6edf3">(a…</text>
+</g>
+<g><title>wants [plugin:pulsar-graph] — 26.18 ms per note switch (2.9%)</title><rect x="783.8" y="115" width="34.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="786.8" y="127" font-size="10.5" fill="#e6edf3">wan…</text>
+</g>
+<g><title>place [plugin:pulsar-graph] — 5.77 ms per note switch (0.6%)</title><rect x="818.5" y="115" width="7.0" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 2.68 ms per note switch (0.3%)</title><rect x="818.5" y="132" width="3.0" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>describeAge [plugin:pulsar-graph] — 2.68 ms per note switch (0.3%)</title><rect x="818.5" y="149" width="3.0" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>mtimeFor [plugin:pulsar-graph] — 1.06 ms per note switch (0.1%)</title><rect x="818.5" y="166" width="0.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>offsetWithin [plugin:pulsar-graph] — 2.17 ms per note switch (0.2%)</title><rect x="822.0" y="132" width="2.3" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>sized.getSize [plugin:pulsar-graph] — 1.54 ms per note switch (0.2%)</title><rect x="822.0" y="149" width="1.4" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>baseAlphaFor [plugin:pulsar-graph] — 1.17 ms per note switch (0.1%)</title><rect x="826.1" y="115" width="0.9" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>u [app.js] — 137.02 ms per note switch (15.4%)</title><rect x="868.5" y="64" width="180.9" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="76" font-size="10.5" fill="#e6edf3">u</text>
+</g>
+<g><title>c [app.js] — 137.02 ms per note switch (15.4%)</title><rect x="868.5" y="81" width="180.9" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="93" font-size="10.5" fill="#e6edf3">c</text>
+</g>
+<g><title>(anonymous) [app.js] — 134.88 ms per note switch (15.1%)</title><rect x="868.5" y="98" width="178.1" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="110" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 134.52 ms per note switch (15.1%)</title><rect x="868.5" y="115" width="177.6" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="127" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 134.44 ms per note switch (15.1%)</title><rect x="868.5" y="132" width="177.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="144" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 134.28 ms per note switch (15.1%)</title><rect x="868.5" y="149" width="177.3" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="161" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 99.35 ms per note switch (11.2%)</title><rect x="868.5" y="166" width="131.0" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="178" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 98.71 ms per note switch (11.1%)</title><rect x="868.5" y="183" width="130.2" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="871.5" y="195" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 55.51 ms per note switch (6.2%)</title><rect x="868.5" y="200" width="72.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="871.5" y="212" font-size="10.5" fill="#e6edf3">(anonymou…</text>
+</g>
+<g><title>filterGraphData.ranges [plugin:pulsar-graph] — 31.01 ms per note switch (3.5%)</title><rect x="868.5" y="217" width="40.5" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="871.5" y="229" font-size="10.5" fill="#e6edf3">filt…</text>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 31.01 ms per note switch (3.5%)</title><rect x="868.5" y="234" width="40.5" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="871.5" y="246" font-size="10.5" fill="#e6edf3">appl…</text>
+</g>
+<g><title>applyOpacity [plugin:pulsar-graph] — 24.10 ms per note switch (2.7%)</title><rect x="868.5" y="251" width="31.3" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="871.5" y="263" font-size="10.5" fill="#e6edf3">app…</text>
+</g>
+<g><title>poolNeighbours [plugin:pulsar-graph] — 14.86 ms per note switch (1.7%)</title><rect x="868.5" y="268" width="19.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>neighboursOf [plugin:pulsar-graph] — 5.84 ms per note switch (0.7%)</title><rect x="868.5" y="285" width="7.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>warmByGroup [plugin:pulsar-graph] — 5.79 ms per note switch (0.6%)</title><rect x="888.2" y="268" width="7.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>groupByComponent [plugin:pulsar-graph] — 3.53 ms per note switch (0.4%)</title><rect x="888.2" y="285" width="4.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>neighboursOf [plugin:pulsar-graph] — 1.67 ms per note switch (0.2%)</title><rect x="888.2" y="302" width="1.6" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>captionFor [plugin:pulsar-graph] — 3.32 ms per note switch (0.4%)</title><rect x="900.4" y="251" width="3.8" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>describeRange [plugin:pulsar-graph] — 3.32 ms per note switch (0.4%)</title><rect x="900.4" y="268" width="3.8" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>summariseRanges [plugin:pulsar-graph] — 1.89 ms per note switch (0.2%)</title><rect x="900.4" y="285" width="1.9" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 1.10 ms per note switch (0.1%)</title><rect x="900.4" y="302" width="0.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>filterPosition [plugin:pulsar-graph] — 1.10 ms per note switch (0.1%)</title><rect x="900.4" y="319" width="0.9" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>opacityFor [plugin:pulsar-graph] — 0.95 ms per note switch (0.1%)</title><rect x="900.4" y="336" width="0.7" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>exemptFromFilter [plugin:pulsar-graph] — 1.33 ms per note switch (0.1%)</title><rect x="902.9" y="285" width="1.2" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>exemptBesidesOpen [plugin:pulsar-graph] — 1.33 ms per note switch (0.1%)</title><rect x="902.9" y="302" width="1.2" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 1.29 ms per note switch (0.1%)</title><rect x="902.9" y="319" width="1.1" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 1.29 ms per note switch (0.1%)</title><rect x="902.9" y="336" width="1.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>applySizes [plugin:pulsar-graph] — 2.60 ms per note switch (0.3%)</title><rect x="904.8" y="251" width="2.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>sizeNode [plugin:pulsar-graph] — 0.94 ms per note switch (0.1%)</title><rect x="904.8" y="268" width="0.6" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 0.79 ms per note switch (0.1%)</title><rect x="908.2" y="251" width="0.4" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 0.79 ms per note switch (0.1%)</title><rect x="908.2" y="268" width="0.4" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [app.js] — 12.22 ms per note switch (1.4%)</title><rect x="909.6" y="217" width="15.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.95 ms per note switch (0.2%)</title><rect x="909.6" y="234" width="2.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 9.63 ms per note switch (1.1%)</title><rect x="925.8" y="217" width="12.2" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>filterGraphData [plugin:pulsar-graph] — 8.41 ms per note switch (0.9%)</title><rect x="925.8" y="234" width="10.5" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>strengthOf [plugin:pulsar-graph] — 1.32 ms per note switch (0.1%)</title><rect x="925.8" y="251" width="1.2" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>filterPosition [plugin:pulsar-graph] — 1.27 ms per note switch (0.1%)</title><rect x="925.8" y="268" width="1.1" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>exemptFromFilter [plugin:pulsar-graph] — 1.02 ms per note switch (0.1%)</title><rect x="936.9" y="234" width="0.8" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>exemptBesidesOpen [plugin:pulsar-graph] — 1.02 ms per note switch (0.1%)</title><rect x="936.9" y="251" width="0.8" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 1.02 ms per note switch (0.1%)</title><rect x="936.9" y="268" width="0.8" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 1.02 ms per note switch (0.1%)</title><rect x="936.9" y="285" width="0.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [app.js] — 32.81 ms per note switch (3.7%)</title><rect x="942.0" y="200" width="42.9" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="945.0" y="212" font-size="10.5" fill="#e6edf3">(ano…</text>
+</g>
+<g><title>Lx [app.js] — 3.66 ms per note switch (0.4%)</title><rect x="942.0" y="217" width="4.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>Ll [app.js] — 3.15 ms per note switch (0.4%)</title><rect x="942.0" y="234" width="3.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 2.28 ms per note switch (0.3%)</title><rect x="946.9" y="217" width="2.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 34.89 ms per note switch (3.9%)</title><rect x="1000.1" y="166" width="45.6" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="1003.1" y="178" font-size="10.5" fill="#e6edf3">(anon…</text>
+</g>
+<g><title>syncRenderers [plugin:pulsar-graph] — 31.33 ms per note switch (3.5%)</title><rect x="1000.1" y="183" width="40.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="1003.1" y="195" font-size="10.5" fill="#e6edf3">sync…</text>
+</g>
+<g><title>applyTo [plugin:pulsar-graph] — 31.33 ms per note switch (3.5%)</title><rect x="1000.1" y="200" width="40.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+<text x="1003.1" y="212" font-size="10.5" fill="#e6edf3">appl…</text>
+</g>
+<g><title>applyOpacity [plugin:pulsar-graph] — 23.59 ms per note switch (2.6%)</title><rect x="1000.1" y="217" width="30.7" height="15.5" rx="1.5" fill="#2e9d5c"/>
+<text x="1003.1" y="229" font-size="10.5" fill="#e6edf3">app…</text>
+</g>
+<g><title>poolNeighbours [plugin:pulsar-graph] — 14.53 ms per note switch (1.6%)</title><rect x="1000.1" y="234" width="18.7" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>neighboursOf [plugin:pulsar-graph] — 6.95 ms per note switch (0.8%)</title><rect x="1000.1" y="251" width="8.6" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>warmByGroup [plugin:pulsar-graph] — 5.62 ms per note switch (0.6%)</title><rect x="1019.3" y="234" width="6.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>groupByComponent [plugin:pulsar-graph] — 3.78 ms per note switch (0.4%)</title><rect x="1019.3" y="251" width="4.4" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>neighboursOf [plugin:pulsar-graph] — 1.79 ms per note switch (0.2%)</title><rect x="1019.3" y="268" width="1.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>captionFor [plugin:pulsar-graph] — 3.40 ms per note switch (0.4%)</title><rect x="1031.3" y="217" width="3.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>describeRange [plugin:pulsar-graph] — 3.40 ms per note switch (0.4%)</title><rect x="1031.3" y="234" width="3.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>summariseRanges [plugin:pulsar-graph] — 2.14 ms per note switch (0.2%)</title><rect x="1031.3" y="251" width="2.2" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 1.10 ms per note switch (0.1%)</title><rect x="1031.3" y="268" width="0.9" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>filterPosition [plugin:pulsar-graph] — 1.03 ms per note switch (0.1%)</title><rect x="1031.3" y="285" width="0.8" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>opacityFor [plugin:pulsar-graph] — 0.79 ms per note switch (0.1%)</title><rect x="1031.3" y="302" width="0.4" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>exemptFromFilter [plugin:pulsar-graph] — 1.18 ms per note switch (0.1%)</title><rect x="1034.2" y="251" width="1.0" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>exemptBesidesOpen [plugin:pulsar-graph] — 1.18 ms per note switch (0.1%)</title><rect x="1034.2" y="268" width="1.0" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 1.18 ms per note switch (0.1%)</title><rect x="1034.2" y="285" width="1.0" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 1.18 ms per note switch (0.1%)</title><rect x="1034.2" y="302" width="1.0" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>applySizes [plugin:pulsar-graph] — 2.35 ms per note switch (0.3%)</title><rect x="1035.8" y="217" width="2.5" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 1.19 ms per note switch (0.1%)</title><rect x="1039.0" y="217" width="1.0" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 1.19 ms per note switch (0.1%)</title><rect x="1039.0" y="234" width="1.0" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>paintTabs [plugin:pulsar-graph] — 2.52 ms per note switch (0.3%)</title><rect x="1041.6" y="183" width="2.7" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>spotlitFrom [plugin:pulsar-graph] — 2.36 ms per note switch (0.3%)</title><rect x="1041.6" y="200" width="2.5" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>newestAmong [plugin:pulsar-graph] — 2.32 ms per note switch (0.3%)</title><rect x="1041.6" y="217" width="2.5" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(anonymous) [plugin:pulsar-graph] — 2.14 ms per note switch (0.2%)</title><rect x="1047.2" y="98" width="2.2" height="15.5" rx="1.5" fill="#1f3d2b"/>
+</g>
+<g><title>write [plugin:pulsar-graph] — 2.14 ms per note switch (0.2%)</title><rect x="1047.2" y="115" width="2.2" height="15.5" rx="1.5" fill="#2e9d5c"/>
+</g>
+<g><title>(program) — 66.74 ms per note switch (7.5%)</title><rect x="1050.0" y="64" width="87.8" height="15.5" rx="1.5" fill="#262c36"/>
+<text x="1053.0" y="76" font-size="10.5" fill="#e6edf3">(program)</text>
+</g>
+<g><title>(garbage collector) — 26.59 ms per note switch (3.0%)</title><rect x="1138.4" y="64" width="34.6" height="15.5" rx="1.5" fill="#262c36"/>
+<text x="1141.4" y="76" font-size="10.5" fill="#e6edf3">(ga…</text>
+</g>
+<g><title>(anonymous) — 6.42 ms per note switch (0.7%)</title><rect x="1173.6" y="64" width="7.9" height="15.5" rx="1.5" fill="#262c36"/>
+</g>
+<g><title>(anonymous) [app.js] — 6.30 ms per note switch (0.7%)</title><rect x="1173.6" y="81" width="7.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 6.26 ms per note switch (0.7%)</title><rect x="1173.6" y="98" width="7.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 6.14 ms per note switch (0.7%)</title><rect x="1173.6" y="115" width="7.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [enhance.js] — 4.59 ms per note switch (0.5%)</title><rect x="1173.6" y="132" width="5.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.27 ms per note switch (0.1%)</title><rect x="1179.7" y="132" width="1.1" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.18 ms per note switch (0.1%)</title><rect x="1179.7" y="149" width="1.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.18 ms per note switch (0.1%)</title><rect x="1179.7" y="166" width="1.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.18 ms per note switch (0.1%)</title><rect x="1179.7" y="183" width="1.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.18 ms per note switch (0.1%)</title><rect x="1179.7" y="200" width="1.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.59 ms per note switch (0.4%)</title><rect x="1182.2" y="64" width="4.2" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.47 ms per note switch (0.4%)</title><rect x="1182.2" y="81" width="4.0" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 3.26 ms per note switch (0.4%)</title><rect x="1182.2" y="98" width="3.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.61 ms per note switch (0.2%)</title><rect x="1182.2" y="115" width="1.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 1.03 ms per note switch (0.1%)</title><rect x="1182.2" y="132" width="0.8" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>r [app.js] — 0.94 ms per note switch (0.1%)</title><rect x="1186.9" y="64" width="0.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.90 ms per note switch (0.1%)</title><rect x="1186.9" y="81" width="0.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.90 ms per note switch (0.1%)</title><rect x="1186.9" y="98" width="0.6" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.86 ms per note switch (0.1%)</title><rect x="1186.9" y="115" width="0.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.86 ms per note switch (0.1%)</title><rect x="1186.9" y="132" width="0.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>(anonymous) [app.js] — 0.78 ms per note switch (0.1%)</title><rect x="1186.9" y="149" width="0.4" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+</svg>

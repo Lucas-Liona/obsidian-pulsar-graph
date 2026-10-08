@@ -1,0 +1,40 @@
+run,file,group,bench,n,mean_ms,sd_ms,median_ms,p99_ms,min_ms,max_ms
+1,test/opacity-store.bench.ts,"store, 1,000 notes","every opacity, recomputed",2806,0.178211,0.34034,0.1378,0.69139,0.083181,6.22318
+1,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 (now),24221,0.0206548,0.0204245,0.015602,0.066426,0.014017,0.97296
+1,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 by full sort (before),1872,0.267184,0.183848,0.216715,1.1565,0.169988,3.19175
+1,test/opacity-store.bench.ts,"store, 10,000 notes","every opacity, recomputed",199,2.51608,1.92227,1.95604,13.8741,1.33346,17.7538
+1,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 (now),1365,0.366483,0.228263,0.29452,1.2451,0.251705,3.32416
+1,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 by full sort (before),102,4.9156,2.64104,3.86591,12.5059,2.48136,12.7014
+1,test/opacity-store.bench.ts,"store, 50,000 notes","every opacity, recomputed",34,14.8336,6.19342,12.9094,33.545,7.80967,33.545
+1,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 (now),73,6.99387,2.75933,6.38743,19.3956,3.04145,19.3956
+1,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 by full sort (before),14,37.0399,11.751,33.623,70.0883,28.3982,70.0883
+1,test/range-stats.bench.ts,"1,000 notes",once per pass (now),4813,0.103891,0.108508,0.082419,0.484631,0.061803,4.02151
+1,test/range-stats.bench.ts,"1,000 notes",once per note (before),5,287.176,55.3524,282.128,369.945,233.071,369.945
+1,test/range-stats.bench.ts,"10,000 notes",once per pass (now),207,2.4225,1.15962,2.16235,7.98457,1.13835,11.072
+1,test/range-stats.bench.ts,"50,000 notes",once per pass (now),15,33.6329,8.61347,30.235,45.2708,23.5182,45.2708
+2,test/opacity-store.bench.ts,"store, 1,000 notes","every opacity, recomputed",2387,0.209482,0.422525,0.152585,1.29031,0.086804,8.00542
+2,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 (now),20750,0.0240969,0.0789844,0.018811,0.073087,0.014371,9.99129
+2,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 by full sort (before),1897,0.263968,0.118435,0.231786,0.89557,0.172423,1.27702
+2,test/opacity-store.bench.ts,"store, 10,000 notes","every opacity, recomputed",162,3.08708,2.54677,2.38645,16.1865,1.47988,19.35
+2,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 (now),1235,0.405366,0.198309,0.387259,1.03436,0.257947,4.29809
+2,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 by full sort (before),136,3.69751,0.875439,3.50126,5.72782,2.49815,6.5575
+2,test/opacity-store.bench.ts,"store, 50,000 notes","every opacity, recomputed",34,14.7673,5.00852,13.6933,35.2478,8.4267,35.2478
+2,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 (now),73,6.85538,2.26006,6.7514,12.4467,2.89554,12.4467
+2,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 by full sort (before),14,38.0617,6.11238,37.4562,52.4562,29.2976,52.4562
+2,test/range-stats.bench.ts,"1,000 notes",once per pass (now),5240,0.0954269,0.0580749,0.079846,0.358804,0.058369,1.386
+2,test/range-stats.bench.ts,"1,000 notes",once per note (before),5,254.045,18.1649,246.627,284.193,236.963,284.193
+2,test/range-stats.bench.ts,"10,000 notes",once per pass (now),204,2.45407,1.15868,2.15348,7.50299,1.27524,10.3249
+2,test/range-stats.bench.ts,"50,000 notes",once per pass (now),22,23.2395,7.17391,20.3469,44.9432,17.0816,44.9432
+3,test/opacity-store.bench.ts,"store, 1,000 notes","every opacity, recomputed",2839,0.176514,0.359276,0.123278,0.854874,0.084754,5.40502
+3,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 (now),23284,0.0214747,0.0449518,0.015985,0.071977,0.014324,5.60832
+3,test/opacity-store.bench.ts,"store, 1,000 notes",newest 3 by full sort (before),1954,0.255898,0.166656,0.208592,0.953976,0.174215,2.6564
+3,test/opacity-store.bench.ts,"store, 10,000 notes","every opacity, recomputed",144,3.48514,2.59481,2.64571,16.7596,1.49413,17.8828
+3,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 (now),1287,0.3887,0.317994,0.305707,1.638,0.261355,6.33902
+3,test/opacity-store.bench.ts,"store, 10,000 notes",newest 3 by full sort (before),131,3.81949,1.21982,3.51428,7.96179,2.48802,10.1451
+3,test/opacity-store.bench.ts,"store, 50,000 notes","every opacity, recomputed",23,21.8059,8.01908,20.471,52.9337,13.9726,52.9337
+3,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 (now),44,11.4501,2.96066,11.1382,18.5278,5.66293,18.5278
+3,test/opacity-store.bench.ts,"store, 50,000 notes",newest 3 by full sort (before),12,44.1408,9.53802,40.9828,59.6932,31.2915,59.6932
+3,test/range-stats.bench.ts,"1,000 notes",once per pass (now),4234,0.118108,0.158308,0.10221,0.569038,0.060327,6.99435
+3,test/range-stats.bench.ts,"1,000 notes",once per note (before),5,271.845,17.4922,272.725,293.005,251.1,293.005
+3,test/range-stats.bench.ts,"10,000 notes",once per pass (now),260,1.93587,0.866802,1.75507,4.0703,1.1135,10.9115
+3,test/range-stats.bench.ts,"50,000 notes",once per pass (now),13,38.6563,7.2817,38.105,52.4811,22.893,52.4811
