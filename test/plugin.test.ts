@@ -591,7 +591,7 @@ describe('colour', () => {
     it('deepens nodes past full strength on a light theme, and hands every one back on a dark one', async () => {
         const world = vault({ groups: [{ prefix: 'n1', rgb: 0xe05050 }] });
         world.workspace.openNote('centre.md');
-        const plugin = await loadPlugin(world, {});
+        const plugin = await loadPlugin(world, FEATURES_OFF);
         const global = world.workspace.openGraph();
         await settle();
         const before = Object.fromEntries(global.renderer.nodes.map((node) => [node.id, node.color?.rgb]));

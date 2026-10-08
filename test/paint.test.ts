@@ -91,7 +91,7 @@ describe('painted colours', () => {
         const drawn = applyOpacity(renderer, store, options({ lightTheme: true }));
         const middle = drawn?.get('middle.md') ?? NaN;
 
-        expect(drawn?.get('new.md')).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(drawn?.get('new.md')).toBe(SETTINGS.maxOpacity);
         expect(node('new.md').color).toEqual({ a: 1, rgb: 0x000000 });
         expect(node('middle.md').color).toEqual({ a: 1, rgb: deepenRgb(GREY, middle) });
         expect(node('middle.md').circle?.tint).toBe(deepenRgb(GREY, middle));
@@ -119,7 +119,7 @@ describe('painted colours', () => {
         expect([...paint.releasing.keys()].sort()).toEqual(['middle.md', 'new.md']);
         expect(node('new.md').color?.rgb).toBe(GREY);
         expect(node('new.md').circle?.tint).toBe(GREY);
-        expect(node('new.md').color?.a).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(node('new.md').color?.a).toBe(SETTINGS.maxOpacity);
     });
 
     // Every node is handed a colour here, so one with none of its own carried
