@@ -26,13 +26,16 @@ looking at a graph rather than from a dialog in front of it:
 
 | Heading | Controls |
 |---|---|
-| **Nodes** | Dimmest, Brightest, Curve |
+| **Nodes** | Dimmest, Brightest, Curve, Glow, Size by age, Spotlight |
+| **Links** | Age, Trace sittings |
 | **Text** | Title size, Ages |
 | **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
 
 They are the same settings, not copies: moving one moves the other. Dimmest and
-Brightest are the minimum and maximum opacity, Curve is the fade type and Ages
-is Show note age. Both run over the same range in either place. Sliders apply
+Brightest are the minimum and maximum opacity, Curve is the fade type, Glow is
+Neighbour glow, Size by age is Size nodes by age, Spotlight is Spotlight the
+newest note, the links' Age is Age the links too, Trace sittings is Trace what
+was written together, and Ages is Show note age. Both run over the same range in either place. Sliders apply
 while you drag and are saved once you stop.
 
 Every slider in the settings has a number box beside it, and a preview at the
@@ -135,10 +138,14 @@ default changed keep their value.
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
 while everything older still falls away. Past 1.0 a node isn't drawn any more
-solid: its colour is lightened instead, so a grey node goes whiter until it is
-plain white, and a very high maximum flattens the top of the curve — the preview
-shows you when that is happening. The spotlight and pin colours are kept exactly
-as you picked them; a graph group's colour is lightened like anything else. The
+solid: on a dark theme its colour is lightened instead, so a grey node goes
+whiter until it is plain white, and a very high maximum flattens the top of the
+curve — the preview shows you when that is happening. On a light theme it is
+the mirror: the colour deepens instead, so the theme's grey goes toward black
+(Moonstone's `#5c5c5c` is near black by 1.5 and black from 2), since lightening
+there would fade a recent note into the page. The spotlight and pin colours are
+kept exactly as you picked them; a graph group's colour is lightened or
+deepened like anything else. The
 two opacity sliders can't cross — move one past the other and it takes the other
 with it.
 

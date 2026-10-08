@@ -585,6 +585,39 @@ describe('colour', () => {
         await unloadPlugin(plugin);
     });
 
+    // On a light theme an alpha above 1 is a step toward the white background:
+    // at the shipped maximum of 3 the newest note was drawn white on white,
+    // and with most of a vault above 1 the graph was links and nothing else.
+    it('deepens nodes past full strength on a light theme, and hands every one back on a dark one', async () => {
+        const world = vault({ groups: [{ prefix: 'n1', rgb: 0xe05050 }] });
+        world.workspace.openNote('centre.md');
+        const plugin = await loadPlugin(world, {});
+        const global = world.workspace.openGraph();
+        await settle();
+        const before = Object.fromEntries(global.renderer.nodes.map((node) => [node.id, node.color?.rgb]));
+
+        expect(global.renderer.node('centre.md').color).toEqual({ a: 3, rgb: GREY });
+
+        world.setTheme('light');
+        await settle();
+        global.renderer.frames(100);
+
+        expect(Math.max(...global.renderer.nodes.map((node) => node.color?.a ?? NaN))).toBe(1);
+        expect(global.renderer.node('centre.md').color).toEqual({ a: 1, rgb: 0x000000 });
+        expect(global.renderer.node('centre.md').circle?.tint).toBe(0x000000);
+        expect(global.renderer.node('oldest.md').color).toEqual({ a: 0.1, rgb: GREY });
+
+        world.setTheme('dark');
+        await settle();
+        global.renderer.frames(100);
+
+        const stalled = global.renderer.nodes.filter((node) => node.circle?.tint !== before[node.id]).map((node) => node.id);
+        expect(stalled).toEqual([]);
+        expect(global.renderer.node('centre.md').color).toEqual({ a: 3, rgb: GREY });
+        expect(global.renderer.node('n1.md').color?.rgb).toBe(0xe05050);
+        await unloadPlugin(plugin);
+    });
+
     // AGENTS.md: "Easing a tint upward stalls; downward converges." The pin
     // colour is held by assigning it, and handing a node back has to land the
     // tint exactly: left to the renderer, n2.md would ease from the pin colour

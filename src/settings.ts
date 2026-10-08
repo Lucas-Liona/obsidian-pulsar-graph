@@ -366,7 +366,7 @@ const WINDOW_DAYS = boundsOf(WINDOW_STOPS, DAY_SECONDS);
 const HALF_LIFE_DAYS = boundsOf(HALF_LIFE_STOPS, DAY_SECONDS);
 
 /** Stops short of 1, where a single fresh note would light the whole graph. */
-const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
+export const BLEED_RANGE = { lowest: 0, highest: 0.95, step: 0.05 };
 
 const HOPS_RANGE = { lowest: 1, highest: 3, step: 1 };
 
