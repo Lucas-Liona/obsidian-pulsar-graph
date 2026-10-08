@@ -36,6 +36,22 @@
 
 ### Fixed
 
+- **On a light theme the newest notes no longer vanish into the page.** Past
+  full strength Obsidian lightens a node, which on a dark background reads as
+  brighter and on a light one fades it toward white: under the shipped maximum
+  of 3, Moonstone's newest notes were drawn white on white and the graph was
+  links and nothing else. On a light theme a note past full strength is now
+  drawn solid and deepened toward black instead, the mirror of what a dark
+  theme does. In the demo vault on Moonstone, 14 of 112 nodes were invisible
+  at the new defaults and 100 at the old; now 1 is, the white spotlight. Dark
+  themes are unchanged.
+
+- **Switching theme with a graph open recolours its notes.** A note with no
+  group colour kept the old theme's grey through every repaint: the dark
+  theme's `#b3b3b3` against a light fill of `#5c5c5c`, measured. It follows
+  the theme now, and so does the colour a pinned or spotlit note is handed
+  back.
+
 - **The note history's rail ends at its oldest bead.** It ran from when the
   first sitting began, but each bead is drawn where its sitting ended, so the
   bottom of every rail was a label with no bead at it: a note with one sitting
