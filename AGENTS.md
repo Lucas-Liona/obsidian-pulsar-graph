@@ -63,6 +63,11 @@ bar, fresh writing, link dots and the history view.
 - `npm run type-check` — `tsc --noEmit`, then the same over `test/`
 - `npm run bench` — vitest benchmarks over synthetic vaults of 1k, 10k and 50k
   notes, printed as mean ± sd per call by `scripts/bench-table.mjs`
+- `bench/performance.ipynb` — recomputes every figure in `docs/performance.md`
+  from `bench/results/` and redraws its charts in `docs/assets/perf/`; run with
+  `jupyter nbconvert --to notebook --execute --inplace`. `bench/live/` is the
+  harness that recorded the results, and `bench/extract.py` turns its raw runs
+  into them
 - `npm run build:profile` — the production bundle unminified with names kept,
   for a CPU profile that reads `describeRange` rather than `s`. Never released
 - `npm test` — vitest over `test/**/*.test.ts`. `obsidian` is declarations

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" width="1200" height="240" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="The same graph at rest, Pulsar off">
+<text x="10" y="22" font-size="15" font-weight="600" fill="#e6edf3">The same graph at rest, Pulsar off</text>
+<text x="10" y="41" font-size="11.5" fill="#9198a1">The same 65 s with Pulsar switched off: the renderer sleeps.</text>
+<rect x="10" y="216" width="11" height="11" rx="2" fill="#2e9d5c"/>
+<text x="26" y="225.5" font-size="11" fill="#9198a1">Pulsar</text>
+<rect x="80.6" y="216" width="11" height="11" rx="2" fill="#1f3d2b"/>
+<text x="96.6" y="225.5" font-size="11" fill="#9198a1">Pulsar hook passing through</text>
+<rect x="279.29999999999995" y="216" width="11" height="11" rx="2" fill="#3d444d"/>
+<text x="295.29999999999995" y="225.5" font-size="11" fill="#9198a1">Obsidian and PIXI</text>
+<rect x="416.99999999999994" y="216" width="11" height="11" rx="2" fill="#36435c"/>
+<text x="432.99999999999994" y="225.5" font-size="11" fill="#9198a1">Node and Electron</text>
+<rect x="554.6999999999999" y="216" width="11" height="11" rx="2" fill="#4d4436"/>
+<text x="570.6999999999999" y="225.5" font-size="11" fill="#9198a1">Browser built-ins and the harness</text>
+<rect x="789.9999999999999" y="216" width="11" height="11" rx="2" fill="#262c36"/>
+<text x="805.9999999999999" y="225.5" font-size="11" fill="#9198a1">VM: (program), garbage collection</text>
+<g><title>(program) — 32.48 ms per second at rest (78.7%)</title><rect x="10.0" y="64" width="928.0" height="15.5" rx="1.5" fill="#262c36"/>
+<text x="13.0" y="76" font-size="10.5" fill="#e6edf3">(program)</text>
+</g>
+<g><title>a [app.js] — 7.10 ms per second at rest (17.2%)</title><rect x="938.6" y="64" width="202.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="76" font-size="10.5" fill="#e6edf3">a</text>
+</g>
+<g><title>(anonymous) [app.js] — 6.99 ms per second at rest (16.9%)</title><rect x="938.6" y="81" width="199.1" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="93" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 6.75 ms per second at rest (16.4%)</title><rect x="938.6" y="98" width="192.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="110" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 6.13 ms per second at rest (14.8%)</title><rect x="938.6" y="115" width="174.5" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="127" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 5.80 ms per second at rest (14.1%)</title><rect x="938.6" y="132" width="165.2" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="144" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 2.74 ms per second at rest (6.6%)</title><rect x="938.6" y="149" width="77.9" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="941.6" y="161" font-size="10.5" fill="#e6edf3">(anonymous)</text>
+</g>
+<g><title>(anonymous) [app.js] — 0.74 ms per second at rest (1.8%)</title><rect x="938.6" y="166" width="20.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>Lx [app.js] — 0.25 ms per second at rest (0.6%)</title><rect x="959.8" y="166" width="6.5" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>Ll [app.js] — 0.22 ms per second at rest (0.5%)</title><rect x="959.8" y="183" width="5.7" height="15.5" rx="1.5" fill="#3d444d"/>
+</g>
+<g><title>SC [app.js] — 2.70 ms per second at rest (6.5%)</title><rect x="1017.0" y="149" width="76.7" height="15.5" rx="1.5" fill="#3d444d"/>
+<text x="1020.0" y="161" font-size="10.5" fill="#e6edf3">SC</text>
+</g>
+<g><title>requestAnimationFrame — 2.34 ms per second at rest (5.7%)</title><rect x="1017.0" y="166" width="66.3" height="15.5" rx="1.5" fill="#4d4436"/>
+<text x="1020.0" y="178" font-size="10.5" fill="#e6edf3">requestA…</text>
+</g>
+<g><title>(garbage collector) — 1.58 ms per second at rest (3.8%)</title><rect x="1141.6" y="64" width="44.5" height="15.5" rx="1.5" fill="#262c36"/>
+<text x="1144.6" y="76" font-size="10.5" fill="#e6edf3">(garb…</text>
+</g>
+<g><title>(anonymous) [remote.js] — 0.08 ms per second at rest (0.2%)</title><rect x="1186.8" y="64" width="1.6" height="15.5" rx="1.5" fill="#36435c"/>
+</g>
+<g><title>send [renderer_init] — 0.08 ms per second at rest (0.2%)</title><rect x="1186.8" y="81" width="1.6" height="15.5" rx="1.5" fill="#36435c"/>
+</g>
+<g><title>send — 0.07 ms per second at rest (0.2%)</title><rect x="1186.8" y="98" width="1.4" height="15.5" rx="1.5" fill="#4d4436"/>
+</g>
+</svg>

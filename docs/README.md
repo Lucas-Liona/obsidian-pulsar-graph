@@ -19,6 +19,7 @@ master toggle at the top of the settings, and off means nothing runs at all.
 | **[Edit history](history.md)** | The log of when each note was worked on. |
 | **[A note's history](beads.md)** | That log drawn as beads down the sidebar: bursts, gaps and quiet stretches. |
 | **[Every setting](settings.md)** | The reference table. |
+| **[Performance](performance.md)** | What Pulsar costs and where, how that was measured, and what changed release by release. |
 
 ## Images
 
@@ -36,6 +37,7 @@ Everything these pages and the README use lives in [`assets/`](assets).
 | `note-history.png` | A note's sittings as beads down the sidebar |
 | `hover.png` | A node's age on hover |
 | `icon.svg` · `icon-mark.svg` | The mark: one bright point, and the same point further into the past |
+| `perf/` | The performance page's charts and flame graphs, a light and a dark copy of each, drawn by [`bench/performance.ipynb`](../bench/performance.ipynb) |
 
 Everything new is captured from the demo vault, never from a real one, and
 anything wide is checked for legible note titles before it goes in — see the
