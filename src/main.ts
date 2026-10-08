@@ -1824,7 +1824,26 @@ export default class PulsarGraphPlugin extends Plugin {
         labels.setMode(this.labelMode(kind));
 
         const paint = newPaint();
-        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id));
+        // A token that changes whenever strengthOf could answer differently:
+        // the store's opacities moved, or this graph's pooled ones did. The
+        // links read it once a frame. Every repaint hands over a new pooled
+        // map, a note switch included, so a new one with the same contents
+        // keeps the token: comparing 20,000 numbers is a tenth of the cost of
+        // working 43,000 links out again.
+        let token = {};
+        let tokenFrom: { byPath: Map<string, number> | null; revision: number } = { byPath: null, revision: -1 };
+        const linkRevision = (): unknown => {
+            const revision = this.store.revision();
+
+            if (revision !== tokenFrom.revision || (pooled.byPath !== tokenFrom.byPath && !samePooled(pooled.byPath, tokenFrom.byPath))) {
+                token = {};
+            }
+
+            tokenFrom = { byPath: pooled.byPath, revision };
+            return token;
+        };
+
+        const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id), linkRevision);
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
             ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
@@ -2101,4 +2120,23 @@ function parseHexColor(value: string): number {
  */
 function isNote(file: TAbstractFile): file is TFile {
     return file instanceof TFile && file.extension === 'md';
+}
+
+/** Whether two graphs' pooled opacities say the same thing about every note. */
+function samePooled(a: Map<string, number> | null, b: Map<string, number> | null): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (!a || !b || a.size !== b.size) {
+        return false;
+    }
+
+    for (const [path, value] of a) {
+        if (b.get(path) !== value) {
+            return false;
+        }
+    }
+
+    return true;
 }
