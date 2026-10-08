@@ -377,9 +377,7 @@ which is worth reusing rather than reinventing:
   a ratio of 1.25, a node is drawn at `x * scale + panX` in the canvas's device
   pixels (`getGlobalPosition()` agrees, and `renderer.px.renderer.resolution`
   reads 1), so a camera that sets `scale`, `targetScale`, `panX` and `panY`
-  itself each frame centres against `renderer.px.view.width` and `height`. The
-  recorder behind the launch footage does this; see `bench/live/` for the
-  probe pattern.
+  itself each frame centres against `renderer.px.view.width` and `height`.
 - **Set the pan after the zoom has finished easing.** `zoomTo` moves the pan
   while it runs, so centring before it settles is immediately undone.
 - Chrome can be hidden for a shot by injecting a stylesheet over
