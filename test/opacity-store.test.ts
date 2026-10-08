@@ -73,11 +73,24 @@ describe('the edit-intensity blend', () => {
         expect(on.opacityFor('new.md')).toBeCloseTo(1);
     });
 
-    it('still moves a note that has sittings on record', () => {
-        const off = storeWith(0, { 'old.md': 9, 'middle.md': 1 });
-        const on = storeWith(0.5, { 'old.md': 9, 'middle.md': 1 });
+    it('lifts a note that has sittings on record above one of its age that has none', () => {
+        const off = storeWith(0, { 'old.md': 9 });
+        const on = storeWith(0.5, { 'old.md': 9 });
 
         expect(on.opacityFor('old.md')).toBeGreaterThan(off.opacityFor('old.md') ?? NaN);
-        expect(on.opacityFor('new.md')).toBeCloseTo(off.opacityFor('new.md') ?? NaN);
+    });
+
+    // Blending only the notes with a record ranked them among themselves, so
+    // the commonest case, a single sitting each, came last at 0 and was
+    // dimmed below every note with no record at all.
+    it('never draws a note with a sitting below one the same age with none', () => {
+        const same = new Map([['worked.md', 5 * DAY], ['untouched.md', 5 * DAY], ['other.md', 0], ['newest.md', 10 * DAY]]);
+        const settings: PulsarGraphSettings = { ...DEFAULT_SETTINGS, ageScale: 'even', fadeType: 'linear', minOpacity: 0, maxOpacity: 1, intensityBlend: 0.25 };
+        const store = new OpacityStore(() => settings);
+        store.setSittingSource((path) => ({ 'worked.md': 1, 'other.md': 1 } as Record<string, number>)[path] ?? 0);
+        store.build([...same].map(([path, mtime]) => Object.assign(new TFile(), { path, extension: 'md', stat: { mtime, ctime: mtime, size: 1 } })));
+        store.refresh();
+
+        expect(store.opacityFor('worked.md')).toBeGreaterThan(store.opacityFor('untouched.md') ?? NaN);
     });
 });

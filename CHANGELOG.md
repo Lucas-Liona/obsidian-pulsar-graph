@@ -107,11 +107,13 @@
   the theme now, and so does the colour a pinned or spotlit note is handed
   back.
 
-- **Blending in edit intensity no longer dims notes with nothing on record.**
-  A note with no sittings counted as the least worked-on of all, so while the
-  history was new every note was dimmed by the blend: at 0.25, the newest note
-  reached three quarters of the range and no further. A note with no record is
-  judged by its date alone now, and one with sittings is blended as before.
+- **Blending in edit intensity no longer dims a vault with no history.**
+  With nothing on record every note's intensity was 0, so the blend dimmed
+  the whole graph: at 0.25, the newest note reached three quarters of the
+  range and no further. The blend now waits until anything is on record. A
+  note's sittings are also ranked against every note, a note with no record
+  counting as 0, so of two notes the same age the one returned to more is
+  never the dimmer.
 
 - **The note history's rail ends at its oldest bead.** It ran from when the
   first sitting began, but each bead is drawn where its sitting ended, so the
