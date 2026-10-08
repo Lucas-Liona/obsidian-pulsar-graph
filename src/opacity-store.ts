@@ -581,9 +581,14 @@ export class OpacityStore {
         // Added to recency rather than multiplied by it. A product would make a
         // note with nothing on record vanish however recently it was edited,
         // which is every note for the first weeks after the history is switched
-        // on. At a blend of 0 this is exactly the old behaviour, so the feature
-        // being off by default falls out of the arithmetic.
-        if (intensityBlend > 0 && path !== undefined) {
+        // on. At a blend of 0 this is exactly the old behaviour.
+        //
+        // And only for a note with something on record. Blending a zero in for
+        // the rest still dimmed every note by the blend until the history had
+        // anything to say: at 0.25 the newest note of a fresh install reached
+        // three quarters of the range and no further. A note with no record is
+        // judged by its date alone, which is all there is to judge it by.
+        if (intensityBlend > 0 && path !== undefined && this.sittings(path) > 0) {
             shaped = (1 - intensityBlend) * shaped + intensityBlend * this.intensityOf(path);
         }
 
