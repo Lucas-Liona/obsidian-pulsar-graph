@@ -36,8 +36,8 @@
   someone who did not choose it:
   - the age filter, which hides notes;
   - group temperature, which averages a whole group to one brightness;
-  - the edit-intensity blend, which dims every note until there is history to
-    read;
+  - the edit-intensity blend, which reads a history a new install doesn't
+    have yet;
   - measuring a local graph from the note in the middle, which changes what a
     brightness means.
 
@@ -52,6 +52,18 @@
   saved settings once has every one of them saved and keeps what they had.
   *Reset all settings* now goes to these, and anyone who never changed a
   setting gets them on upgrade.
+
+- **A note's history is drawn on one scale for every note**, logarithmic back
+  from now, instead of each rail being scaled to its own note. A rail covering
+  twenty minutes used to look exactly like one covering a year. Now the top is
+  now, labels mark an hour, a day, a week, a month and a year (then two, five,
+  ten and twenty years), and a year is 420 pixels down in every note, so two
+  notes read against each other. This morning still spreads out, since the
+  first hour gets 93 pixels and the first day 206; a month of daily sittings a
+  year ago spans about 3. The rail stops at the first label past the oldest
+  sitting, so a short history stays short. A note with one sitting gets the
+  axis too, and the view redraws itself once a minute while it is shown,
+  since a bead's place is its age.
 
 - **Fresh writing can cool in as little as a second**, and still over as long
   as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,
@@ -106,7 +118,7 @@
   bottom of every rail was a label with no bead at it: a note with one sitting
   had its bead at the top of an empty line, labelled "4 hours ago" at both
   ends, and in a longer history the oldest bead floated above the bottom by
-  its own length. A note with one sitting is now that bead, with no line.
+  its own length.
 
 - **How long a sitting is can be set again.** *Counts as one sitting* decides
   how the edit history counts sittings, but it was only shown with *Trace what
@@ -125,6 +137,27 @@
   spotlight was described as painting "the single" newest note, though it can
   cover up to 25 or a time window, and the tabs page said the status bar age
   was off by default, which it has not been since 1.15.0.
+
+### Performance
+
+- **Ageing the links costs a fraction of what it did.** Each link's
+  brightness and ramp were worked out from its two notes on every frame: in
+  the 20,000-note bench vault, 43,515 links and two lookups each, with nothing
+  having changed. They're worked out once per change now. Applying link ages
+  went from 22.2 ± 3.8 and 29.6 ± 5.5 ms a frame to 5.9 ± 1.1 and 6.5 ± 1.1
+  ms, and a note switch no longer works out every link again. (#143)
+
+- **Tracing what was written together does the same.** Whether a link's two
+  notes were saved within a sitting of each other was asked on every frame,
+  for every link, though it only changes when a note is saved. It is worked
+  out with the rest of the link, once per change.
+
+- **Neighbour glow takes about half the time it did.** It looked each note's
+  neighbours up by path, on every repaint, a note switch included: 65 ms a
+  pass on a graph of 20,000 notes and 43,515 links, offline. It now walks the
+  list of links once, by position: 15 to 19 ms on the same graph. In the
+  20,000-note bench vault a repaint with glow on went from 57 and 50 ms to 37
+  and 38 ms, and every note's value is the same, at one, two and three links.
 
 ## [1.42.0] - 2026-10-08
 

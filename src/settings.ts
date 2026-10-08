@@ -233,7 +233,7 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
  * be switched off on its own. A feature starts off when it would make the
  * plugin look broken or wrong to someone who did not choose it: the age filter
  * hides notes; group temperature averages a whole group to one brightness; the
- * edit-intensity blend dims every note until there is history to read; and
+ * edit-intensity blend reads a history a new install does not have yet; and
  * measuring from the note in the middle changes what a brightness means.
  *
  * Changing a default never changes a saved setting. Every key is saved once

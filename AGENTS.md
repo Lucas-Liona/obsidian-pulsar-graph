@@ -136,10 +136,11 @@ shrink to, with a seed that replays it.
   starts off when it would make the plugin look broken or wrong to someone who
   did not choose it: anything that hides notes (the age filter), anything that
   flattens the fade (group temperature, which averages a group to one
-  brightness; the edit-intensity blend, which dims every note until there is
-  history to read), and anything that changes what a brightness means
-  (measuring from the note in the middle). A default that changes how bright
-  things are is checked against a real vault's spread, not just the demo's. Anything on by default has to pass the all-on check: a fresh install
+  brightness), anything that reads a history a new install does not have yet
+  (the edit-intensity blend), and anything that changes what a brightness
+  means (measuring from the note in the middle). A default that changes how
+  bright things are is checked against a real vault's spread, not just the
+  demo's. Anything on by default has to pass the all-on check: a fresh install
   with every default-on feature, against the core fade alone, on the
   20,000-note bench vault and a real vault, no worse than two standard
   deviations on any metric in `docs/performance.md`. A default colour has to
