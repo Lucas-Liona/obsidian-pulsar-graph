@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **Dragging the age filter shows its result again.** While a handle was held,
+  the notes outside the range were meant to disappear with the graph held
+  still, then rebuild on release; nothing disappeared, because Obsidian puts
+  back the flag Pulsar hid them with on every frame. They are hidden in a way it
+  leaves alone now, and a held drag costs less per frame than before
+  (0.44–0.47 ms against 0.58–0.62 ms in the demo vault).
+
 - **A graph is filtered from its first build after Obsidian starts.** A graph
   restored at startup, or opened while the tab bar was switched off, was
   filtered against ages that had not been worked out yet, so it showed every
