@@ -348,6 +348,8 @@
 	white-space: nowrap;
 }
 
+/* Hovered for when the note was edited, as a link's dot is, so it takes the
+   pointer. A click on it still reaches the tab it sits inside. */
 .pulsar-graph-tab-dot {
 	flex: 0 0 auto;
 	width: 6px;
@@ -358,7 +360,6 @@
 	/* Never currentColor: that is the tab header's own text colour, muted on
 	   an inactive tab, so every dot but the active one came out the same. */
 	background-color: var(--text-normal);
-	pointer-events: none;
 }
 
 /*
