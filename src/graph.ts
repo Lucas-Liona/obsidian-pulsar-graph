@@ -1,4 +1,4 @@
-import { App } from 'obsidian';
+import { App, WorkspaceLeaf } from 'obsidian';
 import { OpacityStore } from './opacity-store';
 import { nodeCount, sameGraphData } from './filter';
 
@@ -200,13 +200,27 @@ function centreFinder(view: GraphView, kind: GraphKind): () => string | null {
     return kind === 'local' ? () => centreOf(view) : () => null;
 }
 
-/** Every open graph view, paired with the kind of graph it is. */
+/**
+ * Every open graph view, paired with the kind of graph it is.
+ *
+ * Only leaves the workspace still walks. getLeavesOfType was seen to go on
+ * returning a graph leaf after it was detached (#98), and every graph it
+ * handed back stayed attached, hooks and all, and was rebuilt with the rest
+ * on every refilter, though nothing would ever draw it again.
+ */
 function* graphViews(app: App): Generator<{ view: GraphView; kind: GraphKind }> {
+    const live = new Set<WorkspaceLeaf>();
+    app.workspace.iterateAllLeaves((leaf) => {
+        live.add(leaf);
+    });
+
     for (const viewType of GRAPH_VIEW_TYPES) {
         const kind: GraphKind = viewType === 'localgraph' ? 'local' : 'global';
 
         for (const leaf of app.workspace.getLeavesOfType(viewType)) {
-            yield { view: leaf.view, kind };
+            if (live.has(leaf)) {
+                yield { view: leaf.view, kind };
+            }
         }
     }
 }
