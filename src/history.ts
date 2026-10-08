@@ -29,6 +29,13 @@ export interface Coverage {
 
 const FILE_NAME = 'history.json';
 
+/**
+ * The same contents, written first. Obsidian's adapter writes a file in place,
+ * so quitting or crashing part way through a write leaves it cut short; with
+ * this written beforehand, one of the two is always whole.
+ */
+const BACKUP_NAME = 'history.backup.json';
+
 const FORMAT_VERSION = 1;
 
 /**
@@ -102,6 +109,10 @@ export class EditHistory {
         return normalizePath(`${this.folder}/${FILE_NAME}`);
     }
 
+    private get backupPath(): string {
+        return normalizePath(`${this.folder}/${BACKUP_NAME}`);
+    }
+
     /**
      * Reads what is on disk.
      *
@@ -111,10 +122,16 @@ export class EditHistory {
      * whatever this session had seen. Nothing is recorded or written until a
      * read succeeds; the heartbeat asks again.
      *
-     * A file that reads but does not parse is damaged, so it is kept beside
-     * the new one under a dated name before anything is written. History that
-     * silently empties is indistinguishable from history that never started,
-     * and that is the one failure this should not hide.
+     * A file that reads but does not parse was most likely cut short by a
+     * write that never finished, and the backup written just before it is
+     * whole, so that is read instead. Without one, the file is damaged, and it
+     * is kept beside the new one under a dated name before anything is
+     * written. History that silently empties is indistinguishable from history
+     * that never started, and that is the one failure this should not hide.
+     *
+     * The backup is only read when the file itself is there. A file that is
+     * missing was removed, since a write never removes it, and bringing it back
+     * from the backup would undo that.
      */
     async load(): Promise<void> {
         this.loaded = true;
@@ -133,7 +150,7 @@ export class EditHistory {
             return;
         }
 
-        const stored = parseStored(raw);
+        const stored = parseStored(raw) ?? await this.readBackup();
 
         if (stored === null) {
             await this.keepDamaged(raw);
@@ -153,6 +170,19 @@ export class EditHistory {
 
         this.awake = typeof stored.awake === 'number' ? stored.awake : 0;
         this.closedFor = this.awake > 0 ? Math.max(0, Date.now() - this.awake) : 0;
+    }
+
+    /** The backup's contents, or null when there is no whole one to read. */
+    private async readBackup(): Promise<Record<string, unknown> | null> {
+        try {
+            if (!(await this.app.vault.adapter.exists(this.backupPath))) {
+                return null;
+            }
+
+            return parseStored(await this.app.vault.adapter.read(this.backupPath));
+        } catch {
+            return null;
+        }
     }
 
     /** Stops recording and writing until a later read succeeds. */
@@ -460,6 +490,16 @@ export class EditHistory {
         // Serialised, because two overlapping writes of a whole file can leave
         // the older one last.
         this.writing = this.writing.then(async () => {
+            // The backup first, so a write cut short in either file leaves the
+            // other one whole. One that cannot be written costs only that
+            // protection: the file itself is written regardless, as it always
+            // was.
+            try {
+                await this.app.vault.adapter.write(this.backupPath, payload);
+            } catch {
+                // The next write tries again.
+            }
+
             try {
                 await this.app.vault.adapter.write(this.path, payload);
             } catch {
