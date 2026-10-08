@@ -255,6 +255,15 @@ saturates and the top of the curve goes flat; any other colour changes hue on th
 way. So anything painted with a colour someone chose (the spotlight, pins) is
 drawn at no more than 1. A graph group's colour still shifts above 1.
 
+**On a light theme that lightening is a step toward the background.** Moonstone's
+node grey `#5c5c5c` on white stands 163 levels off the page at alpha 1, 117 at 1.5,
+71 at 2 and 0 at 3: under a maximum of 3 the newest notes were white on white and
+the graph was links and nothing else. So on a light theme no node is handed an
+alpha above 1; one past it is drawn at 1 and *deepened*, each channel's distance
+from white multiplied the way the renderer multiplies the channel on a dark one
+(`deepenRgb`). The deepened colour goes through the same paint record as the
+spotlight, because the way back is upward and an upward tint stalls.
+
 Past saturation there is no headroom for anything to use. A "crest" multiplier
 for the replay's wave was built, measured at 5.04 against a maximum of 2.52, and
 deleted: it was four times past the point where anything changes. Contrast at the
