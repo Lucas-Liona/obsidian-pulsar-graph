@@ -17,9 +17,10 @@ export interface FilterOptions {
     /** A note's own brightness, before neighbours or groups have their say. */
     strengthOf: (path: string) => number | undefined;
     /**
-     * Never hidden. The note you have open, so a local graph cannot go blank
-     * under you, and the spotlit note, because a filter quietly removing the
-     * one node the graph is pointing at is the graph disagreeing with itself.
+     * Never hidden. The note you have open and the one a local graph is built
+     * around, so a local graph cannot go blank under you, and the spotlit note,
+     * because a filter quietly removing the one node the graph is pointing at
+     * is the graph disagreeing with itself.
      */
     keep: ReadonlySet<string>;
     /**

@@ -58,6 +58,11 @@ interface Preview {
     keeps: ((path: string) => boolean) | null;
 }
 
+/** A survivor test that also keeps one more note, if there is one. */
+function sparing(keeps: (path: string) => boolean, spared: string | null): (path: string) => boolean {
+    return spared === null ? keeps : (path) => path === spared || keeps(path);
+}
+
 /** Coalesces the burst of modify events Obsidian fires while a note is typed. */
 const UPDATE_DELAY_MS = 150;
 
@@ -442,7 +447,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // A graph has already drawn every note by the time the layout says it
         // is open, so it is hooked as it is built as well.
-        running.register(hookGraphCreation(this.app, (renderer, onClose) => this.hookEarly(renderer, onClose)));
+        running.register(hookGraphCreation(this.app, (renderer, onClose, centre) => this.hookEarly(renderer, onClose, centre)));
 
         running.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             this.lookAt(this.app.workspace.getActiveFile()?.path ?? null);
@@ -961,7 +966,7 @@ export default class PulsarGraphPlugin extends Plugin {
         const keeps = this.settings.filterEnabled && ranges ? this.survivorTest(ranges) : null;
 
         for (const [renderer, graph] of this.attached) {
-            graph.preview.keeps = keeps;
+            graph.preview.keeps = keeps && sparing(keeps, graph.centre());
             repaint(renderer);
         }
     }
@@ -1139,22 +1144,32 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
-     * The notes a filter is not allowed to take out: the one you have open, so
-     * a local graph cannot go blank under you, the spotlit ones, since a
-     * spotlight pointing at a node that is not there says nothing at all, and
-     * everything pinned.
+     * The notes a filter is not allowed to take out: the one you have open, the
+     * one a local graph is built around, so it cannot go blank under you, the
+     * spotlit ones, since a spotlight pointing at a node that is not there says
+     * nothing at all, and everything pinned.
+     *
+     * The open note and a local graph's centre are usually the same note, but
+     * not always: a local graph linked to one pane, or left on a note, keeps its
+     * centre while you work in another. Sparing only the open note emptied such
+     * a graph the moment you looked away from it, whenever the filter kept older
+     * notes than the one it was about.
      *
      * Pins have to be in here or the feature defeats itself. The note you
      * pinned is one you have not touched lately — that is why it needed
      * pinning — so it is precisely what an age filter is built to remove, and a
      * pin that vanishes the moment you narrow the range is not a pin.
      */
-    private exemptFromFilter(): Set<string> {
+    private exemptFromFilter(centre: string | null = null): Set<string> {
         const exempt = this.exemptBesidesOpen();
         const open = this.app.workspace.getActiveFile()?.path;
 
         if (open !== undefined) {
             exempt.add(open);
+        }
+
+        if (centre !== null) {
+            exempt.add(centre);
         }
 
         return exempt;
@@ -1274,7 +1289,7 @@ export default class PulsarGraphPlugin extends Plugin {
     private readonly saveSoon = debounce(() => void this.saveSettings(), 400, true);
 
     /** Adds the plugin's section to a graph's own control panel, where it has one. */
-    private buildPanel(renderer: GraphRenderer, kind: GraphKind, preview: Preview): PulsarPanel | null {
+    private buildPanel(renderer: GraphRenderer, kind: GraphKind, centre: () => string | null, preview: Preview): PulsarPanel | null {
         const controls = controlsFor(this.app, renderer);
         if (!controls) {
             return null;
@@ -1365,7 +1380,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 void this.saveSettings();
             },
             onPreview: (ranges) => {
-                preview.keeps = ranges ? this.survivorTest(ranges) : null;
+                preview.keeps = ranges ? sparing(this.survivorTest(ranges), centre()) : null;
 
                 if (!ranges) {
                     // Whatever was hidden has to be drawn again, and only a
@@ -1659,7 +1674,7 @@ export default class PulsarGraphPlugin extends Plugin {
      * because a renderer can be hooked as Obsidian builds it, before there is
      * an attached graph to paint.
      */
-    private hookData(renderer: GraphRenderer, cut: { dropped: number }): DataHook | null {
+    private hookData(renderer: GraphRenderer, cut: { dropped: number }, centre: () => string | null): DataHook | null {
         return hookRendererData(
             renderer,
             () => {
@@ -1677,7 +1692,7 @@ export default class PulsarGraphPlugin extends Plugin {
             (supplied) => filterGraphData(supplied, {
                 ranges: this.settings.filterRanges,
                 strengthOf: (path) => (this.settings.filterEnabled ? this.filterPosition(path) : undefined),
-                keep: this.exemptFromFilter(),
+                keep: this.exemptFromFilter(centre()),
                 counted: (dropped) => {
                     cut.dropped = dropped;
                 }
@@ -1691,13 +1706,13 @@ export default class PulsarGraphPlugin extends Plugin {
      * this hook over. Opening the global graph of a 20,000-note vault with a
      * filter keeping 4,168 of them used to build all 20,000 first.
      */
-    private hookEarly(renderer: GraphRenderer, onClose: (callback: () => void) => void): void {
+    private hookEarly(renderer: GraphRenderer, onClose: (callback: () => void) => void, centre: () => string | null): void {
         if (!this.running || !this.settings.graphFade || this.attached.has(renderer) || this.early.has(renderer)) {
             return;
         }
 
         const cut = { dropped: 0 };
-        this.early.set(renderer, { data: this.hookData(renderer, cut), cut });
+        this.early.set(renderer, { data: this.hookData(renderer, cut, centre), cut });
 
         // A view closed before it was ever attached.
         onClose(() => {
@@ -1728,7 +1743,7 @@ export default class PulsarGraphPlugin extends Plugin {
         this.early.delete(renderer);
 
         const cut = early?.cut ?? { dropped: 0 };
-        const data = early ? early.data : this.hookData(renderer, cut);
+        const data = early ? early.data : this.hookData(renderer, cut, centre);
         const preview: Preview = { keeps: null };
         const fonts: { multiplier?: number } = {};
 
@@ -1753,7 +1768,7 @@ export default class PulsarGraphPlugin extends Plugin {
             }
         };
 
-        const panel = this.buildPanel(renderer, kind, preview);
+        const panel = this.buildPanel(renderer, kind, centre, preview);
         const controls = controlsFor(this.app, renderer);
         const caption = controls?.parentElement ? new FilterCaption(controls.parentElement) : null;
 

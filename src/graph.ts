@@ -195,6 +195,11 @@ function centreOf(view: GraphView): string | null {
     return typeof showing === 'string' && showing.length > 0 ? showing : null;
 }
 
+/** A way to ask a view for its centre later, since a local graph's moves. */
+function centreFinder(view: GraphView, kind: GraphKind): () => string | null {
+    return kind === 'local' ? () => centreOf(view) : () => null;
+}
+
 /** Every open graph view, paired with the kind of graph it is. */
 function* graphViews(app: App): Generator<{ view: GraphView; kind: GraphKind }> {
     for (const viewType of GRAPH_VIEW_TYPES) {
@@ -233,7 +238,7 @@ export function openGraphs(app: App): OpenGraph[] {
             open.push({
                 renderer,
                 kind,
-                centre: kind === 'local' ? () => centreOf(view) : () => null,
+                centre: centreFinder(view, kind),
                 replaying: () => (engine?.progression ?? 0) > 0
             });
         }
@@ -886,7 +891,8 @@ export type Unhook = () => void;
 
 /**
  * Calls back with each graph view Obsidian builds from now on, as it is built:
- * the renderer, and a way to run something when that view closes.
+ * the renderer, a way to run something when that view closes, and a way to ask
+ * a local graph what it is built around.
  *
  * A graph view creates its renderer in its constructor and is handed the vault
  * as it opens, before anything that waits for the layout to change can reach
@@ -901,7 +907,7 @@ export type Unhook = () => void;
  */
 export function hookGraphCreation(
     app: App,
-    onCreated: (renderer: GraphRenderer, onClose: (callback: () => void) => void) => void
+    onCreated: (renderer: GraphRenderer, onClose: (callback: () => void) => void, centre: () => string | null) => void
 ): Unhook {
     const registry = (app as unknown as { viewRegistry?: { viewByType?: Record<string, ViewCreator | undefined> } })
         .viewRegistry?.viewByType;
@@ -919,13 +925,15 @@ export function hookGraphCreation(
             continue;
         }
 
+        const kind: GraphKind = viewType === 'localgraph' ? 'local' : 'global';
+
         const wrapped = function (this: unknown, leaf: unknown): unknown {
             const view = original.call(this, leaf) as GraphView | null | undefined;
             const renderer = view?.renderer;
 
-            if (live && renderer && typeof renderer.setData === 'function') {
+            if (live && view && renderer && typeof renderer.setData === 'function') {
                 try {
-                    onCreated(renderer, (callback) => view?.register?.(callback));
+                    onCreated(renderer, (callback) => view.register?.(callback), centreFinder(view, kind));
                 } catch {
                     // Never at the cost of the graph opening. One that is not
                     // reached here is attached once it is open, as before.
