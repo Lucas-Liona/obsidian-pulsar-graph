@@ -14,8 +14,8 @@ entry rather than the several hundred autosaves it really was. Each one stores
 when it started, when it ended, and how long the note was at each end.
 
 It starts empty, and it is worth nothing on the day you install it and a lot a
-year later — which is the only reason it's on by default when everything else
-here is off. The statistics panel at the foot of the settings shows what it has
+year later, which is why it's on from the start rather than waiting to be
+asked for. The statistics panel at the foot of the settings shows what it has
 collected so far, and **Forget everything recorded**, in Clear and reset at the
 foot of the settings, throws the lot away after a second click.
 

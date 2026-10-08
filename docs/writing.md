@@ -67,7 +67,7 @@ just let the innermost win, which is the newest edit, which is the right answer.
 It applies in editing and Live Preview. Reading view isn't CodeMirror, so there
 is nothing to colour there.
 
-Off by default.
+On by default, cooling over five minutes.
 
 ---
 

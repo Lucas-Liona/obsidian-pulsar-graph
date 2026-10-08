@@ -145,8 +145,8 @@ through, which leaves the busiest half of the picture saying nothing about time.
 
 That second one is worth it for the discovery thing: a bright line running out of
 today's work and dimming into something you wrote a year ago is exactly the note
-you'd forgotten you had. Off by default, like everything that changes how the
-graph is drawn beyond the nodes themselves.
+you'd forgotten you had. *Fade between the two* is on by default, so a new install
+shows it straight away.
 
 ## What you wrote together
 

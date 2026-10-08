@@ -226,6 +226,20 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
     titles: 'Whenever titles are shown'
 };
 
+/**
+ * What a new install starts with, and what Reset all settings goes back to.
+ *
+ * Most features start on, so a first look shows what Pulsar does and each can
+ * be switched off on its own. A feature starts off when it would make the
+ * plugin look broken or wrong to someone who did not choose it: the age filter
+ * hides notes; neighbour glow, group temperature and the edit-intensity blend
+ * flatten the fade; measuring from the note in the middle changes what a
+ * brightness means; and trails colour links by a rule nobody would guess.
+ *
+ * Changing a default never changes a saved setting. Every key is saved once
+ * anything is, so a new default reaches new installs, Reset, and anyone who
+ * never changed a thing.
+ */
 export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     enabled: true,
     normalizeBy: 'vault',
@@ -238,10 +252,10 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     steepness: 2.0,
     numSteps: 5,
     ageLabels: 'hover',
-    linkRecency: 'off',
+    linkRecency: 'gradient',
     statusBarAge: true,
-    linkDots: false,
-    spotlightNewest: false,
+    linkDots: true,
+    spotlightNewest: true,
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
     spotlightSize: 2,
@@ -249,27 +263,28 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     spotlightBy: 'count',
     spotlightMinutes: 30,
     pins: [],
-    // On, unlike every other colour here, because the list it paints starts
-    // empty and so nothing changes until the user pins something. An unmarked
-    // pin is worse than no pin: a note held at full brightness with nothing to
-    // say why reads as one you edited this morning.
+    // An unmarked pin is worse than no pin: a note held at full brightness
+    // with nothing to say why reads as one you edited this morning. The list
+    // it paints starts empty, so nothing changes until something is pinned.
     pinMark: true,
     pinColor: '#c084fc',
     pinStrength: 0.85,
     spreadFloorHours: 6,
-    replay: false,
+    replay: true,
     replayTrailDays: 60,
-    // On, unlike a new feature. These switch off behaviour that already
-    // exists, so defaulting them off would quietly disable the plugin's main
-    // job for everyone who upgrades.
+    // These switch off behaviour that already exists, so defaulting them off
+    // would quietly disable the plugin's main job for everyone who upgrades.
     graphFade: true,
     tabBar: true,
     collapsed: [],
-    // The vault, because that is what every graph was measured against before
-    // this setting existed and nothing should change under anyone on upgrade.
-    localScope: 'vault',
+    // The panel, because notes that link to each other tend to have been
+    // written together, and graded against the whole vault a panel's notes
+    // come out nearly alike: across 123 panels in a real vault, the median
+    // spread was 11% of the brightness range against 100% within the panel.
+    // Anyone who saved settings before this keeps the vault.
+    localScope: 'graph',
     localAnchor: false,
-    localLabels: false,
+    localLabels: true,
     neighbourBleed: 0,
     neighbourHops: 1,
     clusterWarmth: 0,
@@ -279,13 +294,13 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     trailColor: '#5ac8fa',
     trailStrength: 0.55,
     saved: [],
-    ink: false,
+    ink: true,
     inkMode: 'colour',
     inkMinutes: 5,
     inkColor: '#ff7a45',
     inkPinColor: '#ffc53d',
     inkDim: 0.45,
-    nodeSizeByAge: false,
+    nodeSizeByAge: true,
     nodeSizeSmallest: 0.7,
     nodeSizeLargest: 1.8,
     titleScale: 1,
@@ -293,20 +308,20 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     filterCaption: true,
     filterRanges: [{ ...WHOLE_RANGE }],
     filterAxis: 'curve',
-    tabFade: 'off',
-    tabFadeScope: 'tab',
+    tabFade: 'attention',
+    // The title rather than the whole tab: a whole tab at a third of its
+    // strength, background and all, reads as a disabled one.
+    tabFadeScope: 'title',
     tabFadeCurve: 'over',
     tabFadeAfter: 60,
     tabFadeFloor: 0.35,
-    tabDot: false,
-    staleTabs: false,
-    staleTabMark: 'line',
+    tabDot: true,
+    staleTabs: true,
+    staleTabMark: 'zzz',
     staleTabAfter: 240,
-    // On by default, like the few other extras the rule allows. The rule that
-    // keeps extras off exists so nothing changes the look of someone's Obsidian
-    // uninvited; this changes nothing on screen, writes only numbers, and into
-    // a file of this plugin's own. It is also worth nothing until it has been
-    // running a while, so starting it off would mean nobody ever has history.
+    // It changes nothing on screen, writes only numbers, into a file of this
+    // plugin's own, and is worth nothing until it has been running a while:
+    // starting it off would mean nobody ever has history.
     history: true,
     historyCap: 100,
     intensityBlend: 0,
@@ -1795,7 +1810,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Light up what you just wrote')
-            .setDesc('Fresh text takes a colour as you type it and cools back to normal over the next few minutes, so a page you have been working through shows where the work went')
+            .setDesc('Fresh text takes a colour as you type it and cools back to normal over the time set below, so a page you have been working through shows where the work went')
             .addToggle((toggle) => toggle
                 .setValue(settings.ink)
                 .onChange(async (value) => {

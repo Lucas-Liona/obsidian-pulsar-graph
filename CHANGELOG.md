@@ -4,6 +4,33 @@
 
 ### Changed
 
+- **A new install starts with most features on**, so the first look shows what
+  Pulsar does, and each can be switched off on its own. Newly on:
+  - the spotlight on the newest note;
+  - nodes sized by age;
+  - links aged, fading from the newer note to the older;
+  - a dot after each link in a note;
+  - fresh writing, cooling over five minutes;
+  - a dot beside each tab, tabs fading by how long since you looked at them
+    (the icon and title, not the whole tab), and a 💤 on tabs left alone;
+  - the graph's own timelapse lit as it plays;
+  - a local graph measured against its own notes, with every age written.
+
+  These stay off, because each would make the plugin look broken or wrong to
+  someone who did not choose it:
+  - the age filter, which hides notes;
+  - neighbour glow, group temperature and the edit-intensity blend, which
+    flatten the fade;
+  - measuring a local graph from the note in the middle, which changes what a
+    brightness means;
+  - tracing what was written together, which colours links by a rule nobody
+    would guess.
+
+  This only changes what a fresh install starts with. Anyone who has saved
+  settings once has every one of them saved and keeps what they had. *Reset
+  all settings* now turns these on, and anyone who never changed a setting gets
+  them on upgrade.
+
 - **Fresh writing can cool in as little as a second**, and still over as long
   as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,
   20, 30 and 45 seconds, then minutes, then hours — marked where the unit

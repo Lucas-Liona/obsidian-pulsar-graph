@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type PulsarGraphPlugin from '../src/main';
 import type { PulsarGraphSettings } from '../src/settings';
+import { FEATURES_OFF } from './features-off';
 import { clearNotices, createWorld, dataPath, historyPath, loadPlugin, notices, settle, unloadPlugin, wait, type FakeGraphView, type FakeRenderer, type NoteSpec, type World, type WorldOptions } from './harness';
 
 // The whole plugin, loaded into the fake Obsidian in ./harness, as a user's
@@ -93,7 +94,7 @@ describe('a local graph and its centre', () => {
     it('keeps its centre when focus moves to a note in another pane', async () => {
         const world = vault();
         world.workspace.openNote('centre.md');
-        const plugin = await loadPlugin(world, OLD_ONLY);
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY });
         const local = world.workspace.openLocalGraph('centre.md');
         const global = world.workspace.openGraph();
         await settle();
@@ -142,7 +143,7 @@ describe('the age filter as a graph opens', () => {
     it('filters a graph opened while Pulsar runs from its very first build', async () => {
         const world = vault();
         world.workspace.openNote('other.md');
-        const plugin = await loadPlugin(world, OLD_ONLY);
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY });
 
         const global = world.workspace.openGraph();
         await settle();
@@ -160,7 +161,7 @@ describe('the age filter as a graph opens', () => {
     // every note, from the first build on.
     it('filters a graph restored at startup from its very first build (review finding 3)', async () => {
         const world = vault({ layoutReady: false });
-        const plugin = await loadPlugin(world, OLD_ONLY);
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY });
 
         const restored = world.workspace.openGraph();
         world.workspace.ready();
@@ -176,7 +177,7 @@ describe('the age filter as a graph opens', () => {
     it('filters a graph that was already open when Pulsar loaded (review finding 3)', async () => {
         const world = vault();
         const global = world.workspace.openGraph();
-        const plugin = await loadPlugin(world, OLD_ONLY);
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY });
         await settle();
 
         expect(global.renderer.ids()).toEqual(OLD_NOTES);
@@ -189,7 +190,7 @@ describe('the age filter as a graph opens', () => {
     it('filters a graph opened with the tab bar switched off (review finding 3)', async () => {
         const world = vault();
         world.workspace.openNote('other.md');
-        const plugin = await loadPlugin(world, { ...OLD_ONLY, tabBar: false });
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY, tabBar: false });
 
         const global = world.workspace.openGraph();
         await settle();
@@ -213,7 +214,7 @@ describe('the graph\'s own replay', () => {
         });
     }
 
-    const REPLAY: Partial<PulsarGraphSettings> = { ...OLD_ONLY, replay: true, replayTrailDays: 1 };
+    const REPLAY: Partial<PulsarGraphSettings> = { ...FEATURES_OFF, ...OLD_ONLY, replay: true, replayTrailDays: 1 };
 
     it('draws each note by when it was written while the replay runs', async () => {
         const world = replayVault();
@@ -425,7 +426,7 @@ describe('reloading', () => {
     it('goes quiet underneath another plugin\'s hooks once unloaded', async () => {
         const world = vault();
         world.workspace.openNote('other.md');
-        const first = await loadPlugin(world, { ...OLD_ONLY, ageLabels: 'titles' });
+        const first = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY, ageLabels: 'titles' });
         const global = world.workspace.openGraph();
         await settle();
         global.renderer.frames(5);
@@ -528,7 +529,7 @@ describe('graphs that close', () => {
     it('lets go of a graph whose leaf is gone, though getLeavesOfType still returns it (#98)', async () => {
         const world = vault();
         world.workspace.openNote('centre.md');
-        const plugin = await loadPlugin(world, { ...OLD_ONLY, ageLabels: 'titles' });
+        const plugin = await loadPlugin(world, { ...FEATURES_OFF, ...OLD_ONLY, ageLabels: 'titles' });
         const gone = world.workspace.openGraph();
         const kept = world.workspace.openGraph();
         await settle();
@@ -556,7 +557,7 @@ describe('colour', () => {
     it('puts the fade back after every rebuild, keeping group colours', async () => {
         const world = vault({ groups: [{ prefix: 'n1', rgb: 0xe05050 }] });
         world.workspace.openNote('centre.md');
-        const plugin = await loadPlugin(world, {});
+        const plugin = await loadPlugin(world, FEATURES_OFF);
         const global = world.workspace.openGraph();
         await settle();
 
@@ -718,5 +719,65 @@ describe('unloading', () => {
         const later = world.workspace.openGraph();
         expect(hooks(later.renderer)).toEqual({ renderCallback: 0, setData: 0, onNodeHover: 0, onNodeUnhover: 0 });
         expect(later.renderer.ids()).toEqual(EVERY_NOTE);
+    });
+});
+
+describe('a fresh install', () => {
+    const ONE = { renderCallback: 1, setData: 1, onNodeHover: 1, onNodeUnhover: 1 };
+    const NONE = { renderCallback: 0, setData: 0, onNodeHover: 0, onNodeUnhover: 0 };
+
+    // A new install starts with most features on at once. With no data.json,
+    // it has to load, attach to both kinds of graph, survive a reload and come
+    // off leaving nothing behind, all of them running together.
+    it('loads with every default on, survives a reload and leaves nothing behind', async () => {
+        const world = vault();
+        world.workspace.openNote('centre.md');
+        expect(world.adapter.files.has(dataPath(world))).toBe(false);
+        const listening = { workspace: world.workspace.listenerCount(), vault: world.vault.listenerCount() };
+
+        let plugin = await loadPlugin(world);
+        expect(plugin.settings).toMatchObject({
+            spotlightNewest: true,
+            nodeSizeByAge: true,
+            linkRecency: 'gradient',
+            linkDots: true,
+            ink: true,
+            tabDot: true,
+            tabFade: 'attention',
+            staleTabs: true,
+            replay: true,
+            localScope: 'graph',
+            localLabels: true,
+            filterEnabled: false,
+            sessionTrails: false
+        });
+
+        const global = world.workspace.openGraph();
+        const local = world.workspace.openLocalGraph('centre.md');
+        await settle();
+        global.renderer.frames(5);
+        local.renderer.frames(5);
+
+        expect(hooks(global.renderer)).toEqual(ONE);
+        expect(hooks(local.renderer)).toEqual(ONE);
+        // Nothing is hidden by default; the newest note is spotlit.
+        expect(global.renderer.ids()).toEqual(EVERY_NOTE);
+        expect(global.renderer.node('centre.md').color?.rgb).toBe(0xffffff);
+
+        await unloadPlugin(plugin);
+        plugin = await loadPlugin(world);
+        global.renderer.frames(5);
+        local.renderer.frames(5);
+
+        expect(hooks(global.renderer)).toEqual(ONE);
+        expect(hooks(local.renderer)).toEqual(ONE);
+        expect([world.registry.wrappers('graph'), world.registry.wrappers('localgraph')]).toEqual([1, 1]);
+
+        await unloadPlugin(plugin);
+
+        expect(hooks(global.renderer)).toEqual(NONE);
+        expect(hooks(local.renderer)).toEqual(NONE);
+        expect([world.registry.wrappers('graph'), world.registry.wrappers('localgraph')]).toEqual([0, 0]);
+        expect({ workspace: world.workspace.listenerCount(), vault: world.vault.listenerCount() }).toEqual(listening);
     });
 });

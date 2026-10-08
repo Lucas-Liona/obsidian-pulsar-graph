@@ -85,8 +85,10 @@ no events watched, no caches built, no timers running, no editor carrying
 anything of ours, no status bar item, and every graph handed back its own
 colours. The settings page collapses to that one switch.
 
-Every feature below it can also be switched off on its own, and almost all of
-them already are until you ask.
+Every feature below it can also be switched off on its own. A new install
+starts with most of them on, so the first look shows what Pulsar does; the ones
+that would hide notes or flatten the fade, such as the age filter, neighbour
+glow and the trails, start off.
 
 ## Worth knowing
 
@@ -101,8 +103,8 @@ them already are until you ask.
 - **Your group colours survive.** The plugin changes how transparent a node is and
   leaves its colour alone, so anything you've set up with graph groups still works.
   Two things paint a node — the spotlight and a pin — and both hand the colour
-  back when they move on. The spotlight is off until you turn it on; a pin paints
-  nothing until you pin something.
+  back when they move on. The spotlight marks the newest note from the start; a
+  pin paints nothing until you pin something.
 - **A faded node is still there.** Obsidian draws labels, links and physics with
   their own opacity, so a note at minimum opacity still has a visible title and
   stays clickable. This is a fade, not a filter — that's

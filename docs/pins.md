@@ -38,10 +38,9 @@ moment you narrow the range is not a pin at all. Pinned notes sit alongside the
 note you have open and the spotlit ones as the things the filter is not allowed
 to touch.
 
-A pin is also given **a colour of its own**, and that is on by default even
-though every other colour here starts off. A note held at full brightness with
-nothing to say why is indistinguishable from one you edited this morning, which
-makes the graph quietly wrong rather than merely plain. Nothing changes until you
+A pin is also given **a colour of its own**, on by default. A note held at full
+brightness with nothing to say why is indistinguishable from one you edited this
+morning, which makes the graph quietly wrong rather than merely plain. Nothing changes until you
 pin something, so the default costs nobody anything.
 
 **The spotlight does not land on a pinned note.** It skips anything pinned and

@@ -80,7 +80,9 @@ defaults and leaves your saved presets, your pins and which parts are folded
 alone. Deleting a saved preset asks for a second click, as everything in Clear
 and reset does.
 
-The tables below follow the settings tab from top to bottom.
+The tables below follow the settings tab from top to bottom. **Default** is what
+a new install starts with and what Reset goes back to; settings saved before a
+default changed keep their value.
 
 ## Above the parts
 
@@ -108,12 +110,12 @@ The tables below follow the settings tab from top to bottom.
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all | How bright the newest note gets |
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential | Higher keeps only the newest notes bright |
 | Number of steps | 1 – 20 | 5 | Step | How many bands of age |
-| Size nodes by age | on / off | off | all | Scales each node by age, on top of Obsidian's own size |
+| Size nodes by age | on / off | on | all | Scales each node by age, on top of Obsidian's own size |
 | Oldest at | 0.2 – 3.0 | 0.7 | Sizing on | What the dimmest note's size is multiplied by |
 | Newest at | 0.2 – 3.0 | 1.8 | Sizing on | What the brightest note's size is multiplied by. Below Oldest at reverses it |
 | Title size | 0.5 – 2.5 | 1.0 | all | What every title's font is multiplied by |
 | Show note age | Never, On hover, Whenever titles are shown | On hover | all | The age, written above the node |
-| Age the links too | Off, Match the newer note, Fade between the two | Off | all | Gives each link the age of its ends |
+| Age the links too | Off, Match the newer note, Fade between the two | Fade between the two | all | Gives each link the age of its ends |
 | Trace what was written together | on / off | off | all | Colours links between notes saved in one sitting |
 | Trail colour | any | blue `#5ac8fa` | Tracing on | |
 | Trail strength | 0.0 – 1.0 | 0.55 | Tracing on | How far a trail goes toward its colour |
@@ -121,13 +123,13 @@ The tables below follow the settings tab from top to bottom.
 | Group notes by | Folder, Linked island | Folder | Temperature above 0 | What counts as a group |
 | Neighbour glow | 0.0 – 0.95 | 0 (off) | all | How much of a bright note carries to the notes it links to |
 | Glow reach | 1 – 3 hops | 1 | Glow above 0 | How many links the glow travels |
-| Measure a local graph against | The vault's whole history, The notes in the panel | Whole history | local graph | Also decides which note the spotlight picks there. Under a half-life the panel option only does that |
+| Measure a local graph against | The vault's whole history, The notes in the panel | The notes in the panel | local graph | Also decides which note the spotlight picks there. Under a half-life the panel option only does that |
 | Measure from the note in the middle | on / off | off | local graph | Brightness by distance in time from the panel's note, either side. Replaces the choice above for brightness |
-| Write every age in a local graph | on / off | off | local graph | Ages with every title in a panel, whatever Show note age says |
+| Write every age in a local graph | on / off | on | local graph | Ages with every title in a panel, whatever Show note age says |
 | Hide notes outside a range | on / off | off | all | Takes notes out of the graph rather than dimming them. The open note, a local graph's own note, spotlit notes and pins are kept |
 | Say so on the graph | on / off | on | every graph | A line across the top saying what the graph holds. Shown whether or not the filter is on, and so is its switch |
 | Keep | one or more ranges along the curve | the whole range | Filter on | What the filter keeps. **+** adds a range, **−** removes the last |
-| Light the timelapse as it plays | on / off | off | all | Measures each note from the moment the graph's own timelapse has reached |
+| Light the timelapse as it plays | on / off | on | all | Measures each note from the moment the graph's own timelapse has reached |
 | Stays lit for | 1 – 365 days, in round steps | 60 days | Replay on | How much vault time a note takes to fade behind the wave |
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
@@ -144,7 +146,7 @@ with it.
 
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
-| Spotlight the newest note | on / off | off | all | Paints the most recently modified notes a colour of your own |
+| Spotlight the newest note | on / off | on | all | Paints the most recently modified notes a colour of your own |
 | Spotlight colour | any | white `#ffffff` | Spotlight on | |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on | How far the colour overrides the node's own |
 | What it covers | The newest few notes, Anything touched recently | The newest few notes | Spotlight on | A count, or a window of time |
@@ -155,7 +157,7 @@ with it.
 | Pin colour | any | purple `#c084fc` | Pin colour on | |
 | Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on | How far the colour overrides the node's own |
 | Pinned notes | a list, each with **Unpin** | none | all | Pinning itself is a right-click on a graph node or a note in the file explorer, or a command |
-| Light up what you just wrote | on / off | off | all | Fresh text takes a colour and cools back to normal. The status bar counts what is still lit |
+| Light up what you just wrote | on / off | on | all | Fresh text takes a colour and cools back to normal. The status bar counts what is still lit |
 | How it shows | Colour what is new, Dim everything else | Colour what is new | Fresh writing on | Colour the new text, or dim the rest of the page |
 | How far it dims | 0.1 – 0.9 | 0.45 | Dim everything else | How far toward the background the rest of the page goes |
 | Cools over | 1 second – 4 hours, in round steps | 5 minutes | Fresh writing on | How long fresh writing takes to fade back. The slider is marked where seconds give way to minutes and minutes to hours |
@@ -168,14 +170,14 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Tabs (switch on the header) | on / off | on | all | Off leaves the tab bar as Obsidian draws it |
-| Show a dot beside each tab | on / off | off | all | A dot at that note's brightness in the graph |
-| Fade tabs | Never, By attention, By edit time | Never | all | Dims a tab the longer it goes untouched |
-| What fades | The icon and title, The whole tab | The whole tab | Fading on | |
+| Show a dot beside each tab | on / off | on | all | A dot at that note's brightness in the graph |
+| Fade tabs | Never, By attention, By edit time | By attention | all | Dims a tab the longer it goes untouched |
+| What fades | The icon and title, The whole tab | The icon and title | Fading on | |
 | How it fades | Gradually, All at once | Gradually | By attention | |
 | Faded after | 1 minute – 8 hours, in round steps | 1 hour | By attention | How long a tab is ignored before it is as faint as it gets |
 | Faintest a tab gets | 0.1 – 1.0 | 0.35 | Fading on | |
-| Mark tabs you have left alone | on / off | off | all | Marks tabs not looked at for a while. A command closes them |
-| How they are marked | A line down the edge, A 💤 where the dot goes | A line down the edge | Marking on | |
+| Mark tabs you have left alone | on / off | on | all | Marks tabs not looked at for a while. A command closes them |
+| How they are marked | A line down the edge, A 💤 where the dot goes | A 💤 where the dot goes | Marking on | |
 | Marked after | 5 minutes – 2 days, in round steps | 4 hours | Marking on | How long a tab is ignored before it is marked |
 
 ## Elsewhere
@@ -183,7 +185,7 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Show the open note's age | on / off | on | all | The open note's age in the status bar, with no graph needed |
-| A dot after each link | on / off | off | all | A dot after each link in a note, at the linked note's brightness |
+| A dot after each link | on / off | on | all | A dot after each link in a note, at the linked note's brightness |
 
 ## Setup
 
