@@ -8,9 +8,9 @@ Every figure on this page is recomputed from the files in
 which also draws every chart. The method, the machine and the weaknesses are all here,
 so that any of it can be checked or argued with.
 
-Measured on 7 October 2026: Pulsar 1.38.0, 1.39.0 and 1.40.0, plus each pull request
-between them. Nothing after 1.40.0 has been measured this way. A figure written
-`a ± b (n)` is the mean and sample standard deviation of n individual samples.
+Measured on 7 and 8 October 2026: Pulsar 1.38.0, 1.39.0 and 1.40.0, each pull request
+between them, and #125, the 1.41.0 fix for the one question 1.40.0 left open. A figure
+written `a ± b (n)` is the mean and sample standard deviation of n individual samples.
 
 - [In short](#in-short)
 - [Where the time goes](#where-the-time-goes)
@@ -20,7 +20,7 @@ between them. Nothing after 1.40.0 has been measured this way. A figure written
 - [Threats to validity](#threats-to-validity)
 - [Corrected after release](#corrected-after-release)
 - [Found, and closed without a fix](#found-and-closed-without-a-fix)
-- [Open: the fresh-writing reconfigure](#open-the-fresh-writing-reconfigure)
+- [Solved: the fresh-writing reconfigure](#solved-the-fresh-writing-reconfigure)
 - [How to reproduce](#how-to-reproduce)
 
 ## In short
@@ -40,6 +40,10 @@ and every run kept.
 
 The graph rows are the bench vault (20,000 generated notes, the author's age filter,
 which keeps 4,168 of them). The timelapse and editor rows are the 112-note demo vault.
+The last row is the time inside the calls, and 1.40.0's includes a restyle of the whole
+window that 1.38.0 paid just after its calls instead; with every restyle forced and
+timed, a load with fresh writing on is no slower in 1.40.0 than in 1.38.0
+([solved below](#solved-the-fresh-writing-reconfigure)).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/perf/open-20k-dark.svg">
@@ -55,10 +59,13 @@ which keeps 4,168 of them). The timelapse and editor rows are the 112-note demo 
   notes moved by under half a standard deviation from 1.39.0. The timelapse row moved by
   0.8 sd, all of it from two consecutive seconds at 0.17 and 0.16 cores while the graph
   was not drawing; without them 1.40.0 reads 0.073 ± 0.004 cores.
-- **1.40.0 leaves one open question.** It no longer reconfigures every open editor on
-  load while fresh writing is off, which is the default. With fresh writing on, its one
-  remaining reconfiguration measured 14.7 ms against 7.2 ms for 1.38.0's two. See
-  [the open item](#open-the-fresh-writing-reconfigure).
+- **1.40.0 looked slower on load with fresh writing on, and was not.** It no longer
+  reconfigures every open editor on load while fresh writing is off, the default. With it
+  on, the one remaining call measured 14.7 ms against 7.2 ms for 1.38.0's two, because
+  the call now included a restyle of the whole window. Timed with every restyle forced,
+  a load cost 25–28 ms against 31–34 ms in 1.38.0, and 1.41.0 (#125) removed most of the
+  restyle: 20.1 → 8.9 ms. See
+  [the fresh-writing reconfigure](#solved-the-fresh-writing-reconfigure).
 - **With the filter on, Pulsar makes a big graph cheaper than Obsidian alone**, because
   it hands Obsidian 4,168 nodes instead of 20,000. Without a filter, 1.38.0 added 15%
   to a note switch at 20,000 notes and 14–35% across the smaller vaults; see
@@ -249,7 +256,10 @@ a summary.
   at least 2 ms, because `performance.now()` here reads in 0.1 ms steps; 3 warm-up calls,
   then 30 samples (20 at 20,000 notes). Only the summary of these was saved.
 - **Editor reconfigurations**: `workspace.updateOptions` wrapped, each call counted and
-  its synchronous part timed, over ten disable-and-enable cycles of the plugin.
+  its synchronous part timed, over ten disable-and-enable cycles of the plugin. A timer
+  around one call also bills it for any restyle the code before it left pending, which
+  is how 1.40.0's call came to look twice as slow ([T21](#threats-to-validity)). The
+  follow-up harness forces and times every pending restyle at fixed points instead.
 - **Flame graphs**: the Chrome DevTools Protocol CPU profiler sampling every 100 µs, on
   an unminified build (`npm run build:profile`) so that frames carry real names.
 
@@ -418,7 +428,7 @@ ends fit. Each row is the oldest and newest build that operation was measured on
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/perf/scale-dark.svg">
-  <img src="assets/perf/scale-light.svg" width="100%" alt="Dot plot on a logarithmic time axis from 0.1 ms to 100 s, one row per operation, before and after with Pulsar off where measured. Graph open settled 10.9 s to 6.1 s against 30.6 s off; blocked 5.0 s to 0.28 s against 25.8 s off; note switches 157 to 118 ms and 150 to 75 ms; editor reconfiguration 7.2 to 14.7 ms; timelapse at rest 315 to 78 ms of CPU per second against 72 off; refilter 1.16 to 0.34 ms; keystroke 0.38 to 0.32 ms.">
+  <img src="assets/perf/scale-light.svg" width="100%" alt="Dot plot on a logarithmic time axis from 0.1 ms to 100 s, one row per operation, before and after with Pulsar off where measured. Graph open settled 10.9 s to 6.1 s against 30.6 s off; blocked 5.0 s to 0.28 s against 25.8 s off; note switches 157 to 118 ms and 150 to 75 ms; a load with fresh writing on, every restyle forced, 20.1 to 8.9 ms from before #125 to 1.41.0; timelapse at rest 315 to 78 ms of CPU per second against 72 off; refilter 1.16 to 0.34 ms; keystroke 0.38 to 0.32 ms.">
 </picture>
 
 ## Flame graphs
@@ -511,9 +521,9 @@ known, and what it touches. "Closed" means the one-session rerun removed it.
   reasons.
 - **T5. The first 1.39.0 switch figures joined two sessions.** *Closed:* the rerun put
   1.38.0 and 1.39.0 side by side. The baseline drifted by about 1 sd between sessions
-  (166.8 ± 8.4 and 158.7 ± 8.8 ms for the same build, 82 minutes apart), and by about
-  1 sd within the rerun too: 1.38.0's three in-range rounds read 144.2, 148.5 and
-  156.0 ms.
+  (166.8 ± 8.4 and 158.7 ± 8.8 ms for the same build, 82 minutes apart by the files'
+  times; the earlier write-up said 85), and by about 1 sd within the rerun too: 1.38.0's
+  three in-range rounds read 144.2, 148.5 and 156.0 ms.
 - **T6. No 1.38.0 graph-open figure existed.** *Closed:* the rerun timed it. The first
   session's #109 table dropped each arm's first run as cold (Pulsar off 49.1 s, #109
   27.5 s); with all six, Pulsar off reads 34.0 ± 7.6 s and #109 14.4 ± 6.5 s. The only
@@ -569,13 +579,22 @@ known, and what it touches. "Closed" means the one-session rerun removed it.
 - **T20. The vitest benchmarks run in Node, not Obsidian, and wander.** Between three
   back-to-back runs a mean moved by up to 1.7×. They rank approaches; they do not
   measure the plugin in place.
+- **T21. A timer around one call can bill it for a restyle someone else left pending.**
+  The browser restyles lazily, so the first call that needs styles pays for every change
+  made before it. 1.40.0 moved three body properties from just after the reconfigure to
+  just before it, and the call's time doubled without the call doing more. Every
+  "synchronous part" and per-call figure on this page carries this risk. Only the
+  reconfigure has been rechecked with restyles forced. Measures that run to a frame,
+  such as a load to the next frame or a switch to the second frame, include the restyle
+  wherever it falls, so they are not misled this way.
 
 ## Corrected after release
 
 The 1.39.0 and 1.40.0 release notes were written from the first session, and four of
 their figures did not hold up once the rerun put the builds side by side. #120 corrected
 the changelog the same night, and the release notes on GitHub carry the same
-corrections.
+corrections. The 1.40.0 entry was corrected a second time when the rerun's own
+reconfigure figure turned out to include a restyle (#125).
 
 | Figure | As published | First session's raw files | Rerun, one session |
 |---|---|---|---|
@@ -584,7 +603,7 @@ corrections.
 | Graph open, settled | 1.39.0 6.21 ± 0.07 s against 32.34 ± 1.85 s off | the same | 1.38.0 10.94 ± 0.76, 1.39.0 6.16 ± 0.11, off 30.65 ± 3.88 s |
 | Timelapse at rest | 0.41 ± 0.02 → 0.08 ± 0.01 cores | 0.41 ± 0.02 → 0.08 ± 0.02 (20) | 0.31 ± 0.02 → 0.07 ± 0.01 (40) |
 | Editor reconfiguration | "one reconfiguration measured 51 ms in a real vault" | two calls, 34.4 ± 3.8 and 16.7 ± 3.0 ms (10) | — |
-| Fresh writing on, per load | "about 5 ms saved" (#116) | not measured | 14.74 ms inside the call in 1.40.0, 7.20 ms in 1.38.0; see [the open item](#open-the-fresh-writing-reconfigure) |
+| Fresh writing on, per load | "about 5 ms saved" (#116), then "14.7 ± 1.6 ms against 7.2 ms" (#120) | not measured | inside the calls, 14.74 ± 1.58 against 7.20 ± 0.73 ms; with every restyle forced, 25.10 ± 3.34 against 34.34 ± 3.52 ms ([below](#solved-the-fresh-writing-reconfigure)) |
 
 - **The switch figures joined sessions four hours apart.** Side by side, the in-range
   gain held (71 ms against a published 70); the out-of-range gain was 38 ms, not 66.
@@ -595,6 +614,9 @@ corrections.
   off a load saves both, so about 51 ms in that vault; with it on, one goes.
 - **#108's sd for the timelapse fix** was 0.0153 cores, which rounds to 0.02, not 0.01.
   The conclusion, the same as Pulsar off, stands.
+- **"14.7 ± 1.6 ms against 7.2 ms"**, #120's own correction for 1.40.0, measured a
+  restyle as well as the reconfigure. With every restyle forced, a load with fresh
+  writing on is 25–28 ms after 1.40.0 against 31–34 ms in 1.38.0.
 
 Two figures outside the changelog are still uncorrected. #116's description, and the
 comment above `syncEditorExtensions` in `src/main.ts`, describe the 51 ms as one
@@ -607,13 +629,17 @@ comes to 9.9 ms per load together. The 58 ms looks like that dropdown, misattrib
 
 - **Item 4: building Pulsar's panel section forces a whole-window layout.** Obsidian's
   dropdown measures itself while the panel is attached: 59.8 ms per load under it in the
-  author's vault, 58.6 ms of that reading `offsetWidth`, and 8.6 ms in the demo. It scales
+  author's vault, 58.6 ms of that reading `offsetWidth`, and 8.6 ms in the demo. The
+  earlier, unpublished write-up of this profiling gave 0.5 ms for the demo; the demo's
+  load profile does not reproduce that, and 8.6 ms is what it holds under the dropdown, mostly in `resizeToFit`. It scales
   with what is on screen, not with notes. Closed because most of it is a layout the
   window performs on its next frame anyway, which Pulsar only brings forward; building
   the section detached would leave the dropdown measured at zero width. This rests on the
   profile and on reading Obsidian's code; no before and after was run.
 - **Item 6: per-frame work while a graph moves.** 1.81 ms of Pulsar's own code per frame
-  at 4,168 nodes, against a 10.02 ± 1.30 ms frame: the age-label pass and the node-size
+  at 4,168 nodes, against a 10.02 ± 1.30 ms frame. The earlier write-up said about 1.9 ms,
+  because it also counted 0.11 ms of calls Pulsar makes into other code; here only time
+  whose innermost frame is Pulsar's is counted. The age-label pass and the node-size
   override visit every node on every frame. It appears only with settings that are off by
   default, and a settled graph draws no frames. Closed under the keep rule, since 1.81 ms
   is less than twice the frame's sd (2.61 ms); see T17 for why that is the rule's verdict
@@ -623,21 +649,62 @@ comes to 9.9 ms per load together. The 58 ms looks like that dropdown, misattrib
   it. It lasts until that graph view is rebuilt or Obsidian restarts. From 1.38.0 on,
   every hook switches itself off on release.
 
-## Open: the fresh-writing reconfigure
+## Solved: the fresh-writing reconfigure
 
-**Being investigated.** With fresh writing on, 1.40.0 reconfigures open editors once per
-load instead of twice, and that one call takes longer than both of 1.38.0's together:
+The rerun timed every `workspace.updateOptions` call as the plugin loaded. With fresh
+writing on, 1.40.0's one call took 14.74 ± 1.58 ms (n = 10), against 7.20 ± 0.73 ms for
+1.38.0's two together, and that was first read as a regression.
 
-| Demo, 6 editors, fresh writing on (n = 10 loads) | Calls per load | ms per call | ms per load |
+It was not the reconfigure. Fresh writing's colours are three CSS custom properties, and
+up to 1.40.0 they were set on `document.body`. A custom property is inherited, so
+setting one restyles every element in the window. 1.40.0 sets them just before the call,
+so the browser paid that restyle inside the timed call. 1.38.0 set them just after,
+and paid the same restyle a moment later, outside the timer.
+
+[`bench/live/restyle.mjs`](../bench/live/restyle.mjs) forces every pending restyle and
+times it at fixed points: before each call, right after the last of the three properties
+is set, and at the end of the load. That way no build can leave one for an untimed
+frame. The test used the demo vault, fresh writing on, six editors and 10 loads per
+build. Each comparison ran twice. The second round of each is in
+[`bench/results/restyle/`](../bench/results/restyle); the first was printed and not kept.
+
+| Per load, second round | 1.38.0 | 1.40.0 code path | The same, properties set after the call |
 |---|---|---|---|
-| 1.38.0 | 2 | 3.60 ± 0.51 (20) | 7.20 ± 0.73 |
-| 1.39.0 | 2 | 4.22 ± 0.53 (20) | 8.45 ± 0.62 |
-| 1.40.0 | 1 | 14.74 ± 1.58 (10) | 14.74 ± 1.58 |
+| Reconfigure calls | 2 | 1 | 1 |
+| Time in the calls | 11.16 ± 1.76 ms | 4.74 ± 1.01 ms | 6.07 ± 1.91 ms |
+| Restyle from the three properties | 15.44 ± 1.47 ms | 13.20 ± 2.46 ms | 15.19 ± 3.10 ms |
+| Other pending restyles | 7.74 ± 1.21 ms | 7.16 ± 1.00 ms | 8.14 ± 1.50 ms |
+| **Total** | **34.34 ± 3.52 ms** | **25.10 ± 3.34 ms** | **29.40 ± 4.43 ms** |
+| Total, first round (printed only) | 30.80 ± 3.56 ms | 28.18 ± 5.53 ms | 24.36 ± 2.98 ms |
 
-1.38.0 and 1.39.0 calls cost about the same with fresh writing on or off (3.6–4.6 ms),
-so the extra time comes from something new in 1.40.0's editor extensions. Whole loads do
-not separate the builds with fresh writing on (62.04 ± 7.69, 69.62 ± 7.56 and
-65.11 ± 4.37 ms). This section will be filled in once the call has been profiled.
+The "1.40.0 code path" is the default branch at #123, which loads the way 1.40.0 does;
+its hash is in [`builds.csv`](../bench/results/builds.csv). So 1.40.0 is not slower than
+1.38.0 with fresh writing on: 25–28 ms per load against 31–34 ms. #116's saved call is
+real, and putting the properties after the call changes nothing, since the two rounds
+disagree on which order is faster. The restyle is the cost. Setting one custom property
+on the body took 15.40 ± 1.00 and 17.02 ± 2.58 ms in two runs, against 0.04 ± 0.05 and
+0.06 ± 0.06 ms on the six editors (n = 30 each, 1,664 elements in the window; printed
+only).
+
+#125, released in 1.41.0, puts the properties on each editor that has fresh writing
+instead of on the body. A load went from 20.14 ± 2.52 to 8.87 ± 1.39 ms (n = 10, 4.5 sd
+of before), and from 20.72 ± 1.00 to 9.31 ± 1.30 ms in the first round (printed only).
+The #125 build measured here is byte-identical to the 1.41.0 release asset.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/perf/restyle-dark.svg">
+  <img src="assets/perf/restyle-light.svg" width="100%" alt="Stacked horizontal bars, milliseconds per load with fresh writing on, split into reconfigure calls, the restyle from fresh writing's body properties, and other pending restyles. 1.38.0 34.3 in all with 2 calls; 1.40.0 code path 25.1; properties set after the call 29.4. A second comparison: before #125 20.1; 1.41.0 8.9, with no restyle from the properties.">
+</picture>
+
+The same build read 25.10 ± 3.34 ms in the first comparison and 20.14 ± 2.52 ms in the
+second, seven minutes later. That is why each comparison is read only within itself.
+
+**What this changes in the method.** A timer around one call measures everything the
+browser does synchronously inside it, including a restyle that the code before it left
+pending. Moving work from just after a call to just before it can then look like a
+regression in the call. The rerun's per-call figures carry that risk, and so does every
+"synchronous part" on this page; only this one has been rechecked with restyles forced
+([T21](#threats-to-validity)).
 
 ## How to reproduce
 

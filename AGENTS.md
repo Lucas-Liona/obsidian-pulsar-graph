@@ -295,7 +295,7 @@ There is a `probe` skill in `.claude/skills/` holding this loop in full.
 
 Anything published — the README, the directory listing, a release note, a short —
 comes from the **demo vault at `~/pulsar-demo-vault`**, never from a real one. It
-exists for this: 74 notes, titles only, with modification times deliberately
+exists for this: 112 notes, titles only, with modification times deliberately
 spread across a year so the fade has something to show. Its note titles were
 audited and are all generic; keep them that way, because a vault anyone can
 download must say nothing about whoever made it.

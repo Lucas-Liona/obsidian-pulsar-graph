@@ -149,6 +149,35 @@ def rerun():
     write('rerun/reconfigure-calls.csv', ['label', 'build', 'mode', 'load', 'call', 'ms'], calls)
 
 
+# ------------------------------------- the fresh-writing reconfigure, solved
+
+# What a load with fresh writing on pays, with every pending restyle forced and
+# timed at a fixed point (bench/live/restyle.mjs), so that no build can slip
+# one into an untimed frame. Two comparisons, each the second of two rounds;
+# the first rounds were printed and not kept.
+RESTYLE = [
+    ('UO4-r138-12101', 'orders', '1.38.0'),
+    ('UO4-master-12101', 'orders', '1.40.0 code path'),
+    ('UO4-after-12101', 'orders', 'properties set after the call'),
+    ('UO4-master-25966', 'fix', 'before #125'),
+    ('UO4-scope-25966', 'fix', '1.41.0 (#125)'),
+]
+
+
+def restyle():
+    rows = []
+    for label, comparison, build in RESTYLE:
+        d = load(DEMO, label)
+        for i in range(len(d['callMs'])):
+            calls, before, props = d['callMs'][i], d['flushMs'][i], d['varFlushMs'][i]
+            after = d['afterLoadFlushMs'][i]
+            rows.append([label, comparison, build, d['mainSha256'], i + 1, d['editors'], len(calls), sum(calls), sum(props),
+                         sum(before), after, sum(calls) + sum(props) + sum(before) + after, d['enableMs'][i]])
+    write('restyle/loads.csv', ['label', 'comparison', 'build', 'main_sha256', 'load', 'editors', 'calls', 'reconfigure_ms',
+                                'restyle_from_properties_ms', 'restyle_pending_before_call_ms', 'restyle_pending_after_load_ms',
+                                'total_ms', 'enable_ms'], rows)
+
+
 # ------------------------------------------------------- the first session
 
 def session1():
@@ -449,6 +478,8 @@ def profiles(src):
 # rebuild rerun/ without the first session or the author's vault.
 if os.path.exists(os.path.join(BENCH, 'RR-open-off-1.json')):
     rerun()
+if all(os.path.exists(os.path.join(DEMO, f'{label}.json')) for label, *_ in RESTYLE):
+    restyle()
 if os.path.exists(os.path.join(BENCH, 'FB20k-off-1.json')):
     session1()
 if os.path.isdir(OWN):

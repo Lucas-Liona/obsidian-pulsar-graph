@@ -11,3 +11,6 @@ pr,quantity,value,n,note
 #123,"history flush(), demo history of 8 KB, round 1",2.40 ± 0.45 → 5.12 ± 1.13 ms,30 each,printed only; builds interleaved over two rounds
 #123,"history flush(), demo history of 8 KB, round 2",4.84 ± 8.79 → 5.50 ± 3.86 ms,30 each,printed only; one outlier in the 'before' arm
 #123,"one write against two, 95 KB payload, rounds 1 / 2",2.44 / 2.45 → 4.34 / 4.24 ms,30 each,printed only; the size of the author's history file
+#125,"load with fresh writing on, every restyle forced, round 1: 1.38.0 / 1.40.0 code path / properties set after",30.80 ± 3.56 / 28.18 ± 5.53 / 24.36 ± 2.98 ms,10 loads each,printed only; round 2 is in restyle/loads.csv
+#125,"load with fresh writing on, every restyle forced, round 1: before #125 → #125",20.72 ± 1.00 → 9.31 ± 1.30 ms,10 loads each,printed only; round 2 is in restyle/loads.csv
+#125,"setting one custom property on the body against on the six editors, two runs",15.40 ± 1.00 / 17.02 ± 2.58 ms against 0.04 ± 0.05 / 0.06 ± 0.06 ms,30 each,printed only; 1664 elements in the window

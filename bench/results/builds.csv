@@ -9,3 +9,6 @@ build,kind,main_sha256,release_published_utc,commit,note
 #113,pull request,,,24978d0,first session only; the default branch before #114; not hashed (T9)
 #114,pull request,,,368ac23,first session only; built from the branch; not hashed (T9)
 #116,pull request,,,448ba9c,first session only; built from the branch; not hashed (T9)
+1.41.0,release,c9973f81df43676b0c77666b8a170c35d72d006f37e4f6068f6aa4a86d75d59e,2026-10-08T06:55:45Z,a7073ed,"the release asset; measured as the #125 branch build, whose hash it matches"
+1.40.0 code path,default branch,a11ca5d3a142654297d4deb620587fcde249a2428a152536d189842e25e32db8,,ee0c0e7,the default branch at #123: 1.40.0's load path plus #119–#123; measured in restyle/ as '1.40.0 code path' and 'before #125'
+properties set after the call,experiment,63f3409a601f815a3ad9c5d7eccff7b19516730e318bac9a143c11e8be9c5e36,,,the default branch at #123 with fresh writing's three body properties set after the reconfigure instead of before; never merged

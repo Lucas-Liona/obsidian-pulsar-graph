@@ -11,6 +11,7 @@ failure as a bug in the copy before suspecting the method.
 | `genvault.py` | Grows the bench vault: numbered one-line notes, 1 to 4 links each by preferential attachment, exponential ages with a 90-day mean. Deterministic per note, so 1,000 → 5,000 → 20,000 keeps the earlier notes. |
 | `harness.mjs` | The measurements: `opengraph`, `switches`, `opentwo`, `settle`, `awake`, `timelapse`, `meta`, `benchsetup`, `guard`/`unguard`, `enable`/`disable`. Each run writes one JSON file with every sample. |
 | `reconfigure.mjs` | Counts and times every `workspace.updateOptions` call across ten plugin loads. |
+| `restyle.mjs` | The same, with every pending restyle forced and timed at fixed points, so a restyle left pending by the caller is not billed to the call. Written after `reconfigure.mjs` was fooled by exactly that. |
 | `relay.mjs` | Evaluates a script inside the window of a named vault. |
 | `pp.sh` | Runs one command through Obsidian's CLI and the relay. |
 | `rerun.sh` | The one-session rerun, phases A (open the graph), B (note switches), C (timelapse at rest) and D (reconfigurations). |

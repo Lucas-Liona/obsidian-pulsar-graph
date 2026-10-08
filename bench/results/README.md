@@ -39,6 +39,21 @@ run kept. Driven by [`../live/rerun.sh`](../live/rerun.sh).
 | `reconfigure-loads.csv` | plugin load | `mode`: `defaults` (no saved settings, so fresh writing off) or `fresh writing on` (the demo's own settings); `editors` open; `calls` to `workspace.updateOptions`; `calls_ms`, their synchronous time together; `enable_ms`, `enablePlugin` until it resolved |
 | `reconfigure-calls.csv` | `updateOptions` call | `load`, `call`, `ms` |
 
+## `restyle/` — the fresh-writing reconfigure, solved, 8 October 2026, 02:38–02:46
+
+`loads.csv`, one row per plugin load in the demo vault with fresh writing on and six
+editors open, measured by [`../live/restyle.mjs`](../live/restyle.mjs). Every pending
+restyle is forced (`document.body.offsetHeight`) and timed at fixed points, so no build
+can leave one for an untimed frame. `comparison` is `orders` (1.38.0, the 1.40.0 code
+path, and that path with the properties set after the call) or `fix` (before #125 and
+1.41.0); each is the second of two rounds, the first having been printed and not kept.
+Columns: `calls` and `reconfigure_ms`, the `workspace.updateOptions` calls and their
+time; `restyle_from_properties_ms`, the restyle forced right after fresh writing's last
+body property is set; `restyle_pending_before_call_ms` and
+`restyle_pending_after_load_ms`, whatever else was pending before each call and at the
+end of the load; `total_ms`, the four together; `enable_ms`, `enablePlugin` until it
+resolved, which the forced restyles lengthen.
+
 ## `session1/` — the first session, 7 October 2026, 11:20–18:41
 
 Each fix against the build just before it. These runs carry no build hash, and some
