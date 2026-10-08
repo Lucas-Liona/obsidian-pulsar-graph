@@ -101,6 +101,14 @@
   cover up to 25 or a time window, and the tabs page said the status bar age
   was off by default, which it has not been since 1.15.0.
 
+### Performance
+
+- **Neighbour glow is three to four times cheaper.** It looked each note's
+  neighbours up by path, on every repaint, a note switch included: 65 ms a
+  pass on a graph of 20,000 notes and 43,515 links. It now walks the list of
+  links once, by position: 15 to 19 ms on the same graph, with the same result
+  for every note.
+
 ## [1.42.0] - 2026-10-08
 
 ### Fixed
