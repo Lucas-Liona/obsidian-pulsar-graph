@@ -153,7 +153,9 @@ graph is drawn beyond the nodes themselves.
 **Trace what was written together** colours the link between two notes that were
 saved close enough together to have been open in the same sitting. It says
 nothing about *how long ago* — the fade already does that — so the two read as
-separate facts: colour for togetherness, brightness for age.
+separate facts: colour for togetherness, brightness for age. It is also a
+switch in the graph's own panel, **Pulsar › Links › Trace sittings**, for
+turning it on while looking at the graph it changes.
 
 How much it catches depends on how you work. On my vault a 5 minute window
 already marks 246 of 692 links, and stretching it to 4 hours only reaches 312,

@@ -26,12 +26,30 @@ different question; the shape is what tells "edited three times today" from
 were busy and leave gaps where you were not, and the gaps say as much as the
 beads do.
 
-**The rail is this note's own life**, from its first sitting to its last, with
-both ends labelled. Measuring against the vault instead collapses the view: a
-note worked on three times this morning, in a vault with a year of history in it,
-puts all three beads inside the same pixel. Because the scale is the note's own,
-always read the labels — a rail covering twenty minutes looks exactly like one
-covering a year.
+**One scale for every note, logarithmic back from now.** The top of the rail is
+now, and it is labelled at an hour, a day, a week, a month and a year, then two,
+five, ten and twenty years. A year is the same 420 pixels down in every note, so
+two notes can be read against each other at a glance. Because the scale is
+logarithmic, this morning still spreads out: the first hour gets 93 pixels and
+the first day 206, so a sitting twenty minutes ago and one three hours before it
+land 76 pixels apart. The trade is at the old end, where a month of daily sittings a year ago
+spans about 3 pixels.
+
+| A sitting this long ago | Lands this far down |
+| --- | ---: |
+| 5 minutes | 25 px |
+| 1 hour | 93 px |
+| 1 day | 206 px |
+| 1 week | 276 px |
+| 1 month | 329 px |
+| 1 year | 420 px |
+| 3 years | 460 px |
+
+The rail stops at the first label past the note's oldest sitting, so a note
+worked on only this morning has a short rail and one with years in it a long
+one, on the same scale. A note with a single sitting gets the axis too: on one
+scale for every note, where that sitting falls says something. The view redraws
+itself once a minute while it is on screen, since a bead's place is its age.
 
 **Size is how long the sitting ran**, up to two hours. A sitting recorded from a
 single write has no duration at all and still draws, at the floor.

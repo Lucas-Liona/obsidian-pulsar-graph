@@ -4,11 +4,29 @@
 
 ### Added
 
+- **More of Pulsar in the graph's own panel.** Under *Nodes*, a *Glow* slider
+  and switches for *Size by age* and the *Spotlight*; and a new *Links* group
+  with how links are aged (*Off*, *Match newer*, *Fade*) and a *Trace
+  sittings* switch. They are the same settings as in the settings tab, so
+  moving one moves the other, and each applies to the graph as you change it.
+
 - **A tab's dot says when its note was edited**, on hover, the way a link's
   dot does: "Edited 5 days ago". The dot used to let the pointer pass through
   it, so there was nothing to hover; a click on it still lands on the tab.
 
 ### Changed
+
+- **A note's history is drawn on one scale for every note**, logarithmic back
+  from now, instead of each rail being scaled to its own note. A rail covering
+  twenty minutes used to look exactly like one covering a year. Now the top is
+  now, labels mark an hour, a day, a week, a month and a year (then two, five,
+  ten and twenty years), and a year is 420 pixels down in every note, so two
+  notes read against each other. This morning still spreads out, since the
+  first hour gets 93 pixels and the first day 206; a month of daily sittings a
+  year ago spans about 3. The rail stops at the first label past the oldest
+  sitting, so a short history stays short. A note with one sitting gets the
+  axis too, and the view redraws itself once a minute while it is shown,
+  since a bead's place is its age.
 
 - **Fresh writing can cool in as little as a second**, and still over as long
   as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,
@@ -46,12 +64,34 @@
 
 ### Fixed
 
+- **On a light theme the newest notes no longer vanish into the page.** Past
+  full strength Obsidian lightens a node, which on a dark background reads as
+  brighter and on a light one fades it toward white: under the shipped maximum
+  of 3, Moonstone's newest notes were drawn white on white and the graph was
+  links and nothing else. On a light theme a note past full strength is now
+  drawn solid and deepened toward black instead, the mirror of what a dark
+  theme does. In the demo vault on Moonstone, 14 of 112 nodes were invisible
+  at the new defaults and 100 at the old; now 1 is, the white spotlight. Dark
+  themes are unchanged.
+
+- **Switching theme with a graph open recolours its notes.** A note with no
+  group colour kept the old theme's grey through every repaint: the dark
+  theme's `#b3b3b3` against a light fill of `#5c5c5c`, measured. It follows
+  the theme now, and so does the colour a pinned or spotlit note is handed
+  back.
+
+- **Blending in edit intensity no longer dims notes with nothing on record.**
+  A note with no sittings counted as the least worked-on of all, so while the
+  history was new every note was dimmed by the blend: at 0.25, the newest note
+  reached three quarters of the range and no further. A note with no record is
+  judged by its date alone now, and one with sittings is blended as before.
+
 - **The note history's rail ends at its oldest bead.** It ran from when the
   first sitting began, but each bead is drawn where its sitting ended, so the
   bottom of every rail was a label with no bead at it: a note with one sitting
   had its bead at the top of an empty line, labelled "4 hours ago" at both
   ends, and in a longer history the oldest bead floated above the bottom by
-  its own length. A note with one sitting is now that bead, with no line.
+  its own length.
 
 - **How long a sitting is can be set again.** *Counts as one sitting* decides
   how the edit history counts sittings, but it was only shown with *Trace what

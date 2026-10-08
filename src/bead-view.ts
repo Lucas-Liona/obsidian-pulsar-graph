@@ -7,14 +7,55 @@ export const BEAD_VIEW_TYPE = 'pulsar-history';
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const YEAR = 365 * DAY;
 
 /**
- * How tall the rail is, in pixels. Fixed rather than filling the pane, because
- * the position of a bead means something — it is where that sitting falls in
- * the vault's history — and a rail that resized would move every bead whenever
- * the sidebar did.
+ * Where a year back falls on the rail, in pixels: the height the whole rail
+ * used to be, so a year of history is as tall as it was. Fixed rather than
+ * filling the pane, because the position of a bead means something, and a
+ * rail that resized would move every bead whenever the sidebar did.
  */
-const RAIL_HEIGHT = 420;
+const YEAR_PX = 420;
+
+/**
+ * The age the axis is logarithmic over: it runs as `log(1 + age / unit)`, so
+ * anything much younger than this is close to linear and anything much older
+ * is logarithmic.
+ *
+ * Five minutes. At one minute the first hour took 131 px of the 420 a year
+ * gets, and a sitting five minutes old already sat 57 px down, so the minutes
+ * just gone ate the rail. At ten, the first five minutes got 16 px and a
+ * sitting just finished sat on top of the "now" label. At five, five minutes
+ * is 25 px, an hour 93, a day 206, a week 276, a month 329 and a year 420.
+ */
+const AXIS_UNIT = 5 * MINUTE;
+
+/**
+ * The ages the rail is labelled at. Past a year the log squeezes each further
+ * year into a few pixels (2 and 3 years are 15 px apart), so the labels thin
+ * out rather than land on each other.
+ */
+const TICKS: readonly { age: number; label: string }[] = [
+    { age: 0, label: 'now' },
+    { age: HOUR, label: '1 hour' },
+    { age: DAY, label: '1 day' },
+    { age: 7 * DAY, label: '1 week' },
+    { age: 30 * DAY, label: '1 month' },
+    { age: YEAR, label: '1 year' },
+    { age: 2 * YEAR, label: '2 years' },
+    { age: 5 * YEAR, label: '5 years' },
+    { age: 10 * YEAR, label: '10 years' },
+    { age: 20 * YEAR, label: '20 years' }
+];
+
+/**
+ * How often an open view redraws itself while nothing else asks it to. A
+ * bead's place is its age, and ages grow: one drawn at five minutes old is at
+ * 25 px, and an hour later belongs at 93. A minute moves a bead within the
+ * first hour by a few pixels at most, and a redraw costs about a tenth of a
+ * millisecond.
+ */
+const REDRAW_MS = 60 * 1000;
 
 /** Kept clear at each end so a bead at the very edge is still a whole circle. */
 const RAIL_INSET = 14;
@@ -66,9 +107,21 @@ export interface BeadSource {
  */
 export class BeadView extends ItemView {
     private path: string | null = null;
+    private name: string | null = null;
 
     constructor(leaf: WorkspaceLeaf, private readonly source: BeadSource) {
         super(leaf);
+    }
+
+    async onOpen(): Promise<void> {
+        // Only while the view is open, since a registered interval is cleared
+        // when it closes, and only while it is on screen. Nothing changes but
+        // the clock, so it redraws what it already shows.
+        this.registerInterval(window.setInterval(() => {
+            if (this.path !== null && this.containerEl.isShown()) {
+                this.render(this.path, this.name);
+            }
+        }, REDRAW_MS));
     }
 
     getViewType(): string {
@@ -97,6 +150,7 @@ export class BeadView extends ItemView {
      */
     render(path: string | null, name: string | null): void {
         this.path = path;
+        this.name = name;
 
         const root = this.contentEl;
         root.empty();
@@ -153,48 +207,38 @@ export class BeadView extends ItemView {
     /**
      * The rail, newest at the top, each bead where its sitting falls.
      *
-     * Measured across **this note's own history**, not the vault's. Against the
-     * vault the view collapses: a note worked on three times this morning, in a
-     * vault with a year of history in it, puts all three beads inside the same
-     * pixel — measured, two sittings three hours apart both landed at 14px — and
-     * the shape the view exists to show is gone. One note is the subject here,
-     * so one note is the scale, and the axis labels say which span that is so a
-     * rail covering twenty minutes cannot be mistaken for one covering a year.
+     * **One scale for every note**, logarithmic back from now. Each note used
+     * to be scaled to its own history, which kept a busy morning from
+     * collapsing into a pixel but made a rail covering twenty minutes look
+     * exactly like one covering a year. On a log axis this morning still
+     * spreads out, since the first hour is 93 px and the first day 206, while
+     * a year is 420 px in every note, so two notes can be compared at a glance.
+     * The trade is at the old end: a month of daily sittings a year ago spans
+     * about 3 px.
+     *
+     * The rail runs from now to the first labelled age at or past the oldest
+     * sitting, so a short history stays short and the scale stays the same.
      *
      * Colour still comes from the vault-wide curve, so a bead's brightness is
-     * the brightness the graph is drawing that note at. Position answers "when,
-     * within this note's life"; brightness answers "how old, in the vault".
+     * the brightness the graph is drawing that note at.
      */
     private drawRail(root: HTMLElement, beads: readonly Bead[]): void {
         const now = Date.now();
+        const layout = layoutRail(beads, now);
         const rail = root.createDiv({ cls: 'pulsar-graph-history-rail' });
+        rail.style.height = `${layout.length + RAIL_INSET * 2}px`;
+        rail.style.setProperty('--pulsar-rail-inset', `${RAIL_INSET}px`);
 
-        const first = beads[0].end;
-        const last = beads[beads.length - 1].end;
-        const usable = RAIL_HEIGHT - RAIL_INSET * 2;
-
-        // One sitting, or several ending inside one instant, has no span to
-        // draw across. A label at the bottom of an empty rail would suggest a
-        // gap that is not there, and so would the rail, so it is one bead
-        // high and says the one thing it knows.
-        const spans = last > first;
-        rail.style.height = `${spans ? RAIL_HEIGHT : RAIL_INSET * 2}px`;
-        rail.toggleClass('is-single', !spans);
-
-        rail.createDiv({ cls: 'pulsar-graph-history-tick is-top', text: formatAge(last, now) });
-
-        if (spans) {
-            rail.createDiv({ cls: 'pulsar-graph-history-tick is-bottom', text: formatAge(first, now) });
+        for (const tick of layout.ticks) {
+            const label = rail.createDiv({ cls: 'pulsar-graph-history-tick', text: tick.label });
+            label.style.top = `${RAIL_INSET + tick.at}px`;
         }
 
-        const placed = placeBeads(beads);
-
         for (const [index, bead] of beads.entries()) {
-            const along = placed[index];
             const size = beadSize(bead);
 
             const dot = rail.createDiv({ cls: 'pulsar-graph-history-bead' });
-            dot.style.top = `${RAIL_INSET + (1 - clamp01(along)) * usable}px`;
+            dot.style.top = `${RAIL_INSET + layout.beads[index]}px`;
             dot.style.width = `${size}px`;
             dot.style.height = `${size}px`;
             const strength = BEAD_FAINTEST + clamp01(this.source.opacityAt(bead.end)) * (1 - BEAD_FAINTEST);
@@ -205,25 +249,48 @@ export class BeadView extends ItemView {
 }
 
 /**
- * Where each bead falls on the rail, from 0 at the bottom to 1 at the top.
+ * How far down the rail something that long ago falls, in pixels from now.
+ * The same for every note. Anything in the future, from a clock that moved,
+ * sits at now.
+ */
+export function axisOffset(age: number): number {
+    return YEAR_PX * Math.log1p(Math.max(0, age) / AXIS_UNIT) / Math.log1p(YEAR / AXIS_UNIT);
+}
+
+export interface RailLayout {
+    /** Each bead's distance down from now, in the order given. */
+    beads: number[];
+    /** The labelled ages the rail runs past, and where each falls. */
+    ticks: { label: string; at: number }[];
+    /** How far down the rail runs. */
+    length: number;
+}
+
+/**
+ * Where everything on a note's rail goes.
  *
  * A bead is placed by when its sitting ended. That is the same moment a note's
  * own modification time records, so the topmost bead and the note's node in the
- * graph are talking about the same thing — and it is why the rail is measured
- * from the first sitting's end as well. Measured from its start, the bottom of
- * every rail was a moment nothing was drawn at: a note with one forty-minute
- * sitting got its bead at the top, an empty rail under it, and a label at the
- * bottom for when that same sitting began.
+ * graph are talking about the same thing.
+ *
+ * The rail ends at the first labelled age at or past the oldest sitting, never
+ * at "now" itself, so even a sitting a minute old has an hour of rail to sit
+ * on. A note with one sitting gets the axis like any other: with one scale for
+ * every note, where that sitting falls says something, which it did not when
+ * the rail was the note's own span and a single sitting had none.
  */
-export function placeBeads(beads: readonly Bead[]): number[] {
-    if (beads.length === 0) {
-        return [];
-    }
+export function layoutRail(beads: readonly Bead[], now: number): RailLayout {
+    const ages = beads.map((bead) => Math.max(0, now - bead.end));
+    const oldest = ages.reduce((most, age) => Math.max(most, age), 0);
+    const last = TICKS.find((tick) => tick.age > 0 && tick.age >= oldest) ?? TICKS[TICKS.length - 1];
 
-    const first = beads[0].end;
-    const span = beads[beads.length - 1].end - first;
-
-    return beads.map((bead) => span > 0 ? (bead.end - first) / span : 1);
+    return {
+        beads: ages.map(axisOffset),
+        ticks: TICKS.filter((tick) => tick.age <= last.age).map((tick) => ({ label: tick.label, at: axisOffset(tick.age) })),
+        // Past the last label, for a history older than twenty years, the rail
+        // runs on to the oldest bead rather than leaving it off the end.
+        length: Math.max(axisOffset(last.age), axisOffset(oldest))
+    };
 }
 
 /**
