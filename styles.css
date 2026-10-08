@@ -170,10 +170,14 @@
 	opacity: 0.8;
 }
 
-/* A bar taller than the axis: drawn to the top, with a cap to say so. */
+/*
+ * A bar taller than the axis: drawn to the top, with a lighter tip to say so.
+ * Not red: the curve is the one red thing here, and the tallest bar is usually
+ * the first, where the curve starts, so a red tip ran into it.
+ */
 .pulsar-graph-range-cap {
-	fill: var(--color-red);
-	opacity: 0.8;
+	fill: var(--text-muted);
+	opacity: 0.9;
 }
 
 .pulsar-graph-range-grid {
