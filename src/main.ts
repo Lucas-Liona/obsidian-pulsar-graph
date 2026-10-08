@@ -345,6 +345,12 @@ export default class PulsarGraphPlugin extends Plugin {
         this.running = running;
         this.addChild(running);
 
+        // Switching off flushes the history without waiting for the write to
+        // land, and switching straight back on used to read the file at once:
+        // a read that beat the write handed back the file from before it, its
+        // sittings replaced the newer ones in memory, and the next write
+        // saved that. The flush waits for any write still under way.
+        await this.history.flush();
         await this.history.load();
 
         // Unloaded or switched off while the history was being read.
