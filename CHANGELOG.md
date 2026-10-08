@@ -115,6 +115,13 @@
   for every link, though it only changes when a note is saved. It is worked
   out with the rest of the link, once per change.
 
+- **Neighbour glow takes about half the time it did.** It looked each note's
+  neighbours up by path, on every repaint, a note switch included: 65 ms a
+  pass on a graph of 20,000 notes and 43,515 links, offline. It now walks the
+  list of links once, by position: 15 to 19 ms on the same graph. In the
+  20,000-note bench vault a repaint with glow on went from 57 and 50 ms to 37
+  and 38 ms, and every note's value is the same, at one, two and three links.
+
 ## [1.42.0] - 2026-10-08
 
 ### Fixed
