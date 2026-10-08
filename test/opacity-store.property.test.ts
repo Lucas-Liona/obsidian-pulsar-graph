@@ -19,8 +19,8 @@ const settings: fc.Arbitrary<PulsarGraphSettings> = fc.record({
     ageScale: fc.constantFrom(...AGE_SCALES),
     fadeType: fc.constantFrom(...FADE_TYPES),
     normalizeBy: fc.constantFrom('vault' as const, 'window' as const, 'shown' as const),
-    windowDays: fc.integer({ min: 1, max: 365 }),
-    halfLifeDays: fc.integer({ min: 1, max: 365 }),
+    windowDays: fc.double({ min: 0.25, max: 365, noNaN: true }),
+    halfLifeDays: fc.double({ min: 1 / 24, max: 365, noNaN: true }),
     steepness: fc.double({ min: 0.1, max: 10, noNaN: true }),
     numSteps: fc.integer({ min: 1, max: 20 }),
     ends: fc.tuple(fc.double({ min: 0, max: 1, noNaN: true }), fc.double({ min: 0, max: 12, noNaN: true }))

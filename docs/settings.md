@@ -93,10 +93,10 @@ The tables below follow the settings tab from top to bottom.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Age scale | Even, By rank, Logarithmic, By half-life | Even | all | How a gap in age becomes a gap in opacity |
-| Half-life | 1 – 365 days | 14 | By half-life | Days for a note to fade halfway |
+| Half-life | 1 hour – 365 days, in round steps | 14 days | By half-life | How long a note takes to fade halfway |
 | Measure age against | Whole history, Recent window, Whatever the graph is showing | Whole history | any scale but half-life | What sets the oldest and newest ends |
-| Never spread across less than | 1 – 168 hours | 6 | anything that re-spreads | The narrowest span a re-spread range may cover |
-| Window | 1 – 365 days | 30 | Recent window | How far back the range reaches. Older notes sit at the minimum |
+| Never spread across less than | 15 minutes – 7 days, in round steps | 6 hours | anything that re-spreads | The narrowest span a re-spread range may cover |
+| Window | 6 hours – 365 days, in round steps | 30 days | Recent window | How far back the range reaches. Older notes sit at the minimum |
 
 ## The graph
 
@@ -128,7 +128,7 @@ The tables below follow the settings tab from top to bottom.
 | Say so on the graph | on / off | on | every graph | A line across the top saying what the graph holds. Shown whether or not the filter is on, and so is its switch |
 | Keep | one or more ranges along the curve | the whole range | Filter on | What the filter keeps. **+** adds a range, **−** removes the last |
 | Light the timelapse as it plays | on / off | off | all | Measures each note from the moment the graph's own timelapse has reached |
-| Stays lit for | 1 – 365 days | 60 | Replay on | Days of vault time a note takes to fade behind the wave |
+| Stays lit for | 1 – 365 days, in round steps | 60 days | Replay on | How much vault time a note takes to fade behind the wave |
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
@@ -149,7 +149,7 @@ with it.
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on | How far the colour overrides the node's own |
 | What it covers | The newest few notes, Anything touched recently | The newest few notes | Spotlight on | A count, or a window of time |
 | How many notes | 1 – 25 | 1 | The newest few notes | How many of the newest notes are lit |
-| Touched within | 1 – 720 minutes | 30 | Anything touched recently | Every note edited this recently is lit, however many — or none |
+| Touched within | 1 minute – 1 day, in round steps | 30 minutes | Anything touched recently | Every note edited this recently is lit, however many — or none |
 | Spotlight size | 1.0 – 5.0 | 2.0 | Spotlight on | What a spotlit note's circle is multiplied by |
 | Give pins a colour | on / off | on | all | Paints pinned notes, so a pin reads as a pin rather than as fresh |
 | Pin colour | any | purple `#c084fc` | Pin colour on | |
@@ -172,11 +172,11 @@ with it.
 | Fade tabs | Never, By attention, By edit time | Never | all | Dims a tab the longer it goes untouched |
 | What fades | The icon and title, The whole tab | The whole tab | Fading on | |
 | How it fades | Gradually, All at once | Gradually | By attention | |
-| Faded after | 1 – 480 minutes | 60 | By attention | Minutes ignored before a tab is as faint as it gets |
+| Faded after | 1 minute – 8 hours, in round steps | 1 hour | By attention | How long a tab is ignored before it is as faint as it gets |
 | Faintest a tab gets | 0.1 – 1.0 | 0.35 | Fading on | |
 | Mark tabs you have left alone | on / off | off | all | Marks tabs not looked at for a while. A command closes them |
 | How they are marked | A line down the edge, A 💤 where the dot goes | A line down the edge | Marking on | |
-| Marked after | 5 – 2880 minutes | 240 | Marking on | Minutes ignored before a tab is marked |
+| Marked after | 5 minutes – 2 days, in round steps | 4 hours | Marking on | How long a tab is ignored before it is marked |
 
 ## Elsewhere
 
@@ -190,7 +190,7 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Keep a record of when notes were worked on | on / off | on | all | Records each sitting with a note, in the plugin's own folder |
-| Counts as one sitting | 1 – 240 minutes | 30 | History or tracing on | The longest gap between two saves in one sitting. The history counts sittings by it and trails decide what was written together by it. Listed under History while that is on, and with the trails otherwise |
+| Counts as one sitting | 1 minute – 4 hours, in round steps | 30 minutes | History or tracing on | The longest gap between two saves in one sitting. The history counts sittings by it and trails decide what was written together by it. Listed under History while that is on, and with the trails otherwise |
 | Sittings kept per note | 10 – 1000 | 100 | History on | The oldest are dropped past this |
 | Blend in edit intensity | 0.0 – 1.0 | 0 (off) | History on | How much brightness comes from how often you return to a note |
 | Measure intensity | Against the busiest note, By rank, Logarithmic | By rank | History on | How a sitting count becomes a brightness. Does nothing at a blend of 0 |

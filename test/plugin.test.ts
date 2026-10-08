@@ -636,6 +636,42 @@ describe('colour', () => {
     });
 });
 
+describe('durations past the old ends', () => {
+    // A window of 6 hours used to be read as 1 day: the setting floored at a
+    // day and rounded to whole ones. In 6 hours, a note 7 hours old is past the
+    // window and sits at the minimum; in a day it would not.
+    it('measures a window of a quarter of a day as six hours', async () => {
+        const notes: NoteSpec[] = [...NOTES, { path: 'seven.md', mtime: NOW - 7 * HOUR, ctime: NOW - 500 * DAY }];
+        const world = vault({ notes });
+        world.workspace.openNote('centre.md');
+        const plugin = await loadPlugin(world, { normalizeBy: 'window', windowDays: 0.25 });
+        const global = world.workspace.openGraph();
+        await settle();
+
+        expect(plugin.settings.windowDays).toBe(0.25);
+        expect(global.renderer.node('seven.md').color?.a).toBeCloseTo(0.1, 5);
+        expect(global.renderer.node('n2.md').color?.a).toBeGreaterThan(0.1);
+        await unloadPlugin(plugin);
+    });
+
+    // The spotlight window stopped at 12 hours, so "everything touched today"
+    // could not be said: a note from 20 hours ago was never marked.
+    it('spotlights a note from twenty hours ago with a window of a day', async () => {
+        const notes: NoteSpec[] = [...NOTES, { path: 'yesterday.md', mtime: NOW - 20 * HOUR, ctime: NOW - 500 * DAY }];
+        const world = vault({ notes });
+        world.workspace.openNote('other.md');
+        const plugin = await loadPlugin(world, { spotlightNewest: true, spotlightBy: 'window', spotlightMinutes: 24 * 60 });
+        const global = world.workspace.openGraph();
+        await settle();
+        global.renderer.frames(100);
+
+        expect(plugin.settings.spotlightMinutes).toBe(24 * 60);
+        expect(global.renderer.node('yesterday.md').circle?.tint).toBe(0xffffff);
+        expect(global.renderer.node('other.md').circle?.tint).toBe(GREY);
+        await unloadPlugin(plugin);
+    });
+});
+
 describe('unloading', () => {
     it('leaves no hook behind and hands every graph back as Obsidian drew it', async () => {
         const world = vault({ groups: [{ prefix: 'n1', rgb: 0xe05050 }] });
