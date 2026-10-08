@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Fresh writing can cool in as little as a second**, and still over as long
+  as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,
+  20, 30 and 45 seconds, then minutes, then hours — marked where the unit
+  changes, so the short end is as easy to pick as the long one. It used to
+  start at a minute. A duration set before this keeps its value until the
+  slider is moved.
+
 ## [1.42.0] - 2026-10-08
 
 ### Fixed

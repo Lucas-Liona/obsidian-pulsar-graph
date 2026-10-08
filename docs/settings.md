@@ -159,7 +159,7 @@ with it.
 | Light up what you just wrote | on / off | off | all | Fresh text takes a colour and cools back to normal. The status bar counts what is still lit |
 | How it shows | Colour what is new, Dim everything else | Colour what is new | Fresh writing on | Colour the new text, or dim the rest of the page |
 | How far it dims | 0.1 – 0.9 | 0.45 | Dim everything else | How far toward the background the rest of the page goes |
-| Cools over | 1 – 240 minutes | 5 | Fresh writing on | How long fresh writing takes to fade back |
+| Cools over | 1 second – 4 hours, in round steps | 5 minutes | Fresh writing on | How long fresh writing takes to fade back. The slider is marked where seconds give way to minutes and minutes to hours |
 | Colour | any | orange `#ff7a45` | Fresh writing on | What the newest writing is drawn in |
 | Pinned colour | any | amber `#ffc53d` | Fresh writing on | What pinned writing is drawn in. It does not cool |
 | Start again | button: **Cool it all** | | Fresh writing on | Cools every open note at once. Pinned writing stays. Also a command |

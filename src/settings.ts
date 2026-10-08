@@ -12,6 +12,7 @@ import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
 import { confirmTwice } from './confirm';
+import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, nearestStop } from './duration';
 
 export type NormalizeBy = 'vault' | 'window' | 'shown';
 
@@ -342,8 +343,13 @@ const BLEND_RANGE = { lowest: 0, highest: 1, step: 0.05 };
 /** What a node's own size is multiplied by. Obsidian's own slider is separate. */
 const NODE_SIZE_RANGE = { lowest: 0.2, highest: 3, step: 0.1 };
 
-/** Minutes for fresh writing to cool back to ordinary text. */
-const INK_RANGE = { lowest: 1, highest: 240, step: 1 };
+/**
+ * Minutes for fresh writing to cool back to ordinary text, from a second to
+ * four hours. Stored in minutes, as it always was, so a second is a fraction:
+ * a version from before seconds were allowed reads one as its own floor of a
+ * minute rather than as anything broken.
+ */
+const INK_MINUTES = { lowest: 1 / 60, highest: 240 };
 
 /** How far the rest of the page dims, as a fraction of the way to the background. */
 const INK_DIM_RANGE = { lowest: 0.1, highest: 0.9, step: 0.05 };
@@ -460,6 +466,51 @@ function format(value: number): string {
 }
 
 /**
+ * A slider over a list of round durations rather than a range, with a mark on
+ * the track wherever the unit changes and the unit's name under its stretch.
+ *
+ * The thumb sits on the stop nearest the stored value, but the value is only
+ * replaced once the slider is moved: seven minutes set some other way stays
+ * seven, and the readout says seven, until someone chooses a stop.
+ */
+class DurationControl {
+    constructor(setting: Setting, stops: DurationStops, seconds: number, commit: (seconds: number) => void) {
+        const column = setting.controlEl.createDiv({ cls: 'pulsar-duration' });
+        const track = column.createDiv({ cls: 'pulsar-duration-track' });
+        const names = column.createDiv({ cls: 'pulsar-duration-units' });
+        const readout = setting.controlEl.createSpan({ cls: 'pulsar-duration-readout', text: formatDuration(seconds) });
+        const { marks, units } = durationMarks(stops);
+
+        for (const at of marks) {
+            track.createDiv({ cls: 'pulsar-duration-mark' }).style.setProperty('--pulsar-at', String(at));
+        }
+
+        for (const { unit, at } of units) {
+            names.createSpan({ cls: 'pulsar-duration-unit', text: unit }).style.setProperty('--pulsar-at', String(at));
+        }
+
+        setting.addSlider((slider) => {
+            slider
+                .setLimits(0, stops.length - 1, 1)
+                .setValue(nearestStop(stops, seconds))
+                .onChange((index) => commit(stops[index]));
+
+            // The readout follows the thumb while it is held, whenever the
+            // value itself is committed.
+            slider.sliderEl.addEventListener('input', () => {
+                readout.setText(formatDuration(stops[Number(slider.sliderEl.value)]));
+            });
+
+            track.prepend(slider.sliderEl);
+        });
+
+        // Obsidian writes a slider's raw value beside it, which here is only
+        // the index of a stop; the readout says what it means.
+        setting.controlEl.querySelector(':scope > .slider-value')?.remove();
+    }
+}
+
+/**
  * Reads saved settings, repairing anything missing, malformed or out of range.
  * Fade types used to be stored capitalized ('Linear'), so saved values are
  * matched case-insensitively, and opacity used to be free text, so a stored
@@ -520,7 +571,7 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         inkMode: INK_MODES.find((mode) => mode === data.inkMode) ?? DEFAULT_SETTINGS.inkMode,
         inkPinColor: parseColor(data.inkPinColor, DEFAULT_SETTINGS.inkPinColor),
         inkDim: clamp(parseNumber(data.inkDim, DEFAULT_SETTINGS.inkDim), INK_DIM_RANGE.lowest, INK_DIM_RANGE.highest),
-        inkMinutes: clamp(parseNumber(data.inkMinutes, DEFAULT_SETTINGS.inkMinutes), INK_RANGE.lowest, INK_RANGE.highest),
+        inkMinutes: clamp(parseNumber(data.inkMinutes, DEFAULT_SETTINGS.inkMinutes), INK_MINUTES.lowest, INK_MINUTES.highest),
         inkColor: parseColor(data.inkColor, DEFAULT_SETTINGS.inkColor),
         nodeSizeByAge: parseBoolean(data.nodeSizeByAge, DEFAULT_SETTINGS.nodeSizeByAge),
         nodeSizeSmallest: clamp(parseNumber(data.nodeSizeSmallest, DEFAULT_SETTINGS.nodeSizeSmallest), NODE_SIZE_RANGE.lowest, NODE_SIZE_RANGE.highest),
@@ -1747,14 +1798,14 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
             }
 
-            new NumberControl(
+            new DurationControl(
                 new Setting(containerEl)
                     .setName('Cools over')
-                    .setDesc('Minutes for fresh writing to fade all the way back. Longer makes a whole session legible; shorter keeps it to what you are doing right now'),
-                INK_RANGE,
-                settings.inkMinutes,
-                (value) => {
-                    settings.inkMinutes = Math.round(value);
+                    .setDesc('How long fresh writing takes to fade all the way back, from a second to four hours. Longer makes a whole session legible; a few seconds only lights what you are typing now'),
+                COOLING_STOPS,
+                settings.inkMinutes * 60,
+                (seconds) => {
+                    settings.inkMinutes = seconds / 60;
                     this.save();
                 }
             );
