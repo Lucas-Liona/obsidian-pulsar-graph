@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { EditorSelection, EditorState, TransactionSpec } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkOptions, unpinInk } from '../src/ink';
+import { coolInk, forgetInk, InkColours, inkCounts, inkExtension, pinInk, setInkColours, setInkOptions, unpinInk } from '../src/ink';
 
 /**
  * Just enough of an editor for the functions under test, which only read its
@@ -96,5 +96,58 @@ describe('fresh writing', () => {
         type(view, 'written while off');
 
         expect(inkCounts(view)).toEqual({ lit: 0, pinned: 0 });
+    });
+});
+
+describe('fresh writing colours', () => {
+    const COLOURS: InkColours = { '--pulsar-ink': '#ff8800', '--pulsar-ink-pin': '#8888ff', '--pulsar-ink-dim': '45%' };
+
+    /** An editor element's inline style, which is all the colours touch. */
+    function withStyle(view: EditorView): Map<string, string> {
+        const style = new Map<string, string>();
+        Object.assign(view, {
+            dom: {
+                style: {
+                    setProperty: (name: string, value: string) => style.set(name, value),
+                    removeProperty: (name: string) => style.delete(name)
+                }
+            }
+        });
+
+        return style;
+    }
+
+    afterEach(() => {
+        setInkColours(null, []);
+    });
+
+    // A custom property on the body restyles the whole window; these are only
+    // ever read inside an editor.
+    it('puts the colours on each editor', () => {
+        const view = editor();
+        const style = withStyle(view);
+
+        setInkColours(COLOURS, [view]);
+
+        expect(Object.fromEntries(style)).toEqual(COLOURS);
+    });
+
+    it('leaves an editor without fresh writing alone', () => {
+        const plain = { state: EditorState.create({ doc: '' }) } as unknown as EditorView;
+        const style = withStyle(plain);
+
+        setInkColours(COLOURS, [plain]);
+
+        expect(style.size).toBe(0);
+    });
+
+    it('takes the colours off again', () => {
+        const view = editor();
+        const style = withStyle(view);
+
+        setInkColours(COLOURS, [view]);
+        setInkColours(null, [view]);
+
+        expect(style.size).toBe(0);
     });
 });
