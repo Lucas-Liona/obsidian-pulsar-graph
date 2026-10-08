@@ -630,8 +630,13 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
             const originalRgb = kept?.originalRgb ?? currentRgb;
             const paintedRgb = blendRgb(originalRgb, target.rgb, target.strength);
 
+            // Never past 1. The renderer multiplies a circle's colour by its
+            // alpha and clamps each channel, so above 1 every channel is pushed
+            // up separately: #4dff91 at 1.85 was drawn #8effff. Grey only gets
+            // whiter, which is what a high maximum is for, but a colour someone
+            // picked comes out a different colour.
             options.paint.painted.set(path, { originalRgb, paintedRgb });
-            node.color = { a: opacity, rgb: paintedRgb };
+            node.color = { a: Math.min(opacity, 1), rgb: paintedRgb };
             continue;
         }
 

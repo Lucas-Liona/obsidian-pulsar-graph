@@ -194,12 +194,18 @@ being behind the vault the instant the replay catches up.
 preserves a colour by reading it there preserves nothing. Keep what the node had
 before as the fallback.
 
-**Alpha above 1 is clamped when drawn.** A high maximum opacity flattens the top
-of the curve rather than extending it — and there is therefore no headroom above
-the maximum for anything to use. A "crest" multiplier for the replay's wave was
-built, measured at 5.04 against a maximum of 2.52, and deleted: it was four times
-past the point where anything changes. Contrast at the top of the range has to
-come from lowering what is around it.
+**Alpha above 1 lightens the colour, channel by channel.** A circle's colour is
+multiplied by its alpha and each channel clamped at 255, read back from the
+graph's own canvas: `#4dff91` at 1.85 is drawn `#8effff`, and a theme's grey
+`#908caa` at 1.84 is drawn pure white. Grey only gets whiter, until every channel
+saturates and the top of the curve goes flat; any other colour changes hue on the
+way. So anything painted with a colour someone chose (the spotlight, pins) is
+drawn at no more than 1. A graph group's colour still shifts above 1.
+
+Past saturation there is no headroom for anything to use. A "crest" multiplier
+for the replay's wave was built, measured at 5.04 against a maximum of 2.52, and
+deleted: it was four times past the point where anything changes. Contrast at the
+top of the range has to come from lowering what is around it.
 
 **Labels never see `node.color`.** A title's alpha is
 `textAlpha * fadeAlpha * colors.text.a`, and `textAlpha` is

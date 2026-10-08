@@ -123,10 +123,13 @@ and reset does.
 
 Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
-while everything older still falls away. Be aware that it is clamped at 1.0 when
-drawn, so a very high maximum flattens the top of the curve — the preview shows
-you when that is happening. The two opacity sliders can't cross — move one past
-the other and it takes the other with it.
+while everything older still falls away. Past 1.0 a node isn't drawn any more
+solid: its colour is lightened instead, so a grey node goes whiter until it is
+plain white, and a very high maximum flattens the top of the curve — the preview
+shows you when that is happening. The spotlight and pin colours are kept exactly
+as you picked them; a graph group's colour is lightened like anything else. The
+two opacity sliders can't cross — move one past the other and it takes the other
+with it.
 
 ---
 
