@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { App, Plugin } from 'obsidian';
 import { EditHistory } from '../src/history';
 
@@ -155,8 +155,12 @@ describe('history file safety', () => {
             release = resolve;
         });
 
-        // The stub's debounce writes at once, so this starts the write.
+        // The debounce starts the write, so the flush below finds nothing
+        // left to write and has to wait for that one instead.
+        vi.useFakeTimers();
         h.markSeen('b.md', 7);
+        vi.advanceTimersByTime(5000);
+        vi.useRealTimers();
 
         let flushed = false;
         const done = h.flush().then(() => {
