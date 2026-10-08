@@ -1,0 +1,36 @@
+metric,build,unit,n,mean,sd,median,source_label,graphs_open
+"note switch, second frame",1.38.0,ms,30,91.8967,11.8773,91.65,A-switch-on,graph:241 (hidden);localgraph:1
+"note switch, blocked",1.38.0,ms,30,1.8333,10.0416,0,A-switch-on,graph:241 (hidden);localgraph:1
+"note switch, second frame",Pulsar off,ms,30,79.0733,11.8773,78.45,A-switch-off,graph:1115 (hidden);localgraph:3
+"note switch, blocked",Pulsar off,ms,30,2.1667,11.8673,0,A-switch-off,graph:1115 (hidden);localgraph:3
+"note switch, second frame",1.38.0 under the profiler,ms,30,107.6933,15.5328,106.75,B-switch-on,graph:241 (hidden);localgraph:1
+"note switch, blocked",1.38.0 under the profiler,ms,30,15.8667,24.7146,0,B-switch-on,graph:241 (hidden);localgraph:1
+"note switch, second frame",Pulsar off under the profiler,ms,30,88.6467,11.2235,89.7,B-switch-off,graph:1115 (hidden);localgraph:3
+"note switch, blocked",Pulsar off under the profiler,ms,30,0,0,0,B-switch-off,graph:1115 (hidden);localgraph:3
+"note switch, second frame",1.38.0,ms,30,82.81,8.7162,81.05,H-switch-release,graph:241 (hidden);localgraph:1
+"note switch, blocked",1.38.0,ms,30,1.7,9.3113,0,H-switch-release,graph:241 (hidden);localgraph:1
+"note switch, second frame",#108,ms,30,89.77,11.5577,88.2,H-switch-fixA,graph:241 (hidden);localgraph:1
+"note switch, blocked",#108,ms,30,3.3333,12.6854,0,H-switch-fixA,graph:241 (hidden);localgraph:1
+"note switch, second frame",#109,ms,30,81.35,11.2757,82.7,H-switch-fixAB,graph:241 (hidden);localgraph:1
+"note switch, blocked",#109,ms,30,0,0,0,H-switch-fixAB,graph:241 (hidden);localgraph:1
+"one frame of a moving graph, 1115 nodes","1.38.0, filter off in memory",ms,199,8.8196,1.0672,8.6,C-frame-on-1115,graph:1115
+"one frame of a moving graph, 1115 nodes",Pulsar off,ms,200,7.877,0.7944,7.75,C-frame-off-1115,graph:1115
+plugin load: enablePlugin (total),1.38.0,ms,10,405.49,36.7067,398.85,C-loadparts,
+plugin load: onload (until done),1.38.0,ms,10,282.91,24.8223,287.2,C-loadparts,
+plugin load: history.load (until done),1.38.0,ms,10,135.42,16.788,134.1,C-loadparts,
+plugin load: syncRenderers,1.38.0,ms,10,77.9,6.6485,79.95,C-loadparts,
+plugin load: attach,1.38.0,ms,10,69.88,4.6341,71.45,C-loadparts,
+plugin load: api.workspace.updateOptions,1.38.0,ms,10,34.37,3.8091,34.2,C-loadparts,
+plugin load: api.registerEditorExtension,1.38.0,ms,10,16.66,2.9624,16.45,C-loadparts,
+plugin load: syncInk,1.38.0,ms,10,9.67,1.2221,9.7,C-loadparts,
+plugin load: applyTo,1.38.0,ms,10,7.95,2.4117,8.3,C-loadparts,
+one call: refilter,1.38.0,ms,30,1.162,0.253,1.1,G-components-before,
+one call: syncRenderers,1.38.0,ms,30,0.85,0.267,0.8,G-components-before,
+"global graph nodes drawn, filter on",1.38.0,nodes,1,241,0,241,G-components-before,
+one call: refilter,#108,ms,30,0.343,0.048,0.343,G-components-after,
+one call: syncRenderers,#108,ms,30,1.402,2.856,0.85,G-components-after,
+"global graph nodes drawn, filter on",#108,nodes,1,241,0,241,G-components-after,
+"global graph nodes, no filter",Pulsar off,nodes,1,1115,0,1115,A-switch-off,
+"plugin load, under the profiler: time under addDropdown",1.38.0,ms per load,11,59.7894,,,B-load,
+"plugin load, under the profiler: of which reading offsetWidth",1.38.0,ms per load,11,58.5608,,,B-load,
+"plugin load, under the profiler: every other layout read",1.38.0,ms per load,11,9.9033,,,B-load,

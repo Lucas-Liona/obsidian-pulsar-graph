@@ -1,0 +1,9 @@
+pair,round,note,nodes_110,nodes_111,nodes_differing
+in,1,first,4168,4168,0
+in,1,second,4168,4168,0
+in,2,first,4168,4168,0
+in,2,second,4168,4168,0
+out,1,first,4168,4168,0
+out,1,second,4169,4169,0
+out,2,first,4168,4168,0
+out,2,second,4169,4169,0

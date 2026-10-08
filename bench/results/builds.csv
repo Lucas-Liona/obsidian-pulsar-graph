@@ -1,0 +1,11 @@
+build,kind,main_sha256,release_published_utc,commit,note
+1.38.0,release,f17fcba711f0077c452473802d02d0b589a21994cddf5f9e5775e2ef6183f79c,2026-10-07T16:31:02Z,91861a2,the release asset; its sha256 matches GitHub's digest for it
+1.39.0,release,f4ecc4cce80b0f327b5aebb9c494694d25d8abca160cb3f8e685ff930a55c867,2026-10-07T22:06:00Z,9106c12,the release asset; its sha256 matches GitHub's digest for it
+1.40.0,release,423f54bae83b9e470fa883ec691c310157a311a0b0c1085822485501cc1088ed,2026-10-08T00:55:48Z,ca3e4a5,the release asset; its sha256 matches GitHub's digest for it
+#108,pull request,,,b45a454,first session only; built from the branch; not hashed (T9)
+#109,pull request,,,f70daa7,first session only; built from the branch; not hashed (T9)
+#110,pull request,,,aec99c9,first session only; built from the branch; not hashed (T9)
+#111,pull request,,,dc6f042,first session only; built from the branch; not hashed (T9)
+#113,pull request,,,24978d0,first session only; the default branch before #114; not hashed (T9)
+#114,pull request,,,368ac23,first session only; built from the branch; not hashed (T9)
+#116,pull request,,,448ba9c,first session only; built from the branch; not hashed (T9)

@@ -1,0 +1,311 @@
+label,build,load,step,ms
+C-loadparts,1.38.0,1,api.addCommand,0.1
+C-loadparts,1.38.0,1,api.addSettingTab,0.1
+C-loadparts,1.38.0,1,api.addStatusBarItem,0
+C-loadparts,1.38.0,1,api.loadData,0
+C-loadparts,1.38.0,1,api.loadData (until done),0.5
+C-loadparts,1.38.0,1,api.registerEditorExtension,3.5
+C-loadparts,1.38.0,1,api.registerView,1.2
+C-loadparts,1.38.0,1,api.vault.getMarkdownFiles,0.1
+C-loadparts,1.38.0,1,api.workspace.updateOptions,8.6
+C-loadparts,1.38.0,1,applyTo,9.5
+C-loadparts,1.38.0,1,attach,13.8
+C-loadparts,1.38.0,1,attention.seed,0
+C-loadparts,1.38.0,1,begin,0
+C-loadparts,1.38.0,1,begin (until done),45.5
+C-loadparts,1.38.0,1,enablePlugin (total),73.3
+C-loadparts,1.38.0,1,history.load,0
+C-loadparts,1.38.0,1,history.load (until done),5.1
+C-loadparts,1.38.0,1,loadSettings,0
+C-loadparts,1.38.0,1,loadSettings (until done),0.5
+C-loadparts,1.38.0,1,onload,0
+C-loadparts,1.38.0,1,onload (until done),51
+C-loadparts,1.38.0,1,paintTabs,0.5
+C-loadparts,1.38.0,1,pins.load,0
+C-loadparts,1.38.0,1,refreshBeadViews,2.2
+C-loadparts,1.38.0,1,store.build,0
+C-loadparts,1.38.0,1,syncInk,17.9
+C-loadparts,1.38.0,1,syncRenderers,15.4
+C-loadparts,1.38.0,1,syncRunning,0.1
+C-loadparts,1.38.0,1,syncRunning (until done),45.5
+C-loadparts,1.38.0,1,syncStatusBar,0
+C-loadparts,1.38.0,1,updateStatusBar,0
+C-loadparts,1.38.0,2,api.addCommand,0.1
+C-loadparts,1.38.0,2,api.addSettingTab,0.2
+C-loadparts,1.38.0,2,api.addStatusBarItem,0
+C-loadparts,1.38.0,2,api.loadData,0
+C-loadparts,1.38.0,2,api.loadData (until done),0.7
+C-loadparts,1.38.0,2,api.registerEditorExtension,4.5
+C-loadparts,1.38.0,2,api.registerView,1.4
+C-loadparts,1.38.0,2,api.vault.getMarkdownFiles,0.1
+C-loadparts,1.38.0,2,api.workspace.updateOptions,8.8
+C-loadparts,1.38.0,2,applyTo,11
+C-loadparts,1.38.0,2,attach,16.3
+C-loadparts,1.38.0,2,attention.seed,0.1
+C-loadparts,1.38.0,2,begin,0.1
+C-loadparts,1.38.0,2,begin (until done),48.1
+C-loadparts,1.38.0,2,enablePlugin (total),76.2
+C-loadparts,1.38.0,2,history.load,0.1
+C-loadparts,1.38.0,2,history.load (until done),6.3
+C-loadparts,1.38.0,2,loadSettings,0
+C-loadparts,1.38.0,2,loadSettings (until done),0.8
+C-loadparts,1.38.0,2,onload,0.1
+C-loadparts,1.38.0,2,onload (until done),55.2
+C-loadparts,1.38.0,2,paintTabs,0.5
+C-loadparts,1.38.0,2,pins.load,0
+C-loadparts,1.38.0,2,refreshBeadViews,1.6
+C-loadparts,1.38.0,2,store.build,0.1
+C-loadparts,1.38.0,2,syncInk,17.7
+C-loadparts,1.38.0,2,syncRenderers,18.5
+C-loadparts,1.38.0,2,syncRunning,0.1
+C-loadparts,1.38.0,2,syncRunning (until done),48.1
+C-loadparts,1.38.0,2,syncStatusBar,0
+C-loadparts,1.38.0,2,updateStatusBar,0
+C-loadparts,1.38.0,3,api.addCommand,0
+C-loadparts,1.38.0,3,api.addSettingTab,0.2
+C-loadparts,1.38.0,3,api.addStatusBarItem,0
+C-loadparts,1.38.0,3,api.loadData,0
+C-loadparts,1.38.0,3,api.loadData (until done),0.4
+C-loadparts,1.38.0,3,api.registerEditorExtension,4.5
+C-loadparts,1.38.0,3,api.registerView,1.1
+C-loadparts,1.38.0,3,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,3,api.workspace.updateOptions,9
+C-loadparts,1.38.0,3,applyTo,10.8
+C-loadparts,1.38.0,3,attach,14.1
+C-loadparts,1.38.0,3,attention.seed,0
+C-loadparts,1.38.0,3,begin,0
+C-loadparts,1.38.0,3,begin (until done),41.7
+C-loadparts,1.38.0,3,enablePlugin (total),67.4
+C-loadparts,1.38.0,3,history.load,0
+C-loadparts,1.38.0,3,history.load (until done),6
+C-loadparts,1.38.0,3,loadSettings,0
+C-loadparts,1.38.0,3,loadSettings (until done),0.5
+C-loadparts,1.38.0,3,onload,0
+C-loadparts,1.38.0,3,onload (until done),48.1
+C-loadparts,1.38.0,3,paintTabs,0.4
+C-loadparts,1.38.0,3,pins.load,0
+C-loadparts,1.38.0,3,refreshBeadViews,1.7
+C-loadparts,1.38.0,3,store.build,0.1
+C-loadparts,1.38.0,3,syncInk,13.8
+C-loadparts,1.38.0,3,syncRenderers,16
+C-loadparts,1.38.0,3,syncRunning,0
+C-loadparts,1.38.0,3,syncRunning (until done),41.7
+C-loadparts,1.38.0,3,syncStatusBar,0
+C-loadparts,1.38.0,3,updateStatusBar,0
+C-loadparts,1.38.0,4,api.addCommand,0
+C-loadparts,1.38.0,4,api.addSettingTab,0.2
+C-loadparts,1.38.0,4,api.addStatusBarItem,0.1
+C-loadparts,1.38.0,4,api.loadData,0
+C-loadparts,1.38.0,4,api.loadData (until done),0.5
+C-loadparts,1.38.0,4,api.registerEditorExtension,3.8
+C-loadparts,1.38.0,4,api.registerView,1.4
+C-loadparts,1.38.0,4,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,4,api.workspace.updateOptions,8.1
+C-loadparts,1.38.0,4,applyTo,10.4
+C-loadparts,1.38.0,4,attach,15.2
+C-loadparts,1.38.0,4,attention.seed,0.1
+C-loadparts,1.38.0,4,begin,0.1
+C-loadparts,1.38.0,4,begin (until done),44.8
+C-loadparts,1.38.0,4,enablePlugin (total),75.6
+C-loadparts,1.38.0,4,history.load,0
+C-loadparts,1.38.0,4,history.load (until done),7.2
+C-loadparts,1.38.0,4,loadSettings,0
+C-loadparts,1.38.0,4,loadSettings (until done),0.5
+C-loadparts,1.38.0,4,onload,0
+C-loadparts,1.38.0,4,onload (until done),50.8
+C-loadparts,1.38.0,4,paintTabs,0.6
+C-loadparts,1.38.0,4,pins.load,0
+C-loadparts,1.38.0,4,refreshBeadViews,2
+C-loadparts,1.38.0,4,store.build,0
+C-loadparts,1.38.0,4,syncInk,14.3
+C-loadparts,1.38.0,4,syncRenderers,17.1
+C-loadparts,1.38.0,4,syncRunning,0.1
+C-loadparts,1.38.0,4,syncRunning (until done),44.8
+C-loadparts,1.38.0,4,syncStatusBar,0.1
+C-loadparts,1.38.0,4,updateStatusBar,0
+C-loadparts,1.38.0,5,api.addCommand,0
+C-loadparts,1.38.0,5,api.addSettingTab,0.2
+C-loadparts,1.38.0,5,api.addStatusBarItem,0.1
+C-loadparts,1.38.0,5,api.loadData,0
+C-loadparts,1.38.0,5,api.loadData (until done),0.5
+C-loadparts,1.38.0,5,api.registerEditorExtension,3.9
+C-loadparts,1.38.0,5,api.registerView,1.2
+C-loadparts,1.38.0,5,api.vault.getMarkdownFiles,0.1
+C-loadparts,1.38.0,5,api.workspace.updateOptions,8.1
+C-loadparts,1.38.0,5,applyTo,10.3
+C-loadparts,1.38.0,5,attach,12.7
+C-loadparts,1.38.0,5,attention.seed,0
+C-loadparts,1.38.0,5,begin,0.1
+C-loadparts,1.38.0,5,begin (until done),43
+C-loadparts,1.38.0,5,enablePlugin (total),108.9
+C-loadparts,1.38.0,5,history.load,0
+C-loadparts,1.38.0,5,history.load (until done),6.3
+C-loadparts,1.38.0,5,loadSettings,0
+C-loadparts,1.38.0,5,loadSettings (until done),0.6
+C-loadparts,1.38.0,5,onload,0
+C-loadparts,1.38.0,5,onload (until done),49
+C-loadparts,1.38.0,5,paintTabs,0.5
+C-loadparts,1.38.0,5,pins.load,0
+C-loadparts,1.38.0,5,refreshBeadViews,2
+C-loadparts,1.38.0,5,store.build,0
+C-loadparts,1.38.0,5,syncInk,16.4
+C-loadparts,1.38.0,5,syncRenderers,14.3
+C-loadparts,1.38.0,5,syncRunning,0.1
+C-loadparts,1.38.0,5,syncRunning (until done),43
+C-loadparts,1.38.0,5,syncStatusBar,0.1
+C-loadparts,1.38.0,5,updateStatusBar,0
+C-loadparts,1.38.0,6,api.addCommand,0.1
+C-loadparts,1.38.0,6,api.addSettingTab,0.3
+C-loadparts,1.38.0,6,api.addStatusBarItem,0
+C-loadparts,1.38.0,6,api.loadData,0
+C-loadparts,1.38.0,6,api.loadData (until done),0.6
+C-loadparts,1.38.0,6,api.registerEditorExtension,5
+C-loadparts,1.38.0,6,api.registerView,1.4
+C-loadparts,1.38.0,6,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,6,api.workspace.updateOptions,8.9
+C-loadparts,1.38.0,6,applyTo,10.6
+C-loadparts,1.38.0,6,attach,14.6
+C-loadparts,1.38.0,6,attention.seed,0.1
+C-loadparts,1.38.0,6,begin,0
+C-loadparts,1.38.0,6,begin (until done),44.3
+C-loadparts,1.38.0,6,enablePlugin (total),70.2
+C-loadparts,1.38.0,6,history.load,0
+C-loadparts,1.38.0,6,history.load (until done),6.7
+C-loadparts,1.38.0,6,loadSettings,0
+C-loadparts,1.38.0,6,loadSettings (until done),0.7
+C-loadparts,1.38.0,6,onload,0
+C-loadparts,1.38.0,6,onload (until done),51.9
+C-loadparts,1.38.0,6,paintTabs,0.2
+C-loadparts,1.38.0,6,pins.load,0
+C-loadparts,1.38.0,6,refreshBeadViews,2
+C-loadparts,1.38.0,6,store.build,0.1
+C-loadparts,1.38.0,6,syncInk,15.9
+C-loadparts,1.38.0,6,syncRenderers,16.4
+C-loadparts,1.38.0,6,syncRunning,0
+C-loadparts,1.38.0,6,syncRunning (until done),44.3
+C-loadparts,1.38.0,6,syncStatusBar,0
+C-loadparts,1.38.0,6,updateStatusBar,0
+C-loadparts,1.38.0,7,api.addCommand,0
+C-loadparts,1.38.0,7,api.addSettingTab,0.2
+C-loadparts,1.38.0,7,api.addStatusBarItem,0
+C-loadparts,1.38.0,7,api.loadData,0
+C-loadparts,1.38.0,7,api.loadData (until done),0.5
+C-loadparts,1.38.0,7,api.registerEditorExtension,4
+C-loadparts,1.38.0,7,api.registerView,1.5
+C-loadparts,1.38.0,7,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,7,api.workspace.updateOptions,8.8
+C-loadparts,1.38.0,7,applyTo,10.2
+C-loadparts,1.38.0,7,attach,14.3
+C-loadparts,1.38.0,7,attention.seed,0
+C-loadparts,1.38.0,7,begin,0
+C-loadparts,1.38.0,7,begin (until done),46
+C-loadparts,1.38.0,7,enablePlugin (total),70.6
+C-loadparts,1.38.0,7,history.load,0
+C-loadparts,1.38.0,7,history.load (until done),5.9
+C-loadparts,1.38.0,7,loadSettings,0
+C-loadparts,1.38.0,7,loadSettings (until done),0.6
+C-loadparts,1.38.0,7,onload,0
+C-loadparts,1.38.0,7,onload (until done),52.5
+C-loadparts,1.38.0,7,paintTabs,0.4
+C-loadparts,1.38.0,7,pins.load,0
+C-loadparts,1.38.0,7,refreshBeadViews,2.6
+C-loadparts,1.38.0,7,store.build,0
+C-loadparts,1.38.0,7,syncInk,17.1
+C-loadparts,1.38.0,7,syncRenderers,16.1
+C-loadparts,1.38.0,7,syncRunning,0
+C-loadparts,1.38.0,7,syncRunning (until done),46
+C-loadparts,1.38.0,7,syncStatusBar,0.1
+C-loadparts,1.38.0,7,updateStatusBar,0.1
+C-loadparts,1.38.0,8,api.addCommand,0
+C-loadparts,1.38.0,8,api.addSettingTab,0.1
+C-loadparts,1.38.0,8,api.addStatusBarItem,0
+C-loadparts,1.38.0,8,api.loadData,0
+C-loadparts,1.38.0,8,api.loadData (until done),0.4
+C-loadparts,1.38.0,8,api.registerEditorExtension,4
+C-loadparts,1.38.0,8,api.registerView,1.7
+C-loadparts,1.38.0,8,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,8,api.workspace.updateOptions,8.1
+C-loadparts,1.38.0,8,applyTo,10
+C-loadparts,1.38.0,8,attach,13.6
+C-loadparts,1.38.0,8,attention.seed,0
+C-loadparts,1.38.0,8,begin,0.1
+C-loadparts,1.38.0,8,begin (until done),38.8
+C-loadparts,1.38.0,8,enablePlugin (total),60.4
+C-loadparts,1.38.0,8,history.load,0.1
+C-loadparts,1.38.0,8,history.load (until done),5.5
+C-loadparts,1.38.0,8,loadSettings,0
+C-loadparts,1.38.0,8,loadSettings (until done),0.4
+C-loadparts,1.38.0,8,onload,0
+C-loadparts,1.38.0,8,onload (until done),45.2
+C-loadparts,1.38.0,8,paintTabs,0.5
+C-loadparts,1.38.0,8,pins.load,0
+C-loadparts,1.38.0,8,refreshBeadViews,1.6
+C-loadparts,1.38.0,8,store.build,0.1
+C-loadparts,1.38.0,8,syncInk,12.8
+C-loadparts,1.38.0,8,syncRenderers,15.3
+C-loadparts,1.38.0,8,syncRunning,0.1
+C-loadparts,1.38.0,8,syncRunning (until done),38.8
+C-loadparts,1.38.0,8,syncStatusBar,0
+C-loadparts,1.38.0,8,updateStatusBar,0
+C-loadparts,1.38.0,9,api.addCommand,0
+C-loadparts,1.38.0,9,api.addSettingTab,0.2
+C-loadparts,1.38.0,9,api.addStatusBarItem,0
+C-loadparts,1.38.0,9,api.loadData,0
+C-loadparts,1.38.0,9,api.loadData (until done),0.7
+C-loadparts,1.38.0,9,api.registerEditorExtension,4.7
+C-loadparts,1.38.0,9,api.registerView,1.4
+C-loadparts,1.38.0,9,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,9,api.workspace.updateOptions,8.5
+C-loadparts,1.38.0,9,applyTo,9.9
+C-loadparts,1.38.0,9,attach,15.7
+C-loadparts,1.38.0,9,attention.seed,0
+C-loadparts,1.38.0,9,begin,0
+C-loadparts,1.38.0,9,begin (until done),43.3
+C-loadparts,1.38.0,9,enablePlugin (total),71
+C-loadparts,1.38.0,9,history.load,0
+C-loadparts,1.38.0,9,history.load (until done),6.3
+C-loadparts,1.38.0,9,loadSettings,0.2
+C-loadparts,1.38.0,9,loadSettings (until done),0.9
+C-loadparts,1.38.0,9,onload,0.2
+C-loadparts,1.38.0,9,onload (until done),50.8
+C-loadparts,1.38.0,9,paintTabs,0.6
+C-loadparts,1.38.0,9,pins.load,0
+C-loadparts,1.38.0,9,refreshBeadViews,2.2
+C-loadparts,1.38.0,9,store.build,0
+C-loadparts,1.38.0,9,syncInk,13.4
+C-loadparts,1.38.0,9,syncRenderers,17.9
+C-loadparts,1.38.0,9,syncRunning,0
+C-loadparts,1.38.0,9,syncRunning (until done),43.3
+C-loadparts,1.38.0,9,syncStatusBar,0.1
+C-loadparts,1.38.0,9,updateStatusBar,0.1
+C-loadparts,1.38.0,10,api.addCommand,0.1
+C-loadparts,1.38.0,10,api.addSettingTab,0.1
+C-loadparts,1.38.0,10,api.addStatusBarItem,0.1
+C-loadparts,1.38.0,10,api.loadData,0
+C-loadparts,1.38.0,10,api.loadData (until done),0.7
+C-loadparts,1.38.0,10,api.registerEditorExtension,3.7
+C-loadparts,1.38.0,10,api.registerView,1.7
+C-loadparts,1.38.0,10,api.vault.getMarkdownFiles,0
+C-loadparts,1.38.0,10,api.workspace.updateOptions,7.7
+C-loadparts,1.38.0,10,applyTo,10.4
+C-loadparts,1.38.0,10,attach,16.8
+C-loadparts,1.38.0,10,attention.seed,0
+C-loadparts,1.38.0,10,begin,0
+C-loadparts,1.38.0,10,begin (until done),45.4
+C-loadparts,1.38.0,10,enablePlugin (total),72.4
+C-loadparts,1.38.0,10,history.load,0
+C-loadparts,1.38.0,10,history.load (until done),5.6
+C-loadparts,1.38.0,10,loadSettings,0
+C-loadparts,1.38.0,10,loadSettings (until done),0.9
+C-loadparts,1.38.0,10,onload,0
+C-loadparts,1.38.0,10,onload (until done),52
+C-loadparts,1.38.0,10,paintTabs,0.5
+C-loadparts,1.38.0,10,pins.load,0.1
+C-loadparts,1.38.0,10,refreshBeadViews,2.1
+C-loadparts,1.38.0,10,store.build,0
+C-loadparts,1.38.0,10,syncInk,15.4
+C-loadparts,1.38.0,10,syncRenderers,18.5
+C-loadparts,1.38.0,10,syncRunning,0
+C-loadparts,1.38.0,10,syncRunning (until done),45.4
+C-loadparts,1.38.0,10,syncStatusBar,0.1
+C-loadparts,1.38.0,10,updateStatusBar,0

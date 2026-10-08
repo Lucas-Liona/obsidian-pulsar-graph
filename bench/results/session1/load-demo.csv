@@ -1,0 +1,101 @@
+label,build,mode,round,load,enable_ms,ready_ms,frame_ms
+IO-first-master-1,before #116,defaults,1,1,43.1,43.1,48.9
+IO-first-master-1,before #116,defaults,1,2,52.9,52.9,57.9
+IO-first-master-1,before #116,defaults,1,3,43.2,43.2,50.5
+IO-first-master-1,before #116,defaults,1,4,51.4,51.5,57.7
+IO-first-master-1,before #116,defaults,1,5,44.2,44.2,48.5
+IO-first-master-1,before #116,defaults,1,6,56.1,56.1,60.3
+IO-first-master-1,before #116,defaults,1,7,48.4,48.5,55.5
+IO-first-master-1,before #116,defaults,1,8,53.3,53.3,60
+IO-first-master-1,before #116,defaults,1,9,39.9,39.9,42.4
+IO-first-master-1,before #116,defaults,1,10,42.3,42.3,47.3
+IO-first-master-2,before #116,defaults,2,1,53.8,53.9,60.8
+IO-first-master-2,before #116,defaults,2,2,87.2,87.2,90.6
+IO-first-master-2,before #116,defaults,2,3,52.7,52.7,55.9
+IO-first-master-2,before #116,defaults,2,4,48,48,51.2
+IO-first-master-2,before #116,defaults,2,5,47.8,47.8,52.3
+IO-first-master-2,before #116,defaults,2,6,47.1,47.1,49.2
+IO-first-master-2,before #116,defaults,2,7,47.4,47.4,51.3
+IO-first-master-2,before #116,defaults,2,8,51.3,51.3,59
+IO-first-master-2,before #116,defaults,2,9,51.8,51.8,56.4
+IO-first-master-2,before #116,defaults,2,10,61.1,61.1,68.3
+IO-first-inkoff-1,#116,defaults,1,1,33.7,33.7,36.4
+IO-first-inkoff-1,#116,defaults,1,2,35,35,37
+IO-first-inkoff-1,#116,defaults,1,3,40,40,47.2
+IO-first-inkoff-1,#116,defaults,1,4,35.6,35.7,41.9
+IO-first-inkoff-1,#116,defaults,1,5,35.7,35.7,43.4
+IO-first-inkoff-1,#116,defaults,1,6,67,67,72.9
+IO-first-inkoff-1,#116,defaults,1,7,41.6,41.6,45.6
+IO-first-inkoff-1,#116,defaults,1,8,35.6,35.6,42.4
+IO-first-inkoff-1,#116,defaults,1,9,33.8,33.8,37.9
+IO-first-inkoff-1,#116,defaults,1,10,43.3,43.3,48.6
+IO-first-inkoff-2,#116,defaults,2,1,41.5,41.5,46.9
+IO-first-inkoff-2,#116,defaults,2,2,47,47,53.5
+IO-first-inkoff-2,#116,defaults,2,3,34.2,34.2,41.3
+IO-first-inkoff-2,#116,defaults,2,4,38.1,38.1,46.3
+IO-first-inkoff-2,#116,defaults,2,5,43.9,43.9,50.9
+IO-first-inkoff-2,#116,defaults,2,6,35.3,35.3,39.8
+IO-first-inkoff-2,#116,defaults,2,7,84.2,84.2,86.3
+IO-first-inkoff-2,#116,defaults,2,8,36.8,36.8,41.1
+IO-first-inkoff-2,#116,defaults,2,9,34.6,34.6,37.6
+IO-first-inkoff-2,#116,defaults,2,10,33.2,33.2,35.5
+IO-own-master-1,before #116,demo settings,1,1,64,64,72.4
+IO-own-master-1,before #116,demo settings,1,2,64.2,64.2,71.2
+IO-own-master-1,before #116,demo settings,1,3,58.3,58.3,64.6
+IO-own-master-1,before #116,demo settings,1,4,58.9,58.9,67.5
+IO-own-master-1,before #116,demo settings,1,5,61.4,61.4,66.2
+IO-own-master-1,before #116,demo settings,1,6,58.8,58.8,67.3
+IO-own-master-1,before #116,demo settings,1,7,59.5,59.5,69.2
+IO-own-master-1,before #116,demo settings,1,8,54.1,54.1,64.5
+IO-own-master-1,before #116,demo settings,1,9,58,58,64.3
+IO-own-master-1,before #116,demo settings,1,10,88.7,88.7,94.8
+IO-own-master-2,before #116,demo settings,2,1,57.5,57.6,64.9
+IO-own-master-2,before #116,demo settings,2,2,59.6,59.6,66.8
+IO-own-master-2,before #116,demo settings,2,3,62.2,62.2,70.8
+IO-own-master-2,before #116,demo settings,2,4,71.1,71.1,79.8
+IO-own-master-2,before #116,demo settings,2,5,66.6,66.7,75.1
+IO-own-master-2,before #116,demo settings,2,6,73.8,73.8,83.9
+IO-own-master-2,before #116,demo settings,2,7,58.8,58.9,65.5
+IO-own-master-2,before #116,demo settings,2,8,65.9,65.9,72.1
+IO-own-master-2,before #116,demo settings,2,9,66,66.1,73.4
+IO-own-master-2,before #116,demo settings,2,10,94.9,94.9,101.7
+IO-own-inkoff-1,#116,demo settings,1,1,64.5,64.6,73.1
+IO-own-inkoff-1,#116,demo settings,1,2,59.5,59.5,66.7
+IO-own-inkoff-1,#116,demo settings,1,3,54.1,54.1,62.9
+IO-own-inkoff-1,#116,demo settings,1,4,60.1,60.1,66.4
+IO-own-inkoff-1,#116,demo settings,1,5,52.2,52.2,61.4
+IO-own-inkoff-1,#116,demo settings,1,6,55.4,55.4,61.1
+IO-own-inkoff-1,#116,demo settings,1,7,51.8,51.8,59.3
+IO-own-inkoff-1,#116,demo settings,1,8,56.6,56.6,64.3
+IO-own-inkoff-1,#116,demo settings,1,9,52.2,52.2,59.8
+IO-own-inkoff-1,#116,demo settings,1,10,68.5,68.5,78
+IO-own-inkoff-2,#116,demo settings,2,1,55.4,55.4,61.5
+IO-own-inkoff-2,#116,demo settings,2,2,64.1,64.1,73.7
+IO-own-inkoff-2,#116,demo settings,2,3,61.8,61.8,67.9
+IO-own-inkoff-2,#116,demo settings,2,4,56,56,64.6
+IO-own-inkoff-2,#116,demo settings,2,5,55.3,55.4,61
+IO-own-inkoff-2,#116,demo settings,2,6,56.1,56.1,65.6
+IO-own-inkoff-2,#116,demo settings,2,7,56.1,56.1,63.5
+IO-own-inkoff-2,#116,demo settings,2,8,57.1,57.1,67.9
+IO-own-inkoff-2,#116,demo settings,2,9,62.1,62.2,69.7
+IO-own-inkoff-2,#116,demo settings,2,10,66.9,66.9,75.5
+A-load,1.38.0,demo settings,1,1,61.7,61.8,65.2
+A-load,1.38.0,demo settings,1,2,91.6,91.6,95.4
+A-load,1.38.0,demo settings,1,3,66.6,66.7,71.3
+A-load,1.38.0,demo settings,1,4,63.1,63.2,65.9
+A-load,1.38.0,demo settings,1,5,63.6,63.6,67.6
+A-load,1.38.0,demo settings,1,6,67.1,67.1,73.3
+A-load,1.38.0,demo settings,1,7,64.6,64.6,67.6
+A-load,1.38.0,demo settings,1,8,68.7,68.7,70.8
+A-load,1.38.0,demo settings,1,9,65.4,65.4,71.3
+A-load,1.38.0,demo settings,1,10,63.9,63.9,67.5
+A-first,1.38.0,defaults,1,1,55.6,55.6,58.4
+A-first,1.38.0,defaults,1,2,58.9,58.9,61.6
+A-first,1.38.0,defaults,1,3,42.6,42.6,44.4
+A-first,1.38.0,defaults,1,4,52,52,55.5
+A-first,1.38.0,defaults,1,5,52.9,52.9,56.3
+A-first,1.38.0,defaults,1,6,48.2,48.3,51
+A-first,1.38.0,defaults,1,7,58.9,58.9,61.5
+A-first,1.38.0,defaults,1,8,56.1,56.1,60
+A-first,1.38.0,defaults,1,9,48.7,48.7,51
+A-first,1.38.0,defaults,1,10,85.4,85.4,87.2
