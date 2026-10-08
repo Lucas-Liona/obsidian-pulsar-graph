@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.42.0] - 2026-10-08
+
+### Fixed
+
+- **Dragging the age filter shows its result again.** While a handle was held,
+  the notes outside the range were meant to disappear with the graph held
+  still, then rebuild on release; nothing disappeared, because Obsidian puts
+  back the flag Pulsar hid them with on every frame. They are hidden in a way it
+  leaves alone now, and a held drag costs less per frame than before
+  (0.44–0.47 ms against 0.58–0.62 ms in the demo vault).
+
+- **A graph is filtered from its first build after Obsidian starts.** A graph
+  restored at startup, or opened while the tab bar was switched off, was
+  filtered against ages that had not been worked out yet, so it showed every
+  note until something made it filter again. Starting with a graph restored and
+  the filter on is now 35% faster at 10,000 notes and 26% faster at 50,000,
+  because the first build is only the notes the filter keeps.
+
+- **A replay ends.** Once the timelapse has drawn every note the filter allows,
+  the graph goes back to today's brightness. It used to wait for the vault's
+  newest note, which the filter may never draw, so it stayed in replay
+  brightness.
+
+- **A note deleted while it was open stays out of the edit history.** It could
+  be written back as seen a moment after it was deleted.
+
+- **Switching Pulsar off and on quickly keeps the last sitting.** Turning it
+  back on read the history before the save from turning it off had landed.
+
+- **A settings tab left open across a reload can no longer save over newer
+  settings**, such as a pin made since.
+
+- **A closed graph is let go of.** A graph whose tab had been closed could stay
+  attached and be rebuilt with the others on every refilter.
+
+- **An old filter range saved with equal minimum and maximum opacity keeps the
+  notes it kept.**
+
+### Documentation
+
+- **How Pulsar's performance is measured**, in `docs/performance.md`: the
+  method, the machine, the results release by release, flame graphs, threats to
+  validity and the corrections, with a notebook that recomputes every number
+  from the data in the repo.
+
 ## [1.41.0] - 2026-10-08
 
 ### Fixed
