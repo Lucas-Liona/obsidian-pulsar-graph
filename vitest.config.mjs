@@ -9,6 +9,7 @@ export default defineConfig({
 	},
 	test: {
 		include: ['test/**/*.test.ts'],
+		setupFiles: ['test/setup.mjs'],
 		benchmark: { include: ['test/**/*.bench.ts'] },
 	},
 });

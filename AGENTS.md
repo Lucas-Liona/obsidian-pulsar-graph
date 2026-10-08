@@ -65,9 +65,26 @@ bar, fresh writing, link dots and the history view.
   notes, printed as mean ± sd per call by `scripts/bench-table.mjs`
 - `npm run build:profile` — the production bundle unminified with names kept,
   for a CPU profile that reads `describeRange` rather than `s`. Never released
-- `npm test` — vitest over `test/**/*.test.ts`. `obsidian` is declarations
-  only, so `test/obsidian-stub.ts` stands in for the few runtime values the
-  source imports; a renderer is faked with plain objects shaped like PIXI's.
+- `npm test` — vitest over `test/**/*.test.ts`, at two layers. `obsidian` is
+  declarations only, so `test/obsidian-stub.ts` stands in for the runtime
+  values the source imports. A module test drives one file from `src/`
+  directly. A plugin test (`test/plugin.test.ts`) loads the whole of
+  `PulsarGraphPlugin` into the fake Obsidian in `test/harness/` and drives it
+  the way a vault would: notes edited and deleted, leaves focused, graphs
+  opened, the plugin reloaded. The local graph losing its own centre (#122)
+  passed all 94 module tests and was caught at the second layer.
+
+The harness keeps to the facts under "Working with Obsidian's graph", and
+`test/harness.test.ts` holds it to them: `setData` keeps surviving nodes and
+wipes their colour, tints ease and stall the way Obsidian's do, the frame loop
+sleeps after 60 idle frames, and every wrapper put on a renderer or a view
+creator is counted. Where Obsidian's behaviour is not written down it chose,
+and says so in `test/harness/world.ts`; the graph has no controls, so the
+panel, the caption and anything else that needs a DOM is not covered. Time is
+`vi.useFakeTimers()`: `wait(ms)` runs the timers, and `settle()` lets queued
+promises and the repaint owed at the end of a task run. A known bug is written
+as what should happen and marked `it.fails` with the finding it comes from, so
+the day it is fixed vitest says so and it becomes an ordinary test.
 
 A vault checkout that has not been installed since the flat-config migration
 fails lint with `ERR_PACKAGE_PATH_NOT_EXPORTED` for `eslint/config` rather than
