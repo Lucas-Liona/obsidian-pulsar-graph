@@ -62,7 +62,11 @@ bar, fresh writing, link dots and the history view.
   community directory runs on every release, so keep it clean.
 - `npm run type-check` — `tsc --noEmit`, then the same over `test/`
 - `npm run bench` — vitest benchmarks over synthetic vaults of 1k, 10k and 50k
-  notes, printed as mean ± sd per call by `scripts/bench-table.mjs`
+  notes, printed as mean ± sd per call by `scripts/bench-table.mjs`.
+  `test/plugin.bench.ts` runs the whole plugin through the harness: a graph
+  opened and closed while it runs, and a start with a graph restored, each
+  beside the fake Obsidian's own cost with no plugin. It is most of the
+  minute the benches take
 - `npm run bench:check` — the same benches, three runs, their median against
   `bench/baseline.json` as a table; it exits non-zero when a bench's mean is
   past the baseline's mean plus two of its sds *and* more than 5% slower, the
@@ -70,7 +74,7 @@ bar, fresh writing, link dots and the history view.
   between the baseline's runs. Local only: a baseline is only comparable on the
   machine that recorded it, which it records and warns about, and a shared CI
   runner is noisier than any regression worth catching. Even here the mean
-  moves between runs — 13% at the median bench and 24% at the worst across
+  moves between runs — 16% at the median bench and 70% at the worst across
   three runs when the baseline was recorded (`noise` in the file).
   `npm run bench:record` runs them three times and writes a new baseline: do it
   on a quiet machine, and again after anything that changes the benches
