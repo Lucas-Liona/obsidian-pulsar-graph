@@ -5,8 +5,7 @@ import { formatAge, formatSpan } from './age';
 import { BEAD_VIEW_TYPE, BeadView, fileOf } from './bead-view';
 import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
-import { FilterCaption, PulsarPanel } from './graph-controls';
-import { FADE_TYPE_LABELS, FadeType } from './fade';
+import { FilterCaption, panelGroups, PulsarPanel } from './graph-controls';
 import { LinkShading } from './links';
 import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
@@ -21,7 +20,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
-import { DEFAULT_SETTINGS, MAX_OPACITY_RANGE, MIN_OPACITY_LIMIT, PulsarGraphSettings, PulsarSettingTab, parseSettings, TITLE_SCALE_RANGE } from './settings';
+import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
@@ -1369,67 +1368,7 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         return new PulsarPanel(controls, {
-            groups: [
-                {
-                    heading: 'Nodes',
-                    controls: [
-                        {
-                            kind: 'slider',
-                            name: 'Dimmest',
-                            limits: { lowest: 0, highest: MIN_OPACITY_LIMIT, step: 0.01 },
-                            value: () => this.settings.minOpacity,
-                            onChange: (value) => this.changeFromPanel(() => {
-                                this.settings.minOpacity = value;
-                                this.settings.maxOpacity = Math.max(this.settings.maxOpacity, value);
-                            })
-                        },
-                        {
-                            kind: 'slider',
-                            name: 'Brightest',
-                            limits: MAX_OPACITY_RANGE,
-                            value: () => this.settings.maxOpacity,
-                            onChange: (value) => this.changeFromPanel(() => {
-                                this.settings.maxOpacity = value;
-                                this.settings.minOpacity = Math.min(this.settings.minOpacity, value);
-                            })
-                        },
-                        {
-                            kind: 'dropdown',
-                            name: 'Curve',
-                            options: FADE_TYPE_LABELS,
-                            value: () => this.settings.fadeType,
-                            onChange: (value) => this.changeFromPanel(() => {
-                                this.settings.fadeType = value as FadeType;
-                            })
-                        }
-                    ]
-                },
-                {
-                    heading: 'Text',
-                    controls: [
-                        {
-                            kind: 'slider',
-                            name: 'Title size',
-                            limits: TITLE_SCALE_RANGE,
-                            value: () => this.settings.titleScale,
-                            onChange: (value) => this.changeFromPanel(() => {
-                                this.settings.titleScale = value;
-                            })
-                        },
-                        {
-                            kind: 'dropdown',
-                            name: 'Ages',
-                            // Shorter than the settings' wording, which is a
-                            // sentence and pushed the name out of a narrow panel.
-                            options: { off: 'Never', hover: 'On hover', titles: 'With titles' } satisfies Record<AgeMode, string>,
-                            value: () => this.settings.ageLabels,
-                            onChange: (value) => this.changeFromPanel(() => {
-                                this.settings.ageLabels = value as AgeMode;
-                            })
-                        }
-                    ]
-                }
-            ],
+            groups: panelGroups(() => this.settings, (apply) => this.changeFromPanel(apply)),
             // Only where there is a note in the middle to measure from. The
             // global graph gets no row rather than a disabled one, because a
             // control that can never do anything is worse than its absence.

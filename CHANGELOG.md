@@ -4,6 +4,12 @@
 
 ### Added
 
+- **More of Pulsar in the graph's own panel.** Under *Nodes*, a *Glow* slider
+  and switches for *Size by age* and the *Spotlight*; and a new *Links* group
+  with how links are aged (*Off*, *Match newer*, *Fade*) and a *Trace
+  sittings* switch. They are the same settings as in the settings tab, so
+  moving one moves the other, and each applies to the graph as you change it.
+
 - **A tab's dot says when its note was edited**, on hover, the way a link's
   dot does: "Edited 5 days ago". The dot used to let the pointer pass through
   it, so there was nothing to hover; a click on it still lands on the tab.
