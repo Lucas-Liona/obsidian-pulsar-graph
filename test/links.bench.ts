@@ -13,7 +13,7 @@ for (const notes of [1_000, 20_000, 50_000]) {
     const strengths = new Map<string, number>();
 
     for (let i = 0; i < notes; i++) {
-        nodes.push({ id: `Note ${i}.md` } as GraphNode);
+        nodes.push({ id: `Note ${i}.md` });
         strengths.set(`Note ${i}.md`, (i % 997) / 997);
     }
 

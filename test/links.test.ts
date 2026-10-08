@@ -18,7 +18,7 @@ type Line = NonNullable<GraphLink['line']>;
 const PLAIN = new FakeTexture();
 
 function node(id: string): GraphNode {
-    return { id } as GraphNode;
+    return { id };
 }
 
 function link(source: GraphNode, target: GraphNode): GraphLink & { line: Line } {
