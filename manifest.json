@@ -1,7 +1,7 @@
 {
 	"id": "pulsar-graph",
 	"name": "Pulsar",
-	"version": "1.40.0",
+	"version": "1.41.0",
 	"minAppVersion": "1.8.0",
 	"description": "Fade graph nodes by how recently each note was modified.",
 	"author": "Lucas-Liona",
