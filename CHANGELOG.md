@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.41.0] - 2026-10-08
+
+### Fixed
+
+- **A local graph keeps its own note through the age filter.** The filter
+  never removes the note you have open, but a local graph linked to one pane
+  keeps its note while you work in another. With a filter keeping older notes
+  than that one, looking away dropped it from its own graph, and dragging a
+  handle hid it the same way. Each graph now spares the note it is built
+  around.
+
+- **The edit history survives a write cut short.** Obsidian writes a file in
+  place, so quitting or crashing part way through a save left `history.json`
+  cut off, and the next load started a new history. Each save now writes
+  `history.backup.json` first and `history.json` second, and a history that
+  will not read is read from the backup. In the demo vault, a history cut in
+  half at reload went from 112 notes to 0 before and kept all 112 after. A
+  save takes about 2 ms longer.
+
+- **An unreadable history is never written over.** A history file that was
+  there but could not be read, such as one held for a moment by a sync tool or
+  a virus scanner, used to be replaced by an empty one at the next save:
+  112 notes to 0 in the demo vault under a 20-second lock. Pulsar now records
+  nothing until it can read the file, and tries again every half minute. A file
+  that reads but is damaged is kept as `history.damaged-<date>.json` before a
+  new one starts.
+
+- **The spotlight and pins are drawn in exactly the colour picked.** Above a
+  maximum opacity of 1, Obsidian's graph lightens each colour channel
+  separately, which turned a green spotlight (`#4dff91`) turquoise
+  (142, 255, 255) at a maximum of 1.85. Painted nodes are now drawn at an
+  opacity of at most 1, so the colour stays (77, 255, 145). Grey nodes still
+  go whiter, as a high maximum intends.
+
+- **The histogram's overflow mark is no longer red.** It ran into the start of
+  the red curve over the first bar. It is now a lighter grey than the bars.
+
+### Performance
+
+- **Fresh writing's colours restyle only the editors.** They were set on the
+  whole window, so every load with fresh writing on restyled every element in
+  it. With six editors open in the demo vault, a load's restyling and editor
+  reconfiguration went from 20.72 ± 1.00 ms to 9.31 ± 1.30 ms, and changing a
+  fresh-writing colour saves the same.
+
+### Documentation
+
+- **The settings reference lists every setting**, 66 rows in the settings
+  tab's order. The `obsidian` typings are pinned to the version the build uses,
+  so a build of the source reproduces the release.
+
 ## [1.40.0] - 2026-10-07
 
 ### Added
@@ -50,10 +101,13 @@
   reconfigure every open editor twice, whether fresh writing was on or not; in a
   real vault the two took 51 ms between them. Now a load reconfigures none while
   fresh writing and link dots are both off. With fresh writing on it still
-  reconfigures once, and that one costs more than the two did, 14.7 ± 1.6 ms
-  against 7.2 ms in 1.38.0 with six editors open, so the saving is only with
-  fresh writing off. *(Corrected after release: this said one reconfiguration
-  took 51 ms, and implied a saving with fresh writing on.)*
+  reconfigures once, one fewer than before. *(Corrected after release, twice.
+  This first said one reconfiguration took 51 ms. It then said the one left
+  cost 14.7 ± 1.6 ms against 7.2 ms for 1.38.0's two, but that figure included
+  a restyle of the whole window that 1.38.0 paid just after its
+  reconfigurations instead of during them. Timed together, a load with fresh
+  writing on cost 25–28 ms after 1.40.0 against 31–34 ms in 1.38.0, and 1.41.0
+  removes most of the restyle.)*
 
 ## [1.39.0] - 2026-10-07
 
