@@ -77,6 +77,12 @@ it with `package.json`'s tabs, and it had been committed with two spaces. It is
 committed in npm's own format now, so an install that changes nothing leaves it
 alone.
 
+The `*.property.test.ts` files are property tests with `fast-check`, pinned to
+an exact version: each states what has to hold for every input — a newer note
+never drawn fainter, a filter that only ever takes nodes away, history that reads
+back exactly what it wrote — and a failure prints the smallest case it could
+shrink to, with a seed that replays it.
+
 ## Conventions
 
 - `"strict": true` TypeScript, warning-clean.
