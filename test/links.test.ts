@@ -30,7 +30,7 @@ function link(source: GraphNode, target: GraphNode): GraphLink & { line: Line } 
  * a frame that does what Obsidian's does to a link's alpha: sets it back to its
  * own eased value before anything after it runs.
  */
-function world(strengths: Record<string, number>) {
+function world(strengths: Record<string, number>, mtimes: Record<string, number> = {}) {
     const nodes = { a: node('a.md'), b: node('b.md'), c: node('c.md'), loose: node('loose') };
     const links = [link(nodes.a, nodes.b), link(nodes.b, nodes.c), link(nodes.loose, nodes.loose)];
     let hovered: GraphNode | null = null;
@@ -40,11 +40,14 @@ function world(strengths: Record<string, number>) {
         getHighlightNode: () => hovered
     } as unknown as GraphRenderer;
 
-    const state = { strengths, revision: 0 };
+    const state = { strengths, mtimes, revision: 0, mtimeReads: 0 };
     const shading = new LinkShading(
         renderer,
         (id) => state.strengths[id],
-        () => undefined,
+        (id) => {
+            state.mtimeReads++;
+            return state.mtimes[id];
+        },
         () => state.revision
     );
 
@@ -222,4 +225,77 @@ describe('LinkShading', () => {
             expect(links[1].line.texture).toBe(plain);
         });
     });
+
+    describe('trails', () => {
+        const MINUTE = 60 * 1000;
+        const TRAIL = { gapMs: 30 * MINUTE, rgb: 0x5ac8fa, strength: 1 };
+
+        // a and b were saved ten minutes apart; c a day later.
+        const MTIMES = { 'a.md': 0, 'b.md': 10 * MINUTE, 'c.md': 24 * 60 * MINUTE };
+
+        it('tints a link between two notes saved within a sitting, and only that one', () => {
+            const { links, shading, frame } = world({ 'a.md': 0.5, 'b.md': 0.5, 'c.md': 0.5 }, MTIMES);
+            shading.setTrails(TRAIL);
+
+            frame();
+
+            expect(links[0].line.tint).toBe(0x5ac8fa);
+            expect(links[1].line.tint).toBe(0);
+        });
+
+        // Asked every frame, this was two lookups by path per link: 87,000 a
+        // frame in the 20,000-note bench vault.
+        it('reads the dates once per revision, not once per frame', () => {
+            const { shading, state, frame } = world({ 'a.md': 0.5, 'b.md': 0.5, 'c.md': 0.5 }, MTIMES);
+            shading.setTrails(TRAIL);
+
+            frame();
+            const first = state.mtimeReads;
+            for (let i = 0; i < 5; i++) {
+                frame();
+            }
+
+            expect(first).toBeGreaterThan(0);
+            expect(state.mtimeReads).toBe(first);
+
+            state.revision++;
+            frame();
+            expect(state.mtimeReads).toBe(2 * first);
+        });
+
+        it('keeps tinting through the renderer easing the tint back each frame', () => {
+            const { links, shading, frame } = world({ 'a.md': 0.5, 'b.md': 0.5, 'c.md': 0.5 }, MTIMES);
+            shading.setTrails(TRAIL);
+            frame();
+
+            links[0].line.tint = 0x888888;
+            frame();
+
+            expect(links[0].line.tint).toBe(0x5ac8fa);
+        });
+
+        it('works the trails out again when the sitting changes length', () => {
+            const { links, shading, frame } = world({ 'a.md': 0.5, 'b.md': 0.5, 'c.md': 0.5 }, MTIMES);
+            shading.setTrails(TRAIL);
+            frame();
+
+            shading.setTrails({ ...TRAIL, gapMs: 5 * MINUTE });
+            links[0].line.tint = 0;
+            frame();
+
+            expect(links[0].line.tint).toBe(0);
+        });
+
+        it('draws trails with link ageing switched off', () => {
+            const { links, shading, frame } = world({ 'a.md': 0.5, 'b.md': 0.5, 'c.md': 0.5 }, MTIMES);
+            shading.setMode('off');
+            shading.setTrails(TRAIL);
+
+            frame();
+
+            expect(links[0].line.tint).toBe(0x5ac8fa);
+            expect(links[0].line.alpha).toBe(0.6);
+        });
+    });
 });
+

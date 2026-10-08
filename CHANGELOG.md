@@ -103,11 +103,24 @@
 
 ### Performance
 
+- **Ageing the links costs a fraction of what it did.** Each link's
+  brightness and ramp were worked out from its two notes on every frame: in
+  the 20,000-note bench vault, 43,515 links and two lookups each, with nothing
+  having changed. They're worked out once per change now. Applying link ages
+  went from 22.2 ± 3.8 and 29.6 ± 5.5 ms a frame to 5.9 ± 1.1 and 6.5 ± 1.1
+  ms, and a note switch no longer works out every link again. (#143)
+
+- **Tracing what was written together does the same.** Whether a link's two
+  notes were saved within a sitting of each other was asked on every frame,
+  for every link, though it only changes when a note is saved. It is worked
+  out with the rest of the link, once per change.
+
 - **Neighbour glow is three to four times cheaper.** It looked each note's
   neighbours up by path, on every repaint, a note switch included: 65 ms a
-  pass on a graph of 20,000 notes and 43,515 links. It now walks the list of
-  links once, by position: 15 to 19 ms on the same graph, with the same result
-  for every note.
+  pass on a graph of 20,000 notes and 43,515 links, offline. It now walks the
+  list of links once, by position: 15 to 19 ms on the same graph. In the
+  20,000-note bench vault a repaint with glow on went from 57 and 50 ms to 37
+  and 38 ms, and every note's value is the same, at one, two and three links.
 
 ## [1.42.0] - 2026-10-08
 
