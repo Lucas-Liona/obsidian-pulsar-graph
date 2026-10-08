@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A tab's dot says when its note was edited**, on hover, the way a link's
+  dot does: "Edited 5 days ago". The dot used to let the pointer pass through
+  it, so there was nothing to hover; a click on it still lands on the tab.
+
 ### Changed
 
 - **Fresh writing can cool in as little as a second**, and still over as long

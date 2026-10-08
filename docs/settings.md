@@ -168,7 +168,7 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Tabs (switch on the header) | on / off | on | all | Off leaves the tab bar as Obsidian draws it |
-| Show a dot beside each tab | on / off | off | all | A dot at that note's brightness in the graph |
+| Show a dot beside each tab | on / off | off | all | A dot at that note's brightness in the graph. Hover it for when the note was edited |
 | Fade tabs | Never, By attention, By edit time | Never | all | Dims a tab the longer it goes untouched |
 | What fades | The icon and title, The whole tab | The whole tab | Fading on | |
 | How it fades | Gradually, All at once | Gradually | By attention | |
