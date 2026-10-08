@@ -16,6 +16,18 @@
 
 ### Changed
 
+- **A note's history is drawn on one scale for every note**, logarithmic back
+  from now, instead of each rail being scaled to its own note. A rail covering
+  twenty minutes used to look exactly like one covering a year. Now the top is
+  now, labels mark an hour, a day, a week, a month and a year (then two, five,
+  ten and twenty years), and a year is 420 pixels down in every note, so two
+  notes read against each other. This morning still spreads out, since the
+  first hour gets 93 pixels and the first day 206; a month of daily sittings a
+  year ago spans about 3. The rail stops at the first label past the oldest
+  sitting, so a short history stays short. A note with one sitting gets the
+  axis too, and the view redraws itself once a minute while it is shown,
+  since a bead's place is its age.
+
 - **Fresh writing can cool in as little as a second**, and still over as long
   as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,
   20, 30 and 45 seconds, then minutes, then hours — marked where the unit
@@ -69,7 +81,7 @@
   bottom of every rail was a label with no bead at it: a note with one sitting
   had its bead at the top of an empty line, labelled "4 hours ago" at both
   ends, and in a longer history the oldest bead floated above the bottom by
-  its own length. A note with one sitting is now that bead, with no line.
+  its own length.
 
 - **How long a sitting is can be set again.** *Counts as one sitting* decides
   how the edit history counts sittings, but it was only shown with *Trace what
