@@ -3,11 +3,11 @@
 The one part of Pulsar that works inside a note rather than around it.
 
 <p align="center">
-  <img src="assets/fresh-writing.gif" width="640" alt="Animation of text being typed into a note. The new words appear in green, cool back to their normal colours over the next few seconds, and a count of lit characters appears in the status bar.">
+  <img src="assets/fresh-writing.gif" width="640" alt="A note being revised: a half-finished sentence is completed, a one-letter typo is fixed, and a new sentence is added to an earlier paragraph. Each edit appears in green where it was made and cools back to the ordinary text colour while the next one is typed.">
 </p>
 
 <p align="center">
-  <img src="assets/writing-light.gif" width="680" alt="A note on a white page. A heading and a sentence are typed in, appearing in green, then cool back to ordinary black text.">
+  <img src="assets/writing-light.gif" width="680" alt="The same revision on a white page: each edit appears in dark green and cools back to ordinary black text.">
 </p>
 
 <p align="center"><i>The same thing on a light theme. Nothing about the colour is hard-coded — it cools toward whatever that text would otherwise be.</i></p>
