@@ -269,6 +269,14 @@ scaling, font and visibility, which is how the age label is drawn without
 duplicating any of that. The constructor comes from `node.text.constructor`,
 since no PIXI global is exposed.
 
+**`visible` is Obsidian's; hide with `renderable`.** The renderer sets
+`visible` on every node's circle and title each frame, to skip what is outside
+the viewport, so anything hidden by setting `visible = false` is drawn again
+before the frame is. The age filter's drag preview did exactly that and hid
+nothing on screen for some time before anyone looked (#140). PIXI's
+`renderable` is never touched, and stays put across frames, so whatever sets it
+also has to set it back.
+
 **A link's line is a stretched, rotated sprite** whose local x axis runs source to
 target, so a horizontal ramp texture maps onto it with no extra maths.
 
@@ -365,6 +373,13 @@ which is worth reusing rather than reinventing:
   stage at CSS scale and the view at `devicePixelRatio`, so framing computed
   against `renderer.px.view.width` comes out wrong by the ratio and the graph
   sits off-centre. Use `renderer.width` and `renderer.height`.
+  *Except when assigning `panX`/`panY` directly:* measured on Obsidian 1.14.4 at
+  a ratio of 1.25, a node is drawn at `x * scale + panX` in the canvas's device
+  pixels (`getGlobalPosition()` agrees, and `renderer.px.renderer.resolution`
+  reads 1), so a camera that sets `scale`, `targetScale`, `panX` and `panY`
+  itself each frame centres against `renderer.px.view.width` and `height`. The
+  recorder behind the launch footage does this; see `bench/live/` for the
+  probe pattern.
 - **Set the pan after the zoom has finished easing.** `zoomTo` moves the pan
   while it runs, so centring before it settles is immediately undone.
 - Chrome can be hidden for a shot by injecting a stylesheet over
