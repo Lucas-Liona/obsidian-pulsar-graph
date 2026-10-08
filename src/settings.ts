@@ -232,9 +232,9 @@ const AGE_MODE_LABELS: Record<AgeMode, string> = {
  * Most features start on, so a first look shows what Pulsar does and each can
  * be switched off on its own. A feature starts off when it would make the
  * plugin look broken or wrong to someone who did not choose it: the age filter
- * hides notes; neighbour glow, group temperature and the edit-intensity blend
- * flatten the fade; measuring from the note in the middle changes what a
- * brightness means; and trails colour links by a rule nobody would guess.
+ * hides notes; group temperature averages a whole group to one brightness; the
+ * edit-intensity blend dims every note until there is history to read; and
+ * measuring from the note in the middle changes what a brightness means.
  *
  * Changing a default never changes a saved setting. Every key is saved once
  * anything is, so a new default reaches new installs, Reset, and anyone who
@@ -244,11 +244,15 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     enabled: true,
     normalizeBy: 'vault',
     windowDays: 30,
-    ageScale: 'even',
+    // Rank, because one ancient note squeezes every other note against the top
+    // of an even scale: with it and a maximum of 3, 95% of a real 1,121-note
+    // vault and 87.5% of the demo were drawn at full white. Ranked at 1.5, the
+    // middle 80% of that vault runs from 0.14 to 0.81 of full white.
+    ageScale: 'rank',
     halfLifeDays: 14,
     fadeType: 'linear',
     minOpacity: 0.1,
-    maxOpacity: 3.0,
+    maxOpacity: 1.5,
     steepness: 2.0,
     numSteps: 5,
     ageLabels: 'hover',
@@ -285,11 +289,13 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     localScope: 'graph',
     localAnchor: false,
     localLabels: true,
-    neighbourBleed: 0,
+    // Gentle: on the default curve this lifts about one note in nine in the
+    // demo, the neighbours of what is being worked on, for 4% of contrast.
+    neighbourBleed: 0.35,
     neighbourHops: 1,
     clusterWarmth: 0,
     clusterBy: 'folder',
-    sessionTrails: false,
+    sessionTrails: true,
     sessionGapMinutes: 30,
     trailColor: '#5ac8fa',
     trailStrength: 0.55,

@@ -94,7 +94,7 @@ default changed keep their value.
 
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
-| Age scale | Even, By rank, Logarithmic, By half-life | Even | all | How a gap in age becomes a gap in opacity |
+| Age scale | Even, By rank, Logarithmic, By half-life | By rank | all | How a gap in age becomes a gap in opacity |
 | Half-life | 1 hour – 365 days, in round steps | 14 days | By half-life | How long a note takes to fade halfway |
 | Measure age against | Whole history, Recent window, Whatever the graph is showing | Whole history | any scale but half-life | What sets the oldest and newest ends |
 | Never spread across less than | 15 minutes – 7 days, in round steps | 6 hours | anything that re-spreads | The narrowest span a re-spread range may cover |
@@ -107,7 +107,7 @@ default changed keep their value.
 | The graph (switch on the header) | on / off | on | all | Off hands every graph back as Obsidian draws it |
 | Fade type | Linear, Exponential, Step | Linear | all | How opacity falls from newest to oldest |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
-| Maximum opacity | 0.0 – 12.0 | 3.0 | all | How bright the newest note gets |
+| Maximum opacity | 0.0 – 12.0 | 1.5 | all | How bright the newest note gets |
 | Steepness | 0.1 – 10.0 | 2.0 | Exponential | Higher keeps only the newest notes bright |
 | Number of steps | 1 – 20 | 5 | Step | How many bands of age |
 | Size nodes by age | on / off | on | all | Scales each node by age, on top of Obsidian's own size |
@@ -116,12 +116,12 @@ default changed keep their value.
 | Title size | 0.5 – 2.5 | 1.0 | all | What every title's font is multiplied by |
 | Show note age | Never, On hover, Whenever titles are shown | On hover | all | The age, written above the node |
 | Age the links too | Off, Match the newer note, Fade between the two | Fade between the two | all | Gives each link the age of its ends |
-| Trace what was written together | on / off | off | all | Colours links between notes saved in one sitting |
+| Trace what was written together | on / off | on | all | Colours links between notes saved in one sitting |
 | Trail colour | any | blue `#5ac8fa` | Tracing on | |
 | Trail strength | 0.0 – 1.0 | 0.55 | Tracing on | How far a trail goes toward its colour |
 | Group temperature | 0.0 – 1.0 | 0 (off) | all | Pulls each note toward its group's median brightness |
 | Group notes by | Folder, Linked island | Folder | Temperature above 0 | What counts as a group |
-| Neighbour glow | 0.0 – 0.95 | 0 (off) | all | How much of a bright note carries to the notes it links to |
+| Neighbour glow | 0.0 – 0.95 | 0.35 | all | How much of a bright note carries to the notes it links to |
 | Glow reach | 1 – 3 hops | 1 | Glow above 0 | How many links the glow travels |
 | Measure a local graph against | The vault's whole history, The notes in the panel | The notes in the panel | local graph | Also decides which note the spotlight picks there. Under a half-life the panel option only does that |
 | Measure from the note in the middle | on / off | off | local graph | Brightness by distance in time from the panel's note, either side. Replaces the choice above for brightness |

@@ -20,22 +20,32 @@
   - a dot beside each tab, tabs fading by how long since you looked at them
     (the icon and title, not the whole tab), and a 💤 on tabs left alone;
   - the graph's own timelapse lit as it plays;
-  - a local graph measured against its own notes, with every age written.
+  - a local graph measured against its own notes, with every age written;
+  - links between notes written in the same sitting, traced in their own
+    colour;
+  - neighbour glow at 0.35, one link out, which lifts about one note in nine
+    in the demo vault for 4% of the graph's contrast.
 
   These stay off, because each would make the plugin look broken or wrong to
   someone who did not choose it:
   - the age filter, which hides notes;
-  - neighbour glow, group temperature and the edit-intensity blend, which
-    flatten the fade;
+  - group temperature, which averages a whole group to one brightness;
+  - the edit-intensity blend, which dims every note until there is history to
+    read;
   - measuring a local graph from the note in the middle, which changes what a
-    brightness means;
-  - tracing what was written together, which colours links by a rule nobody
-    would guess.
+    brightness means.
 
-  This only changes what a fresh install starts with. Anyone who has saved
-  settings once has every one of them saved and keeps what they had. *Reset
-  all settings* now turns these on, and anyone who never changed a setting gets
-  them on upgrade.
+- **The fade starts ranked, with a maximum of 1.5**, rather than even with a
+  maximum of 3. One very old note squeezes every other note against the top of
+  an even scale, and a maximum of 3 then draws most of them at full white: 95%
+  of a real 1,121-note vault and 87.5% of the demo vault. Ranked at 1.5, the
+  middle 80% of that vault runs from 0.14 to 0.81 of full white, and 8% of the
+  demo is at full.
+
+  Both of these only change what a fresh install starts with. Anyone who has
+  saved settings once has every one of them saved and keeps what they had.
+  *Reset all settings* now goes to these, and anyone who never changed a
+  setting gets them on upgrade.
 
 - **Fresh writing can cool in as little as a second**, and still over as long
   as four hours. *Cools over* is one slider of round steps — 1, 2, 3, 5, 10, 15,

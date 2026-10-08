@@ -749,7 +749,12 @@ describe('a fresh install', () => {
             localScope: 'graph',
             localLabels: true,
             filterEnabled: false,
-            sessionTrails: false
+            sessionTrails: true,
+            neighbourBleed: 0.35,
+            clusterWarmth: 0,
+            intensityBlend: 0,
+            ageScale: 'rank',
+            maxOpacity: 1.5
         });
 
         const global = world.workspace.openGraph();
