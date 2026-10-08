@@ -79,21 +79,42 @@ export class EditHistory {
 
     private dirty = false;
     private loaded = false;
+    /**
+     * The file is there but could not be read. Nothing is written while this
+     * holds: the only thing a write could do is replace a history this session
+     * never saw.
+     */
+    private unreadable = false;
+    /** Whether the user has been told, so a retry every heartbeat stays quiet. */
+    private warned = false;
+    private reading = false;
     private writing: Promise<void> = Promise.resolve();
 
     private readonly writeSoon = debounce(() => void this.write(), WRITE_DELAY_MS);
 
     constructor(private readonly app: App, private readonly plugin: Plugin) {}
 
+    private get folder(): string {
+        return normalizePath(`${this.app.vault.configDir}/plugins/${this.plugin.manifest.id}`);
+    }
+
     private get path(): string {
-        return normalizePath(`${this.app.vault.configDir}/plugins/${this.plugin.manifest.id}/${FILE_NAME}`);
+        return normalizePath(`${this.folder}/${FILE_NAME}`);
     }
 
     /**
-     * Reads what is on disk. A file that cannot be read or parsed is reported
-     * and replaced rather than thrown over: history that silently empties is
-     * indistinguishable from history that never started, and that is the one
-     * failure this should not hide.
+     * Reads what is on disk.
+     *
+     * A file that is there but cannot be read is left alone. The cause is as
+     * likely to be a lock held for a moment by sync or a virus scanner as
+     * damage, and writing over it would replace months of sittings with
+     * whatever this session had seen. Nothing is recorded or written until a
+     * read succeeds; the heartbeat asks again.
+     *
+     * A file that reads but does not parse is damaged, so it is kept beside
+     * the new one under a dated name before anything is written. History that
+     * silently empties is indistinguishable from history that never started,
+     * and that is the one failure this should not hide.
      */
     async load(): Promise<void> {
         this.loaded = true;
@@ -102,30 +123,24 @@ export class EditHistory {
 
         try {
             if (!(await this.app.vault.adapter.exists(this.path))) {
+                this.recovered();
                 return;
             }
 
             raw = await this.app.vault.adapter.read(this.path);
         } catch {
-            new Notice('Pulsar could not read its edit history. A new one has been started.');
+            this.cannotRead('Pulsar could not read its edit history. It records nothing until it can, and will try again shortly.');
             return;
         }
 
-        let parsed: unknown;
+        const stored = parseStored(raw);
 
-        try {
-            parsed = JSON.parse(raw);
-        } catch {
-            new Notice('Pulsar could not read its edit history. A new one has been started.');
+        if (stored === null) {
+            await this.keepDamaged(raw);
             return;
         }
 
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-            new Notice('Pulsar could not read its edit history. A new one has been started.');
-            return;
-        }
-
-        const stored = parsed as Record<string, unknown>;
+        this.recovered();
 
         for (const [key, value] of Object.entries(stored)) {
             if (key !== 'v' && key !== 'notes' && key !== 'opened' && key !== 'awake') {
@@ -138,6 +153,41 @@ export class EditHistory {
 
         this.awake = typeof stored.awake === 'number' ? stored.awake : 0;
         this.closedFor = this.awake > 0 ? Math.max(0, Date.now() - this.awake) : 0;
+    }
+
+    /** Stops recording and writing until a later read succeeds. */
+    private cannotRead(message: string): void {
+        this.loaded = false;
+        this.unreadable = true;
+
+        if (!this.warned) {
+            this.warned = true;
+            new Notice(message);
+        }
+    }
+
+    private recovered(): void {
+        this.unreadable = false;
+        this.warned = false;
+    }
+
+    /**
+     * Keeps a file that does not parse beside the new one, so starting again
+     * loses nothing that was there. If there is nowhere to keep it, nothing is
+     * written over it either.
+     */
+    private async keepDamaged(raw: string): Promise<void> {
+        const name = `history.damaged-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+
+        try {
+            await this.app.vault.adapter.write(normalizePath(`${this.folder}/${name}`), raw);
+        } catch {
+            this.cannotRead('Pulsar could not read its edit history or keep a copy of it. It records nothing until it can.');
+            return;
+        }
+
+        this.recovered();
+        new Notice(`Pulsar could not read its edit history. A copy is kept as ${name} in its plugin folder, and a new one has been started.`);
     }
 
     /**
@@ -329,10 +379,15 @@ export class EditHistory {
         }
     }
 
-    /** Throws the lot away, at the user's request. */
+    /**
+     * Throws the lot away, at the user's request. The one write allowed over a
+     * file that could not be read, since replacing it is what was asked for.
+     */
     async clear(): Promise<void> {
         this.notes.clear();
         this.opened.clear();
+        this.loaded = true;
+        this.recovered();
         this.touch();
         await this.flush();
     }
@@ -340,18 +395,43 @@ export class EditHistory {
     /**
      * Records that the session is still running, so the next load can tell idle
      * time from time the app was shut. Cheap enough to call on a short timer:
-     * it only asks for a write once every few minutes.
+     * it only asks for a write once every few minutes. While the file cannot be
+     * read, it tries the read again instead.
      */
     heartbeat(): void {
+        if (this.unreadable) {
+            void this.retry();
+            return;
+        }
+
         if (this.loaded && Date.now() - this.awake >= AWAKE_REFRESH_MS) {
             this.touch();
         }
     }
 
-    /** Writes anything outstanding now, for unload and for app quit. */
+    private async retry(): Promise<void> {
+        if (this.reading) {
+            return;
+        }
+
+        this.reading = true;
+
+        try {
+            await this.load();
+        } finally {
+            this.reading = false;
+        }
+    }
+
+    /**
+     * Writes anything outstanding now, for unload and for app quit. A write
+     * already under way counts as outstanding: returning before it lands is how
+     * quitting leaves a file cut short.
+     */
     async flush(): Promise<void> {
         this.writeSoon.cancel();
         await this.write();
+        await this.writing;
     }
 
     private touch(): void {
@@ -360,7 +440,9 @@ export class EditHistory {
     }
 
     private async write(): Promise<void> {
-        if (!this.dirty) {
+        // Left dirty, so whatever happened meanwhile is written once a read
+        // succeeds.
+        if (!this.dirty || this.unreadable) {
             return;
         }
 
@@ -390,6 +472,19 @@ export class EditHistory {
 
         await this.writing;
     }
+}
+
+/** The file's top level, or null when it is not the object this writes. */
+function parseStored(raw: string): Record<string, unknown> | null {
+    let parsed: unknown;
+
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        return null;
+    }
+
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
 }
 
 /** Whether a sitting was watched happen, rather than imported after the fact. */
