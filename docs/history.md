@@ -25,6 +25,14 @@ arrives by sync is dated by the note's own timestamp, so work you did on your
 phone three days ago is recorded three days ago rather than as a fictional
 sitting now.
 
+**It's never written over by accident.** If the file is there but can't be read
+— a sync tool or virus scanner holding it for a moment, say — Pulsar records
+nothing and writes nothing until it can read it again, and tries every half
+minute. If it reads but is damaged, a copy is kept beside it as
+`history.damaged-<date>.json` before a new one is started, and a notice says
+so. Only **Forget everything recorded** replaces it outright, since that's
+what it's for.
+
 **It can start with a head start.** Obsidian's core *File recovery* plugin keeps
 a copy of every note it has seen change, usually for the last seven days, and
 **Import earlier history** in the settings folds those timestamps in. On my vault
