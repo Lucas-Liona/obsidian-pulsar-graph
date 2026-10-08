@@ -16,7 +16,8 @@ when it started, when it ended, and how long the note was at each end.
 It starts empty, and it is worth nothing on the day you install it and a lot a
 year later — which is the only reason it's on by default when everything else
 here is off. The statistics panel at the foot of the settings shows what it has
-collected so far, and **Forget everything recorded** throws the lot away.
+collected so far, and **Forget everything recorded**, in Clear and reset at the
+foot of the settings, throws the lot away after a second click.
 
 It's a record of how *you* worked on *this* machine, so it lives in a file of its
 own in the plugin's folder and is never synced between devices. An edit that

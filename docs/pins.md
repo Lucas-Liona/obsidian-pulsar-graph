@@ -58,8 +58,9 @@ like one you edited this morning.
 
 ## Taking them off
 
-The settings tab lists everything pinned, with an *Unpin* beside each and an
-*Unpin all*. There is a command for the latter too. A list you cannot read is a
+The settings tab lists everything pinned, with an *Unpin* beside each, and
+*Unpin every note* sits in Clear and reset at the foot of the settings, asking
+for a second click. There is a command for that too. A list you cannot read is a
 list that grows until half the graph is pinned and nobody remembers why, so the
 list is the feature as much as the pinning is.
 
