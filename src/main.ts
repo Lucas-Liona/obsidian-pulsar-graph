@@ -362,6 +362,12 @@ export default class PulsarGraphPlugin extends Plugin {
         running.registerEvent(this.app.vault.on('delete', (file) => {
             if (isNote(file)) {
                 this.store.recordDelete(file);
+                // Off the attention clock as well as out of the history, as a
+                // rename does. A note deleted while open is still the one the
+                // clock is on, and the workspace may say the leaf has emptied
+                // only after this: leaving it then stamped the deleted note as
+                // seen, and the history wrote it straight back.
+                this.attention.forget(file.path);
                 this.history.forget(file.path);
 
                 if (this.pins.has(file.path)) {

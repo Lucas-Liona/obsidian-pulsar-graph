@@ -330,7 +330,9 @@ describe('the edit history', () => {
         await unloadPlugin(plugin);
     });
 
-    // #24's rule: a deleted note takes its history with it.
+    // #24's rule: a deleted note takes its history with it, whichever of the
+    // vault and the workspace reports the deletion first. Their order has not
+    // been checked live, so both are tested.
     it('forgets a note deleted while open when the workspace lets go of it first', async () => {
         const { world, plugin } = await writing();
 
@@ -341,11 +343,10 @@ describe('the edit history', () => {
         await unloadPlugin(plugin);
     });
 
-    // Audit item 6. The delete handler forgets the note's history but not its
-    // place in the attention clock, so when the workspace reports the leaf
-    // emptied afterwards, the note left is stamped as seen and written back.
-    // Which order Obsidian fires the two in has not been checked live.
-    it.fails('forgets a note deleted while open when the vault reports it first (audit item 6)', async () => {
+    // Audit item 6. The delete handler forgot the note's history but not its
+    // place in the attention clock, so when the workspace reported the leaf
+    // emptied afterwards, the note left was stamped as seen and written back.
+    it('forgets a note deleted while open when the vault reports it first (audit item 6)', async () => {
         const { world, plugin } = await writing();
 
         world.deleteOpenNote('a.md', 'vault');
