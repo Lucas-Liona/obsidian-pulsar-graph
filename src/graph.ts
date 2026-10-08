@@ -23,6 +23,8 @@ export interface GraphText {
     text: string;
     alpha: number;
     visible: boolean;
+    /** PIXI's own switch; Obsidian never touches it, so it is the one to hide with. */
+    renderable?: boolean;
     resolution: number;
     y: number;
     scale: { x: number; y: number };
@@ -58,6 +60,7 @@ export interface GraphLink {
         alpha: number;
         tint: number;
         visible: boolean;
+        renderable?: boolean;
         texture?: GraphTexture;
     } | null;
 }
@@ -78,7 +81,7 @@ export interface GraphNode {
     forward?: Record<string, unknown>;
     reverse?: Record<string, unknown>;
     text?: GraphText | null;
-    circle?: { tint: number; visible: boolean } | null;
+    circle?: { tint: number; visible: boolean; renderable?: boolean } | null;
     getSize?: () => number;
 }
 
@@ -1119,6 +1122,12 @@ export function hookRendererFrame(renderer: GraphRenderer, onFrame: () => void):
  * made: every frame of a scrub would re-pack, and the thing being aimed at would
  * crawl away from the cursor. Hiding leaves every position untouched, so the
  * graph holds still and only the contents change.
+ *
+ * Hidden with `renderable`, not `visible`. Obsidian sets `visible` itself on
+ * every frame, to skip what is outside the viewport, so a node hidden that way
+ * was drawn again before the frame was: the preview flagged 56 nodes hidden in
+ * the demo vault and the screen did not change at all. Every node is set either
+ * way on each pass, so one dragged back into the range comes back with it.
  */
 export function previewFilter(
     renderer: GraphRenderer,
@@ -1127,18 +1136,18 @@ export function previewFilter(
     const hidden = new Set<string>();
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
-        if (keeps(path)) {
-            continue;
+        const kept = keeps(path);
+
+        if (!kept) {
+            hidden.add(path);
         }
 
-        hidden.add(path);
-
         if (node.circle) {
-            node.circle.visible = false;
+            node.circle.renderable = kept;
         }
 
         if (node.text) {
-            node.text.visible = false;
+            node.text.renderable = kept;
         }
     }
 
@@ -1146,10 +1155,15 @@ export function previewFilter(
         const source = link.source?.id;
         const target = link.target?.id;
 
-        if (link.line && ((source !== undefined && hidden.has(source)) || (target !== undefined && hidden.has(target)))) {
-            link.line.visible = false;
+        if (link.line) {
+            link.line.renderable = !((source !== undefined && hidden.has(source)) || (target !== undefined && hidden.has(target)));
         }
     }
+}
+
+/** Draws everything a preview hid, once the drag is over. */
+export function clearPreviewFilter(renderer: GraphRenderer): void {
+    previewFilter(renderer, () => true);
 }
 
 /**
