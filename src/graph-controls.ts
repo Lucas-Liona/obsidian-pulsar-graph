@@ -1,6 +1,10 @@
 import { Setting, setIcon } from 'obsidian';
+import { AgeMode } from './age-label';
+import { FADE_TYPE_LABELS, FadeType } from './fade';
 import { OpacityRange } from './filter';
+import { LinkRecency } from './links';
 import { RangeBar, Spread } from './range-bar';
+import { BLEED_RANGE, MAX_OPACITY_RANGE, MIN_OPACITY_LIMIT, PulsarGraphSettings, TITLE_SCALE_RANGE } from './settings';
 import { writeStats } from './stats-text';
 
 /**
@@ -21,12 +25,138 @@ export type QuickControl =
         options: Record<string, string>;
         value: () => string;
         onChange: (value: string) => void;
+    }
+    | {
+        kind: 'toggle';
+        name: string;
+        value: () => boolean;
+        onChange: (value: boolean) => void;
     };
 
 /** A small heading inside the section, and the controls under it. */
 export interface QuickGroup {
     heading: string;
     controls: QuickControl[];
+}
+
+/**
+ * What the panel holds, as data: each control reads its setting and writes it
+ * through `change`, which applies the result to every graph and saves. Nothing
+ * here touches the page, so what each control is wired to can be checked
+ * without one.
+ *
+ * Names are short because the panel is narrow; the settings tab has the
+ * sentences.
+ */
+export function panelGroups(settings: () => PulsarGraphSettings, change: (apply: () => void) => void): QuickGroup[] {
+    return [
+        {
+            heading: 'Nodes',
+            controls: [
+                {
+                    kind: 'slider',
+                    name: 'Dimmest',
+                    limits: { lowest: 0, highest: MIN_OPACITY_LIMIT, step: 0.01 },
+                    value: () => settings().minOpacity,
+                    onChange: (value) => change(() => {
+                        settings().minOpacity = value;
+                        settings().maxOpacity = Math.max(settings().maxOpacity, value);
+                    })
+                },
+                {
+                    kind: 'slider',
+                    name: 'Brightest',
+                    limits: MAX_OPACITY_RANGE,
+                    value: () => settings().maxOpacity,
+                    onChange: (value) => change(() => {
+                        settings().maxOpacity = value;
+                        settings().minOpacity = Math.min(settings().minOpacity, value);
+                    })
+                },
+                {
+                    kind: 'dropdown',
+                    name: 'Curve',
+                    options: FADE_TYPE_LABELS,
+                    value: () => settings().fadeType,
+                    onChange: (value) => change(() => {
+                        settings().fadeType = value as FadeType;
+                    })
+                },
+                {
+                    kind: 'slider',
+                    name: 'Glow',
+                    limits: BLEED_RANGE,
+                    value: () => settings().neighbourBleed,
+                    onChange: (value) => change(() => {
+                        settings().neighbourBleed = value;
+                    })
+                },
+                {
+                    kind: 'toggle',
+                    name: 'Size by age',
+                    value: () => settings().nodeSizeByAge,
+                    onChange: (value) => change(() => {
+                        settings().nodeSizeByAge = value;
+                    })
+                },
+                {
+                    kind: 'toggle',
+                    name: 'Spotlight',
+                    value: () => settings().spotlightNewest,
+                    onChange: (value) => change(() => {
+                        settings().spotlightNewest = value;
+                    })
+                }
+            ]
+        },
+        {
+            heading: 'Links',
+            controls: [
+                {
+                    kind: 'dropdown',
+                    name: 'Age',
+                    options: { off: 'Off', uniform: 'Match newer', gradient: 'Fade' } satisfies Record<LinkRecency, string>,
+                    value: () => settings().linkRecency,
+                    onChange: (value) => change(() => {
+                        settings().linkRecency = value as LinkRecency;
+                    })
+                },
+                {
+                    kind: 'toggle',
+                    name: 'Trace sittings',
+                    value: () => settings().sessionTrails,
+                    onChange: (value) => change(() => {
+                        settings().sessionTrails = value;
+                    })
+                }
+            ]
+        },
+        {
+            heading: 'Text',
+            controls: [
+                {
+                    kind: 'slider',
+                    name: 'Title size',
+                    limits: TITLE_SCALE_RANGE,
+                    value: () => settings().titleScale,
+                    onChange: (value) => change(() => {
+                        settings().titleScale = value;
+                    })
+                },
+                {
+                    kind: 'dropdown',
+                    name: 'Ages',
+                    // Shorter than the settings' wording, which is a sentence
+                    // and pushed the name out of a narrow panel.
+                    options: { off: 'Never', hover: 'On hover', titles: 'With titles' } satisfies Record<AgeMode, string>,
+                    value: () => settings().ageLabels,
+                    onChange: (value) => change(() => {
+                        settings().ageLabels = value as AgeMode;
+                    })
+                }
+            ]
+        }
+    ];
 }
 
 export interface PanelOptions {
@@ -143,6 +273,29 @@ export class PulsarPanel {
                     if (Math.abs(slider.getValue() - value) >= control.limits.step / 2) {
                         syncing = true;
                         slider.setValue(value);
+                        syncing = false;
+                    }
+                });
+            });
+            return;
+        }
+
+        if (control.kind === 'toggle') {
+            setting.addToggle((toggle) => {
+                toggle
+                    .setValue(control.value())
+                    .onChange((value) => {
+                        if (!syncing) {
+                            control.onChange(value);
+                        }
+                    });
+
+                this.syncs.push(() => {
+                    const value = control.value();
+
+                    if (toggle.getValue() !== value) {
+                        syncing = true;
+                        toggle.setValue(value);
                         syncing = false;
                     }
                 });
