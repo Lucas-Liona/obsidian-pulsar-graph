@@ -30,6 +30,13 @@
 
 ### Fixed
 
+- **The note history's rail ends at its oldest bead.** It ran from when the
+  first sitting began, but each bead is drawn where its sitting ended, so the
+  bottom of every rail was a label with no bead at it: a note with one sitting
+  had its bead at the top of an empty line, labelled "4 hours ago" at both
+  ends, and in a longer history the oldest bead floated above the bottom by
+  its own length. A note with one sitting is now that bead, with no line.
+
 - **How long a sitting is can be set again.** *Counts as one sitting* decides
   how the edit history counts sittings, but it was only shown with *Trace what
   was written together* on, which is off by default. It is listed under
