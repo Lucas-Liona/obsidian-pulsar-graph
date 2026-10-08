@@ -72,6 +72,12 @@ export class OpacityStore {
     /** How many sittings a note has on record. Zero until a history exists. */
     private sittings: (path: string) => number = () => 0;
 
+    /**
+     * Counts every change to a note, a date or an opacity, so an answer worked
+     * out from them can be kept until the count moves.
+     */
+    private changes = 0;
+
     constructor(private readonly getSettings: () => PulsarGraphSettings) {}
 
     /**
@@ -84,6 +90,7 @@ export class OpacityStore {
     }
 
     build(files: TFile[]): void {
+        this.changes++;
         this.mtimes.clear();
         this.creations.clear();
 
@@ -98,6 +105,7 @@ export class OpacityStore {
 
     /** Drops every cache, for when the plugin is switched off. */
     clear(): void {
+        this.changes++;
         this.mtimes.clear();
         this.creations.clear();
         this.opacities.clear();
@@ -107,6 +115,7 @@ export class OpacityStore {
     }
 
     recordChange(file: TFile): void {
+        this.changes++;
         const mtime = file.stat.mtime;
         this.mtimes.set(file.path, mtime);
         this.creations.set(file.path, createdAt(file));
@@ -135,6 +144,7 @@ export class OpacityStore {
 
     /** Drops a path the vault no longer has, such as the old side of a rename. */
     forget(path: string): void {
+        this.changes++;
         this.mtimes.delete(path);
         this.creations.delete(path);
         this.opacities.delete(path);
@@ -154,6 +164,7 @@ export class OpacityStore {
             return;
         }
 
+        this.changes++;
         this.anchor = Date.now();
         this.rebuildRanking();
         this.rebuildIntensityRanking();
@@ -303,17 +314,26 @@ export class OpacityStore {
         return gaps.length < SPREAD_FLOOR_NOTES ? null : anchorSpan(gaps, floorHours);
     }
 
-    /** The most recent moment any note in the vault first appeared. */
-    newestCreated(): number {
+    /**
+     * The most recent moment any note first appeared, among the notes a test
+     * keeps when one is given. The test is only asked about a note newer than
+     * the best found so far.
+     */
+    newestCreated(keeps?: (path: string) => boolean): number {
         let newest = 0;
 
-        for (const created of this.creations.values()) {
-            if (created > newest) {
+        for (const [path, created] of this.creations) {
+            if (created > newest && (keeps === undefined || keeps(path))) {
                 newest = created;
             }
         }
 
         return newest;
+    }
+
+    /** Moves whenever a note, a date or an opacity may have changed. */
+    revision(): number {
+        return this.changes;
     }
 
     /**
@@ -529,6 +549,7 @@ export class OpacityStore {
     }
 
     cacheOpacityFor(path: string, mtime: number): number {
+        this.changes++;
         const opacity = this.calculateOpacity(mtime, path);
         this.opacities.set(path, opacity);
         return opacity;
