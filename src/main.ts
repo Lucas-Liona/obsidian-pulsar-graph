@@ -8,7 +8,7 @@ import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filt
 import { FilterCaption, PulsarPanel } from './graph-controls';
 import { FADE_TYPE_LABELS, FadeType } from './fade';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -56,6 +56,10 @@ interface AttachedGraph {
 /** What a drag is previewing, if anything. */
 interface Preview {
     keeps: ((path: string) => boolean) | null;
+    /** Whether anything is hidden that a frame still has to draw again. */
+    shown?: boolean;
+    /** What was last hidden, and over how many nodes and links, so it is done once per change. */
+    applied?: { keeps: (path: string) => boolean; nodes: number; links: number } | null;
 }
 
 /** A survivor test that also keeps one more note, if there is one. */
@@ -1852,8 +1856,23 @@ export default class PulsarGraphPlugin extends Plugin {
             holdPaintTint(renderer, paint);
             settleReleases(renderer, paint);
 
+            // Once per move of a handle, not once per frame: nothing but this
+            // sets `renderable`, so what it hid stays hidden until the range
+            // or the graph's contents change.
             if (preview.keeps) {
-                previewFilter(renderer, preview.keeps);
+                const nodes = renderer.nodes?.length ?? 0;
+                const links = renderer.links?.length ?? 0;
+                const last = preview.applied;
+
+                if (!last || last.keeps !== preview.keeps || last.nodes !== nodes || last.links !== links) {
+                    previewFilter(renderer, preview.keeps);
+                    preview.applied = { keeps: preview.keeps, nodes, links };
+                    preview.shown = true;
+                }
+            } else if (preview.shown) {
+                clearPreviewFilter(renderer);
+                preview.shown = false;
+                preview.applied = null;
             }
         };
 
@@ -1899,6 +1918,10 @@ export default class PulsarGraphPlugin extends Plugin {
                 labels.destroy();
                 links.destroy();
                 panel?.destroy();
+                if (preview.shown) {
+                    clearPreviewFilter(renderer);
+                }
+
                 clearPaint(renderer, paint);
                 repaint(renderer);
             }
