@@ -1,0 +1,189 @@
+{
+	"comment": "Written by `npm run bench:record`. Per bench, the median of the runs by mean, with that run's sd (ms per call); noiseSd and noiseRelative are the spread of the runs' means. Local only: compare on the machine below.",
+	"machine": {
+		"cpu": "AMD Ryzen 7 7735HS with Radeon Graphics",
+		"cores": 16,
+		"memoryGb": 31,
+		"os": "linux 5.15.167.4-microsoft-standard-WSL2",
+		"node": "v20.19.3",
+		"vitest": "3.2.7",
+		"date": "2026-10-08T07:07:19.764Z",
+		"commit": "80e84f0bb472e91e32386d3e7d9a55793c59d661"
+	},
+	"runs": 3,
+	"noise": {
+		"medianRelative": 0.1298776762890327,
+		"maxRelative": 0.23677239490347501
+	},
+	"benches": {
+		"test/opacity-store.bench.ts › store, 1,000 notes › every opacity, recomputed": {
+			"mean": 0.15574741991342048,
+			"sd": 0.32574041152252703,
+			"samples": 3234,
+			"runs": 3,
+			"means": [
+				0.19259204736642416,
+				0.14807692346335594,
+				0.15574741991342048
+			],
+			"noiseSd": 0.02379761663152636,
+			"noiseRelative": 0.1438164638111457
+		},
+		"test/opacity-store.bench.ts › store, 1,000 notes › newest 3 (now)": {
+			"mean": 0.018727515187835365,
+			"sd": 0.04085253276048747,
+			"samples": 26699,
+			"runs": 3,
+			"means": [
+				0.02212294066634183,
+				0.017931704992109762,
+				0.018727515187835365
+			],
+			"noiseSd": 0.0022259336814270097,
+			"noiseRelative": 0.1136025104919708
+		},
+		"test/opacity-store.bench.ts › store, 1,000 notes › newest 3 by full sort (before)": {
+			"mean": 0.23889581892020612,
+			"sd": 0.13334188850326834,
+			"samples": 2093,
+			"runs": 3,
+			"means": [
+				0.2822985553047406,
+				0.2196885746268735,
+				0.23889581892020612
+			],
+			"noiseSd": 0.03207471859968023,
+			"noiseRelative": 0.1298776762890327
+		},
+		"test/opacity-store.bench.ts › store, 10,000 notes › every opacity, recomputed": {
+			"mean": 2.8131931499999734,
+			"sd": 2.30156633444663,
+			"samples": 180,
+			"runs": 3,
+			"means": [
+				2.8131931499999734,
+				3.1408326625000056,
+				2.5916106787564757
+			],
+			"noiseSd": 0.2763123923933478,
+			"noiseRelative": 0.09700122138686545
+		},
+		"test/opacity-store.bench.ts › store, 10,000 notes › newest 3 (now)": {
+			"mean": 0.3715863647845351,
+			"sd": 0.15507220342390252,
+			"samples": 1346,
+			"runs": 3,
+			"means": [
+				0.3419076103896104,
+				0.4142737928748964,
+				0.3715863647845351
+			],
+			"noiseSd": 0.03637744114809284,
+			"noiseRelative": 0.09676843631829422
+		},
+		"test/opacity-store.bench.ts › store, 10,000 notes › newest 3 by full sort (before)": {
+			"mean": 4.0570297903225825,
+			"sd": 1.7165167697186399,
+			"samples": 124,
+			"runs": 3,
+			"means": [
+				3.2803608235294393,
+				4.980807267326727,
+				4.0570297903225825
+			],
+			"noiseSd": 0.8512831118594365,
+			"noiseRelative": 0.20732329194681903
+		},
+		"test/opacity-store.bench.ts › store, 50,000 notes › every opacity, recomputed": {
+			"mean": 15.55688329411765,
+			"sd": 7.02450569384485,
+			"samples": 34,
+			"runs": 3,
+			"means": [
+				14.194208000000016,
+				15.55688329411765,
+				19.593943384615333
+			],
+			"noiseSd": 2.808080018902431,
+			"noiseRelative": 0.17072112952304844
+		},
+		"test/opacity-store.bench.ts › store, 50,000 notes › newest 3 (now)": {
+			"mean": 5.627974252747313,
+			"sd": 2.6338701294915365,
+			"samples": 91,
+			"runs": 3,
+			"means": [
+				6.012614411764704,
+				4.830621733333256,
+				5.627974252747313
+			],
+			"noiseSd": 0.6028855314251089,
+			"noiseRelative": 0.10980714535174238
+		},
+		"test/opacity-store.bench.ts › store, 50,000 notes › newest 3 by full sort (before)": {
+			"mean": 38.80283907692312,
+			"sd": 14.907102115201365,
+			"samples": 13,
+			"runs": 3,
+			"means": [
+				38.99771835714273,
+				35.89865626666669,
+				38.80283907692312
+			],
+			"noiseSd": 1.7357247079089455,
+			"noiseRelative": 0.04579780241429486
+		},
+		"test/range-stats.bench.ts › 1,000 notes › once per note (before)": {
+			"mean": 223.7744144,
+			"sd": 11.016560802736844,
+			"samples": 5,
+			"runs": 3,
+			"means": [
+				280.85944559999996,
+				217.328708,
+				223.7744144
+			],
+			"noiseSd": 34.96761010349439,
+			"noiseRelative": 0.14530231200363725
+		},
+		"test/range-stats.bench.ts › 1,000 notes › once per pass (now)": {
+			"mean": 0.08506231127742821,
+			"sd": 0.041645004929815946,
+			"samples": 5879,
+			"runs": 3,
+			"means": [
+				0.10108359531028831,
+				0.08506231127742821,
+				0.08086327118369868
+			],
+			"noiseSd": 0.010670637184619206,
+			"noiseRelative": 0.11989067874387001
+		},
+		"test/range-stats.bench.ts › 10,000 notes › once per pass (now)": {
+			"mean": 1.6759086287625604,
+			"sd": 0.4777784358034137,
+			"samples": 299,
+			"runs": 3,
+			"means": [
+				2.26666746153848,
+				1.4420688242074935,
+				1.6759086287625604
+			],
+			"noiseSd": 0.4249784240376677,
+			"noiseRelative": 0.23677239490347501
+		},
+		"test/range-stats.bench.ts › 50,000 notes › once per pass (now)": {
+			"mean": 16.152123806451527,
+			"sd": 2.4678647779607825,
+			"samples": 31,
+			"runs": 3,
+			"means": [
+				22.81949172727284,
+				16.152123806451527,
+				15.220207060606024
+			],
+			"noiseSd": 4.144703271603043,
+			"noiseRelative": 0.2294462378187295
+		}
+	}
+}
