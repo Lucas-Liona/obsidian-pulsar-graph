@@ -70,6 +70,12 @@
   the theme now, and so does the colour a pinned or spotlit note is handed
   back.
 
+- **Blending in edit intensity no longer dims notes with nothing on record.**
+  A note with no sittings counted as the least worked-on of all, so while the
+  history was new every note was dimmed by the blend: at 0.25, the newest note
+  reached three quarters of the range and no further. A note with no record is
+  judged by its date alone now, and one with sittings is blended as before.
+
 - **The note history's rail ends at its oldest bead.** It ran from when the
   first sitting began, but each bead is drawn where its sitting ended, so the
   bottom of every rail was a label with no bead at it: a note with one sitting
