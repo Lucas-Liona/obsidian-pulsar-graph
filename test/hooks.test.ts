@@ -245,6 +245,27 @@ describe('hookGraphCreation', () => {
         expect(closed).toBe(1);
     });
 
+    // The filter spares it, so it has to be readable from the first build: a
+    // local graph linked to another pane keeps its centre while you work
+    // somewhere else, and was emptied by a filter that spared only the open note.
+    it('says what a local graph is built around, as of when it is asked', () => {
+        const { app, viewByType } = registry();
+        const engine = { options: { localFile: 'a.md' } };
+        viewByType.localgraph = () => ({ renderer: renderer(), engine });
+        const centres: Array<() => string | null> = [];
+
+        hookGraphCreation(app, (_graph, _onClose, centre) => centres.push(centre));
+        viewByType.localgraph({});
+        viewByType.graph?.({});
+
+        const [local, global] = centres;
+        expect(local?.()).toBe('a.md');
+
+        engine.options.localFile = 'b.md';
+        expect(local?.()).toBe('b.md');
+        expect(global?.()).toBeNull();
+    });
+
     it('puts the creators back when it is still on top', () => {
         const { app, viewByType } = registry();
         const graph = viewByType.graph;
