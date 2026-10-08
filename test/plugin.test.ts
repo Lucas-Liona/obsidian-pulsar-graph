@@ -231,11 +231,11 @@ describe('the graph\'s own replay', () => {
         await unloadPlugin(plugin);
     });
 
-    // Review finding 4. "Caught up" is measured against the newest creation in
-    // the whole vault, which this graph's filter never lets it draw, so the
-    // graph stays in replay brightness for good: other.md, created at the last
-    // note the graph can show, is drawn as brand new.
-    it.fails('goes back to today\'s brightness once every note it can show is drawn (review finding 4)', async () => {
+    // Review finding 4. "Caught up" was measured against the newest creation
+    // in the whole vault, which this graph's filter never lets it draw, so the
+    // graph stayed in replay brightness for good: other.md, created at the
+    // last note the graph can show, was drawn as brand new.
+    it('goes back to today\'s brightness once every note it can show is drawn (review finding 4)', async () => {
         const world = replayVault();
         world.workspace.openNote('other.md');
         const plugin = await loadPlugin(world, REPLAY);

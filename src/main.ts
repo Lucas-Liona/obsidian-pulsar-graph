@@ -125,6 +125,8 @@ export default class PulsarGraphPlugin extends Plugin {
     private unloaded = false;
     /** The note that was open when the graphs were last filtered, and so exempt in them. */
     private filteredOpen: string | null = null;
+    /** The newest note a replaying graph can draw, and what it was worked out from. */
+    private drawable: { key: string; newest: number } | null = null;
 
     /** Emptied when the plugin is off, so no editor carries anything of ours. */
     private readonly editorExtensions: Extension[] = [];
@@ -1072,13 +1074,42 @@ export default class PulsarGraphPlugin extends Plugin {
      * into nothing. The newest note on screen is where the replay has reached,
      * by construction: it shows what existed, so nothing newer is there yet.
      *
-     * Null once the replay has caught up with the vault, which is both the
-     * honest answer and the thing that ends the wave.
+     * Null once the replay has caught up, which is both the honest answer and
+     * the thing that ends the wave. Caught up with what this graph can draw,
+     * not with the vault: the vault's newest note is often one the age filter
+     * takes out, and a replay measured against it never caught up, so the
+     * graph stayed in replay brightness with nothing left to reach.
      */
-    private replayReach(renderer: GraphRenderer): number | null {
+    private replayReach(renderer: GraphRenderer, centre: string | null): number | null {
         const reached = this.store.reachedBy(pathsIn(renderer));
 
-        return reached !== null && reached < this.store.newestCreated() ? reached : null;
+        return reached !== null && reached < this.newestDrawable(centre) ? reached : null;
+    }
+
+    /**
+     * When the newest note a graph's filter lets it draw first appeared.
+     *
+     * Asked on every pass of a running replay, which steps several times a
+     * second, so the answer is kept until the store, the ranges or the notes
+     * exempt from them change: working it out walks the vault.
+     */
+    private newestDrawable(centre: string | null): number {
+        this.store.refresh();
+
+        const ranges = this.settings.filterRanges;
+
+        if (!this.settings.filterEnabled || isWholeRange(ranges)) {
+            return this.store.newestCreated();
+        }
+
+        const exempt = this.exemptFromFilter(centre);
+        const key = [this.store.revision(), JSON.stringify(ranges), ...[...exempt].sort()].join('\n');
+
+        if (this.drawable?.key !== key) {
+            this.drawable = { key, newest: this.store.newestCreated((path) => keepsNote(path, this.filterPosition(path), ranges, exempt)) };
+        }
+
+        return this.drawable.newest;
     }
 
     /** Whether a graph writes every age, which a small panel can afford to. */
@@ -1960,10 +1991,11 @@ export default class PulsarGraphPlugin extends Plugin {
         // Where the graph's own replay has got to, or null when it is not
         // replaying. Two conditions, because the animation's counter never
         // returns to zero once started: it has to have been started, and the
-        // notes on screen have to still be short of the vault's newest. The
-        // second is also what ends the wave — once everything is drawn there is
-        // nothing left to reach, and the graph goes back to reading today.
-        const replayAt = this.settings.replay && graph.replaying() ? this.replayReach(renderer) : null;
+        // notes on screen have to still be short of the newest this graph can
+        // draw. The second is also what ends the wave — once everything is
+        // drawn there is nothing left to reach, and the graph goes back to
+        // reading today.
+        const replayAt = this.settings.replay && graph.replaying() ? this.replayReach(renderer, graph.centre()) : null;
 
         // Not only while something is hidden. The line answers "what am I
         // looking at", which is a question a graph raises whether or not a
