@@ -21,7 +21,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
-import { DEFAULT_SETTINGS, MIN_OPACITY_LIMIT, PulsarGraphSettings, PulsarSettingTab, parseSettings, TITLE_SCALE_RANGE } from './settings';
+import { DEFAULT_SETTINGS, MAX_OPACITY_RANGE, MIN_OPACITY_LIMIT, PulsarGraphSettings, PulsarSettingTab, parseSettings, TITLE_SCALE_RANGE } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
@@ -1382,7 +1382,7 @@ export default class PulsarGraphPlugin extends Plugin {
                         {
                             kind: 'slider',
                             name: 'Brightest',
-                            limits: { lowest: 0.1, highest: 6, step: 0.01 },
+                            limits: MAX_OPACITY_RANGE,
                             value: () => this.settings.maxOpacity,
                             onChange: (value) => this.changeFromPanel(() => {
                                 this.settings.maxOpacity = value;

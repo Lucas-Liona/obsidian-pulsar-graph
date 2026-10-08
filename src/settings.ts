@@ -128,7 +128,7 @@ export interface PulsarGraphSettings {
     localAnchor: boolean;
     /** Writes every age in a local graph, however the global graph is set. */
     localLabels: boolean;
-    /** A line across the top of a local graph saying what the panel holds. */
+    /** How far a note's brightness carries to the notes it links to, 0 for not at all. */
     neighbourBleed: number;
     neighbourHops: number;
     clusterWarmth: number;
@@ -149,6 +149,7 @@ export interface PulsarGraphSettings {
     nodeSizeLargest: number;
     titleScale: number;
     filterEnabled: boolean;
+    /** A line across the top of every graph saying what it holds. */
     filterCaption: boolean;
     filterRanges: OpacityRange[];
     /**
@@ -256,11 +257,11 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     pinColor: '#c084fc',
     pinStrength: 0.85,
     spreadFloorHours: 6,
+    replay: false,
+    replayTrailDays: 60,
     // On, unlike a new feature. These switch off behaviour that already
     // exists, so defaulting them off would quietly disable the plugin's main
     // job for everyone who upgrades.
-    replay: false,
-    replayTrailDays: 60,
     graphFade: true,
     tabBar: true,
     collapsed: [],
@@ -301,7 +302,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     staleTabs: false,
     staleTabMark: 'line',
     staleTabAfter: 240,
-    // On by default, unlike everything else past the core fade. The rule that
+    // On by default, like the few other extras the rule allows. The rule that
     // keeps extras off exists so nothing changes the look of someone's Obsidian
     // uninvited; this changes nothing on screen, writes only numbers, and into
     // a file of this plugin's own. It is also worth nothing until it has been
@@ -390,6 +391,28 @@ export const MIN_OPACITY_LIMIT = 1;
  * carrying one along with the other lands on an exact step.
  */
 const OPACITY_STEP = 0.01;
+
+/**
+ * Maximum opacity's range, here and in the graph's own panel. The panel used
+ * to stop at 6, for no recorded reason, so a value set here above 6 snapped
+ * down the moment the panel's slider was touched.
+ */
+/**
+ * Where *Counts as one sitting* is drawn. The history counts sittings by it
+ * and trails decide what was written together by it, so it goes under History
+ * while that is on, with the trails while only they are, and nowhere when
+ * nothing reads it. It used to live with the trails alone, which are off by
+ * default, so the length the history used could not be reached.
+ */
+export function sittingGapPlacement(settings: Pick<PulsarGraphSettings, 'history' | 'sessionTrails'>): 'history' | 'trails' | null {
+    if (settings.history) {
+        return 'history';
+    }
+
+    return settings.sessionTrails ? 'trails' : null;
+}
+
+export const MAX_OPACITY_RANGE = { lowest: 0, highest: MAX_OPACITY_LIMIT, step: OPACITY_STEP };
 
 const STEEPNESS_RANGE = { lowest: 0.1, highest: 10, step: 0.1 };
 const STEPS_RANGE = { lowest: 1, highest: 20, step: 1 };
@@ -790,7 +813,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             void this.plugin.saveSettings();
         });
 
-        // Seven parts, by what each one changes, rather than fifteen headings
+        // Eight parts, by what each one changes, rather than fifteen headings
         // of equal weight. Time comes first because everything else reads the
         // number it produces.
         const time = page.container('Time', {
@@ -1086,7 +1109,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName('Maximum opacity')
                 .setDesc('How bright the newest note becomes. Above 1.0 holds it at full strength as the rest of the graph fades'),
-            { lowest: 0, highest: MAX_OPACITY_LIMIT, step: OPACITY_STEP },
+            MAX_OPACITY_RANGE,
             settings.maxOpacity,
             (value) => {
                 settings.maxOpacity = value;
@@ -1276,11 +1299,11 @@ export class PulsarSettingTab extends PluginSettingTab {
     }
 
     private buildSpotlight(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Spotlight', 'Picking the single newest note out of the graph so it is findable at a glance');
+        heading(containerEl, 'Spotlight', 'Picking the newest notes out of the graph so they are findable at a glance');
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
-            .setDesc('Paint the single most recently modified note a colour of your own, so the thing you touched last is findable at a glance')
+            .setDesc('Paint the most recently modified note a colour of your own, so the thing you touched last is findable at a glance. It can cover the last few notes, or everything touched within a window, instead')
             .addToggle((toggle) => toggle
                 .setValue(settings.spotlightNewest)
                 .onChange(async (value) => {
@@ -1406,17 +1429,9 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.sessionTrails) {
-            new NumberControl(
-                new Setting(containerEl)
-                    .setName('Counts as one sitting')
-                    .setDesc('How many minutes apart two notes can be saved and still be treated as worked on together'),
-                SESSION_RANGE,
-                settings.sessionGapMinutes,
-                (value) => {
-                    settings.sessionGapMinutes = Math.round(value);
-                    this.save();
-                }
-            );
+            if (sittingGapPlacement(settings) === 'trails') {
+                this.buildSittingGap(containerEl, settings);
+            }
 
             new Setting(containerEl)
                 .setName('Trail colour')
@@ -1528,18 +1543,21 @@ export class PulsarSettingTab extends PluginSettingTab {
                 })
             );
 
-        if (settings.filterEnabled) {
-            new Setting(containerEl)
-                .setName('Say so on the graph')
-                .setDesc('A line across the top of the graph saying what is on it. The filter is the one setting whose effect is invisible once made: a graph with half its notes gone looks exactly like a graph')
-                .addToggle((toggle) => toggle
-                    .setValue(settings.filterCaption)
-                    .onChange(async (value) => {
-                        settings.filterCaption = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
+        // Outside the filter's own switch, because the caption is drawn on
+        // every graph whether the filter is on or not. Inside it, a caption
+        // on by default could only be switched off by turning the filter on.
+        new Setting(containerEl)
+            .setName('Say so on the graph')
+            .setDesc('A line across the top of every graph saying how many notes are on it and how far back they go. It matters most with the filter on, whose effect is otherwise invisible: a graph with half its notes gone looks exactly like a graph')
+            .addToggle((toggle) => toggle
+                .setValue(settings.filterCaption)
+                .onChange(async (value) => {
+                    settings.filterCaption = value;
+                    await this.plugin.saveSettings();
+                })
+            );
 
+        if (settings.filterEnabled) {
             const bar = new Setting(containerEl)
                 .setName('Keep')
                 .setDesc('Drag a handle to move one edge, or the lit stretch between them to move the whole range without changing its width. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
@@ -1842,6 +1860,21 @@ export class PulsarSettingTab extends PluginSettingTab {
         }
     }
 
+    /** *Counts as one sitting*, drawn where `sittingGapPlacement` says. */
+    private buildSittingGap(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('Counts as one sitting')
+                .setDesc('How many minutes apart two saves can be and still count as one sitting. The history counts sittings by it, and trails use it to decide which notes were worked on together'),
+            SESSION_RANGE,
+            settings.sessionGapMinutes,
+            (value) => {
+                settings.sessionGapMinutes = Math.round(value);
+                this.save();
+            }
+        );
+    }
+
     private buildHistory(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'History', "Pulsar's own record of when each note was worked on. It is worth nothing until it has been running a while, which is why it is on");
 
@@ -1859,6 +1892,10 @@ export class PulsarSettingTab extends PluginSettingTab {
             );
 
         if (settings.history) {
+            if (sittingGapPlacement(settings) === 'history') {
+                this.buildSittingGap(containerEl, settings);
+            }
+
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Sittings kept per note')

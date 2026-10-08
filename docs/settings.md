@@ -32,8 +32,8 @@ looking at a graph rather than from a dialog in front of it:
 
 They are the same settings, not copies: moving one moves the other. Dimmest and
 Brightest are the minimum and maximum opacity, Curve is the fade type and Ages
-is Show note age. Brightest stops at 6 there; the settings go to 12. Sliders
-apply while you drag and are saved once you stop.
+is Show note age. Both run over the same range in either place. Sliders apply
+while you drag and are saved once you stop.
 
 Every slider in the settings has a number box beside it, and a preview at the
 top shows dots at real ages from your own vault at the opacity each would get,
@@ -115,7 +115,6 @@ The tables below follow the settings tab from top to bottom.
 | Show note age | Never, On hover, Whenever titles are shown | On hover | all | The age, written above the node |
 | Age the links too | Off, Match the newer note, Fade between the two | Off | all | Gives each link the age of its ends |
 | Trace what was written together | on / off | off | all | Colours links between notes saved in one sitting |
-| Counts as one sitting | 1 – 240 minutes | 30 | Tracing on | The longest gap between two saves in one sitting |
 | Trail colour | any | blue `#5ac8fa` | Tracing on | |
 | Trail strength | 0.0 – 1.0 | 0.55 | Tracing on | How far a trail goes toward its colour |
 | Group temperature | 0.0 – 1.0 | 0 (off) | all | Pulls each note toward its group's median brightness |
@@ -126,7 +125,7 @@ The tables below follow the settings tab from top to bottom.
 | Measure from the note in the middle | on / off | off | local graph | Brightness by distance in time from the panel's note, either side. Replaces the choice above for brightness |
 | Write every age in a local graph | on / off | off | local graph | Ages with every title in a panel, whatever Show note age says |
 | Hide notes outside a range | on / off | off | all | Takes notes out of the graph rather than dimming them. The open note, a local graph's own note, spotlit notes and pins are kept |
-| Say so on the graph | on / off | on | every graph | A line across the top saying what the graph holds. Shown whether or not the filter is on, but its switch only appears while it is |
+| Say so on the graph | on / off | on | every graph | A line across the top saying what the graph holds. Shown whether or not the filter is on, and so is its switch |
 | Keep | one or more ranges along the curve | the whole range | Filter on | What the filter keeps. **+** adds a range, **−** removes the last |
 | Light the timelapse as it plays | on / off | off | all | Measures each note from the moment the graph's own timelapse has reached |
 | Stays lit for | 1 – 365 days | 60 | Replay on | Days of vault time a note takes to fade behind the wave |
@@ -191,6 +190,7 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Keep a record of when notes were worked on | on / off | on | all | Records each sitting with a note, in the plugin's own folder |
+| Counts as one sitting | 1 – 240 minutes | 30 | History or tracing on | The longest gap between two saves in one sitting. The history counts sittings by it and trails decide what was written together by it. Listed under History while that is on, and with the trails otherwise |
 | Sittings kept per note | 10 – 1000 | 100 | History on | The oldest are dropped past this |
 | Blend in edit intensity | 0.0 – 1.0 | 0 (off) | History on | How much brightness comes from how often you return to a note |
 | Measure intensity | Against the busiest note, By rank, Logarithmic | By rank | History on | How a sitting count becomes a brightness. Does nothing at a blend of 0 |

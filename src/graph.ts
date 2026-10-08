@@ -393,9 +393,10 @@ interface Releasing {
 }
 
 /**
- * How many consecutive passes have to agree before a node is let go. Two,
- * because one is what a fresh assignment produces on its own and says nothing
- * about whether it survived.
+ * How many consecutive passes have to agree before a node is let go. More than
+ * one, because one is what a fresh assignment produces on its own and says
+ * nothing about whether it survived; three frames in a row on which the
+ * renderer left the colour where it was put is when it has stopped moving it.
  */
 const RELEASE_STABLE = 3;
 

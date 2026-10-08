@@ -68,11 +68,13 @@ Both off by default.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in
-sight. Off by default, since it puts something in a part of Obsidian the plugin
-doesn't otherwise touch.
+sight. On by default: it puts something in a part of Obsidian the plugin doesn't
+otherwise touch, which would usually keep it off, but it says what the whole
+plugin is about in four words. Switch it off under **Elsewhere**.
 
-The spotlight paints the single most recently modified note a colour of your
-own, so the thing you touched last is findable at a glance. It's off by default,
+The spotlight paints the most recently modified note a colour of your own, so
+the thing you touched last is findable at a glance. It can cover the last few
+notes instead, up to 25, or everything touched within a window. It's off by default,
 because it's the one feature here that changes a node's colour rather than its
 opacity, and it puts the original colour back the moment the newest note changes,
 you turn it off, or the plugin unloads.
