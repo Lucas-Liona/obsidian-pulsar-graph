@@ -26,13 +26,16 @@ looking at a graph rather than from a dialog in front of it:
 
 | Heading | Controls |
 |---|---|
-| **Nodes** | Dimmest, Brightest, Curve |
+| **Nodes** | Dimmest, Brightest, Curve, Glow, Size by age, Spotlight |
+| **Links** | Age, Trace sittings |
 | **Text** | Title size, Ages |
 | **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
 
 They are the same settings, not copies: moving one moves the other. Dimmest and
-Brightest are the minimum and maximum opacity, Curve is the fade type and Ages
-is Show note age. Both run over the same range in either place. Sliders apply
+Brightest are the minimum and maximum opacity, Curve is the fade type, Glow is
+Neighbour glow, Size by age is Size nodes by age, Spotlight is Spotlight the
+newest note, the links' Age is Age the links too, Trace sittings is Trace what
+was written together, and Ages is Show note age. Both run over the same range in either place. Sliders apply
 while you drag and are saved once you stop.
 
 Every slider in the settings has a number box beside it, and a preview at the
