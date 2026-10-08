@@ -42,16 +42,26 @@ export function isWholeRange(ranges: OpacityRange[]): boolean {
  * Exact rather than approximate: the old axis is a monotonic function of the
  * new one below 1, and everything at or above 1 sat on its last point, which
  * is the top of the curve. A range keeps selecting the same notes.
+ *
+ * Except a range that selected none, which has no exact place on the curve.
+ * It comes out as a point, which parseRanges drops, and a filter left with no
+ * range keeps everything: the curve's line has no stretch guaranteed to hold
+ * no note, and a filter that hides the whole graph is not one anybody kept on
+ * purpose. That is a range lying wholly below the dimmest opacity or above the
+ * brightest, or, with the two set equal, one missing the only opacity there is.
  */
 export function rangeOntoCurve(range: OpacityRange, minOpacity: number, maxOpacity: number): OpacityRange {
     const span = maxOpacity - minOpacity;
-    const move = (value: number): number => {
-        if (value >= 1 || span <= 0) {
-            return value >= 1 ? 1 : value;
-        }
 
-        return Math.min(1, Math.max(0, (value - minOpacity) / span));
-    };
+    // Every note was drawn at the one opacity, so the range kept all of them
+    // or none, and on a curve with no length they all sit at its top. Moved
+    // value by value, a range that kept them all came out short of the top and
+    // kept none.
+    if (span <= 0) {
+        return withinRanges(Math.min(1, minOpacity), [range]) ? { ...WHOLE_RANGE } : { from: 0, to: 0 };
+    }
+
+    const move = (value: number): number => (value >= 1 ? 1 : Math.min(1, Math.max(0, (value - minOpacity) / span)));
 
     return { from: move(range.from), to: move(range.to) };
 }
