@@ -302,11 +302,11 @@ describe('the edit history', () => {
         await unloadPlugin(plugin);
     });
 
-    // Review finding 5. Switching off flushes without waiting, switching on
-    // reads the file at once, and a disk slower than the read hands back the
-    // file from before the flush: its beads replace the newer ones in memory,
-    // and the next write saves that.
-    it.fails('keeps a sitting across switching off and on while the write is still landing (review finding 5)', async () => {
+    // Review finding 5. Switching off flushes without waiting, and switching
+    // on read the file at once: a disk slower than the read handed back the
+    // file from before the flush, its beads replaced the newer ones in memory,
+    // and the next write saved that.
+    it('keeps a sitting across switching off and on while the write is still landing (review finding 5)', async () => {
         const { world, plugin } = await writing();
 
         await switchOffAndOn(plugin, world.adapter);
@@ -314,6 +314,26 @@ describe('the edit history', () => {
 
         expect({ inMemory: plugin.historyCoverage().beads, onDisk: storedHistory(world).sittings }).toEqual({ inMemory: 2, onDisk: { 'a.md': 2 } });
         await unloadPlugin(plugin);
+    });
+
+    // The same race across a reload rather than a switch, and not fixed by
+    // waiting in begin(): the instance reading the file is a new one, and the
+    // write still landing belongs to the instance just unloaded, which nothing
+    // in the new one can wait for. Plausible rather than seen: Obsidian loads
+    // the new instance's code and data.json before this read.
+    it.fails('keeps a sitting across a reload while the last write is still landing', async () => {
+        const { world, plugin } = await writing();
+        const release = world.adapter.hold(/history/);
+
+        plugin.unload();
+        const reloading = loadPlugin(world);
+        await settle();
+        release();
+        const reloaded = await reloading;
+        await wait(10_000);
+
+        expect({ inMemory: reloaded.historyCoverage().beads, onDisk: storedHistory(world).sittings }).toEqual({ inMemory: 2, onDisk: { 'a.md': 2 } });
+        await unloadPlugin(reloaded);
     });
 
     // A pin and a history are both held against a path, so filing a note away
