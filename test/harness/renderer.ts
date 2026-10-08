@@ -559,8 +559,10 @@ export class FakeRenderer implements GraphRenderer {
             }
         }
 
+        const isFresh = new Set(fresh);
+
         for (const node of fresh) {
-            this.place(node, fresh);
+            this.place(node, isFresh);
 
             if (this.graphics) {
                 this.drawNode(node);
@@ -571,9 +573,9 @@ export class FakeRenderer implements GraphRenderer {
     }
 
     /** At the average of the nodes it links to that were already there. */
-    private place(node: FakeNode, fresh: FakeNode[]): void {
+    private place(node: FakeNode, fresh: ReadonlySet<FakeNode>): void {
         const related = [...Object.values(node.forward).map((link) => link.target), ...Object.values(node.reverse).map((link) => link.source)]
-            .filter((other) => !fresh.includes(other));
+            .filter((other) => !fresh.has(other));
 
         if (related.length > 0) {
             node.x = related.reduce((sum, other) => sum + other.x, 0) / related.length;

@@ -16,6 +16,12 @@ for (const size of [1_000, 10_000, 50_000]) {
             store.refresh();
         });
 
+        // What every filter pass and note switch now asks first, with the
+        // store already fresh: it has to cost nothing.
+        bench('refresh, nothing stale', () => {
+            store.refresh();
+        }, { setup: () => store.refresh() });
+
         bench('newest 3 (now)', () => {
             store.newestAmong(mtimes.keys(), 3);
         });

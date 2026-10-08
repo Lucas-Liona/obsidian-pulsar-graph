@@ -117,9 +117,9 @@ describe('a local graph and its centre', () => {
 
     // Review finding 3, as the review first saw it: a reload seemed to fix an
     // emptied panel because the reload left it unfiltered. Attaching to a
-    // graph that is already open refilters through a store nothing has
-    // refreshed yet, so n1.md and n2.md come back, and stay.
-    it.fails('keeps only its centre across a reload while focus is elsewhere (review finding 3)', async () => {
+    // graph that was already open refiltered through a store nothing had
+    // refreshed yet, so n1.md and n2.md came back, and stayed.
+    it('keeps only its centre across a reload while focus is elsewhere (review finding 3)', async () => {
         const world = vault();
         world.workspace.openNote('centre.md');
         const first = await loadPlugin(world, OLD_ONLY);
@@ -153,11 +153,12 @@ describe('the age filter as a graph opens', () => {
     });
 
     // Review finding 3. Plugins load before the layout is restored, so a graph
-    // restored at startup is built through the creator hook while the store
-    // has never been refreshed: every position reads undefined, which keeps
-    // the note. Attaching refilters, but onLayoutReady attaches before
-    // anything refreshes the store, and nothing filters again afterwards.
-    it.fails('filters a graph restored at startup (review finding 3)', async () => {
+    // restored at startup is built through the creator hook before anything
+    // has refreshed the store, and a position never computed reads undefined,
+    // which keeps the note. Attaching refiltered, but before the tab bar's
+    // first paint refreshed the store, and nothing filtered again afterwards:
+    // every note, from the first build on.
+    it('filters a graph restored at startup from its very first build (review finding 3)', async () => {
         const world = vault({ layoutReady: false });
         const plugin = await loadPlugin(world, OLD_ONLY);
 
@@ -165,14 +166,14 @@ describe('the age filter as a graph opens', () => {
         world.workspace.ready();
         await settle();
 
+        expect(restored.renderer.built).toEqual([2]);
         expect(restored.renderer.ids()).toEqual(OLD_NOTES);
         await unloadPlugin(plugin);
     });
 
     // Review finding 3, as a reload or an update finds it: the graph is already
-    // open, attaching refilters through a store not yet refreshed, and the
-    // graph keeps every note.
-    it.fails('filters a graph that was already open when Pulsar loaded (review finding 3)', async () => {
+    // open, and attaching refiltered through a store not yet refreshed.
+    it('filters a graph that was already open when Pulsar loaded (review finding 3)', async () => {
         const world = vault();
         const global = world.workspace.openGraph();
         const plugin = await loadPlugin(world, OLD_ONLY);
@@ -183,9 +184,9 @@ describe('the age filter as a graph opens', () => {
     });
 
     // Review finding 3, as the review harness found it. With the tab bar off
-    // nothing refreshes the store before a new graph's first build or its
+    // nothing refreshed the store before a new graph's first build or its
     // attach, and a later switch between two kept notes never refilters.
-    it.fails('filters a graph opened with the tab bar switched off (review finding 3)', async () => {
+    it('filters a graph opened with the tab bar switched off (review finding 3)', async () => {
         const world = vault();
         world.workspace.openNote('other.md');
         const plugin = await loadPlugin(world, { ...OLD_ONLY, tabBar: false });

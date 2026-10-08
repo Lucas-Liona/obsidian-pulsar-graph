@@ -1186,6 +1186,7 @@ export default class PulsarGraphPlugin extends Plugin {
      * change what the filter keeps.
      */
     private keptWithoutOpen(): (path: string) => boolean {
+        this.freshForFilter();
         const exempt = this.exemptBesidesOpen();
         const ranges = this.settings.filterRanges;
 
@@ -1689,15 +1690,39 @@ export default class PulsarGraphPlugin extends Plugin {
                     this.applyTo(renderer);
                 }
             },
-            (supplied) => filterGraphData(supplied, {
-                ranges: this.settings.filterRanges,
-                strengthOf: (path) => (this.settings.filterEnabled ? this.filterPosition(path) : undefined),
-                keep: this.exemptFromFilter(centre()),
-                counted: (dropped) => {
-                    cut.dropped = dropped;
-                }
-            })
+            (supplied) => {
+                this.freshForFilter();
+
+                return filterGraphData(supplied, {
+                    ranges: this.settings.filterRanges,
+                    strengthOf: (path) => (this.settings.filterEnabled ? this.filterPosition(path) : undefined),
+                    keep: this.exemptFromFilter(centre()),
+                    counted: (dropped) => {
+                        cut.dropped = dropped;
+                    }
+                });
+            }
         );
+    }
+
+    /**
+     * Brings the store up to date before anything filters against it.
+     *
+     * The store computes opacities lazily, and a position it has never
+     * computed reads undefined, which the filter keeps. A graph restored at
+     * startup is built before anything has refreshed it, and attaching
+     * refilters before the tab bar's first paint — which was the thing that
+     * happened to refresh it — so every such graph kept every note, and kept
+     * them until something filtered again. With the tab bar off, so did every
+     * graph opened afterwards.
+     *
+     * Only while a filter is on, and free when the store is already fresh,
+     * which it is for every build after the first.
+     */
+    private freshForFilter(): void {
+        if (this.settings.filterEnabled && !isWholeRange(this.settings.filterRanges)) {
+            this.store.refresh();
+        }
     }
 
     /**
