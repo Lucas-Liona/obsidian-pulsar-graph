@@ -330,6 +330,15 @@ export interface OpacityOptions {
     /** 0 leaves the node's own colour alone, 1 replaces it outright. */
     pinStrength: number;
     /**
+     * Whether the theme is a light one. Above full alpha the renderer lightens
+     * a circle channel by channel, which on a dark background reads as
+     * brighter and on a light one is a step toward the background — a note at
+     * 3 was drawn white on white. So on a light theme a node past 1 is drawn
+     * at 1 and deepened toward black instead, the mirror of what the renderer
+     * does on a dark one.
+     */
+    lightTheme: boolean;
+    /**
      * Every node this plugin has painted over, and the colour each had before.
      *
      * Node colour is the only place a graph group's colour lives, so anything
@@ -575,15 +584,6 @@ function* neighboursOf(node: GraphNode): Generator<string> {
 export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, options: OpacityOptions): Map<string, number> | null {
     const fallbackRgb = renderer.colors?.fill?.rgb ?? FALLBACK_COLOR_RGB;
     const replaying = options.replayAt !== null;
-
-    // Nothing of ours is painted during a replay. The spotlight points at the
-    // vault's newest note, which has not been written yet at the moment being
-    // shown, and a pin is a statement about today. Both would be the present
-    // intruding on a picture of the past.
-    const wanted = replaying ? new Map<string, WantedPaint>() : wantedPaint(renderer, options);
-
-    releasePaint(renderer, options.paint, wanted);
-
     const own = new Map<string, number>();
 
     if (options.replayAt !== null) {
@@ -639,6 +639,24 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     // is measured on.
     const held = replaying ? (pooled ?? own) : holdPins(pooled ?? own, options);
 
+    // Nothing of ours is painted during a replay. The spotlight points at the
+    // vault's newest note, which has not been written yet at the moment being
+    // shown, and a pin is a statement about today. Both would be the present
+    // intruding on a picture of the past. Deepening is neither: it is how a
+    // light theme draws what a dark one would draw past full alpha, so a
+    // replay's wave gets it too.
+    const wanted = replaying ? new Map<string, WantedPaint>() : wantedPaint(renderer, options);
+
+    if (options.lightTheme) {
+        for (const [path, opacity] of held) {
+            if (opacity > 1 && !wanted.has(path) && renderer.nodeLookup[path]) {
+                wanted.set(path, { deepen: opacity });
+            }
+        }
+    }
+
+    releasePaint(renderer, options.paint, wanted);
+
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
         const opacity = held.get(path);
         if (opacity === undefined) {
@@ -651,13 +669,16 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
         if (target !== undefined) {
             const kept = options.paint.painted.get(path);
             const originalRgb = kept?.originalRgb ?? currentRgb;
-            const paintedRgb = blendRgb(originalRgb, target.rgb, target.strength);
+            const paintedRgb = 'deepen' in target
+                ? deepenRgb(originalRgb, target.deepen)
+                : blendRgb(originalRgb, target.rgb, target.strength);
 
             // Never past 1. The renderer multiplies a circle's colour by its
             // alpha and clamps each channel, so above 1 every channel is pushed
             // up separately: #4dff91 at 1.85 was drawn #8effff. Grey only gets
             // whiter, which is what a high maximum is for, but a colour someone
-            // picked comes out a different colour.
+            // picked comes out a different colour. A deepened node has had the
+            // strength past 1 put into its colour already.
             options.paint.painted.set(path, { originalRgb, paintedRgb });
             node.color = { a: Math.min(opacity, 1), rgb: paintedRgb };
             continue;
@@ -673,11 +694,11 @@ export function applyOpacity(renderer: GraphRenderer, store: OpacityStore, optio
     return held;
 }
 
-/** One colour a node is to be painted, and how much of it to use. */
-interface WantedPaint {
-    rgb: number;
-    strength: number;
-}
+/**
+ * One colour a node is to be painted: a colour of ours and how much of it to
+ * use, or how far past full strength a light theme deepens the node's own.
+ */
+type WantedPaint = { rgb: number; strength: number } | { deepen: number };
 
 /**
  * Which nodes get a colour of ours this pass, and what.
@@ -749,10 +770,16 @@ function holdPins(drawn: Map<string, number>, options: OpacityOptions): Map<stri
  * feedback is worth more than the spotlight.
  */
 export function holdPaintTint(renderer: GraphRenderer, paint: PaintState): void {
+    // Asked once rather than per node: on a light theme every note past full
+    // strength is painted, which is thousands of them in a large vault.
+    const hovered = renderer.getHighlightNode?.() ?? null;
+
     for (const [path, marked] of paint.painted) {
         const node = renderer.nodeLookup[path];
 
-        if (node?.circle && renderer.getHighlightNode?.() !== node) {
+        // Written only when it has moved. The tint is a setter on the
+        // renderer's side, and a node that has landed has nothing to correct.
+        if (node?.circle && node !== hovered && node.circle.tint !== marked.paintedRgb) {
             node.circle.tint = marked.paintedRgb;
         }
     }
@@ -807,6 +834,22 @@ export function settleReleases(renderer: GraphRenderer, paint: PaintState): void
             paint.releasing.delete(path);
         }
     }
+}
+
+/**
+ * What the renderer does to a colour past full alpha on a dark background,
+ * mirrored for a light one: there each channel is multiplied and clamped, so
+ * grey climbs to white; here each channel's distance from white is, so grey
+ * sinks to black. Moonstone's #5c5c5c is itself at 1, #0a0a0a at 1.5 and black
+ * from 2.
+ */
+export function deepenRgb(rgb: number, strength: number): number {
+    const sink = (shift: number): number => {
+        const channel = (rgb >> shift) & 0xff;
+        return 255 - Math.min(255, Math.round((255 - channel) * strength));
+    };
+
+    return (sink(16) << 16) | (sink(8) << 8) | sink(0);
 }
 
 /** Mixes two packed colours channel by channel. */

@@ -457,6 +457,10 @@ export default class PulsarGraphPlugin extends Plugin {
 
         running.registerInterval(window.setInterval(() => this.updateStatusBar(), STATUS_REFRESH_MS));
 
+        // A theme switch changes how a node past full strength is drawn:
+        // lightened on a dark background, deepened on a light one.
+        running.registerEvent(this.app.workspace.on('css-change', () => this.syncRenderers()));
+
         // Graph views come and go, and each brings its own renderer to hook.
         running.registerEvent(this.app.workspace.on('layout-change', () => {
             this.syncRenderers();
@@ -1996,6 +2000,15 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
+     * Whether the theme is a light one. `isDarkMode` is Obsidian's own answer
+     * from 1.10; before that, the class it puts on the body says the same.
+     */
+    private lightTheme(): boolean {
+        const app = this.app as { isDarkMode?: () => boolean };
+        return app.isDarkMode ? !app.isDarkMode() : activeDocument.body.hasClass('theme-light');
+    }
+
+    /**
      * Repaints a graph at the end of what is running now rather than at once.
      * A note switch asks as the active leaf changes, and then Obsidian rebuilds
      * the graph around the note just opened, which wipes the paint and asks
@@ -2095,7 +2108,8 @@ export default class PulsarGraphPlugin extends Plugin {
             anchorPath,
             replayAt,
             replayTrailDays: this.settings.replayTrailDays,
-            spreadFloorHours: this.settings.spreadFloorHours
+            spreadFloorHours: this.settings.spreadFloorHours,
+            lightTheme: this.lightTheme()
         });
 
         applySizes(renderer, {

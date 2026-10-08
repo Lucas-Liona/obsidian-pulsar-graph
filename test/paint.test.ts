@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
-import { applyOpacity, GraphNode, GraphRenderer, newPaint, OpacityOptions } from '../src/graph';
+import { applyOpacity, deepenRgb, GraphNode, GraphRenderer, newPaint, OpacityOptions } from '../src/graph';
 import { OpacityStore } from '../src/opacity-store';
 import { DEFAULT_SETTINGS } from '../src/settings';
 
@@ -45,6 +45,7 @@ function options(overrides: Partial<OpacityOptions>): OpacityOptions {
         pinRgb: PURPLE,
         pinStrength: 1,
         paint: newPaint(),
+        lightTheme: false,
         ...overrides,
     };
 }
@@ -78,6 +79,45 @@ describe('painted colours', () => {
         expect(node('old.md').color).toEqual({ a: opacity, rgb: GREEN });
     });
 
+    // On a light theme an alpha above 1 is a step toward the background: at the
+    // shipped maximum of 3 the newest note was drawn white on white.
+    it('deepens a node past full strength on a light theme, at alpha 1, and leaves what it reports alone', () => {
+        const { renderer, store, node } = setUp();
+
+        const drawn = applyOpacity(renderer, store, options({ lightTheme: true }));
+        const middle = drawn?.get('middle.md') ?? NaN;
+
+        expect(drawn?.get('new.md')).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(node('new.md').color).toEqual({ a: 1, rgb: 0x000000 });
+        expect(node('middle.md').color).toEqual({ a: 1, rgb: deepenRgb(GREY, middle) });
+        expect(node('middle.md').circle?.tint).toBe(deepenRgb(GREY, middle));
+        expect(node('old.md').color).toEqual({ a: drawn?.get('old.md'), rgb: GREY });
+    });
+
+    it('lets the spotlight win over deepening on a light theme', () => {
+        const { renderer, store, node } = setUp();
+
+        applyOpacity(renderer, store, options({ lightTheme: true, spotlit: ['new.md'] }));
+
+        expect(node('new.md').color).toEqual({ a: 1, rgb: GREEN });
+    });
+
+    // The way back is upward, which the renderer's easing stalls on, so a
+    // deepened node goes through the same release as a spotlight moving on.
+    it('hands a deepened node its own colour back when the theme turns dark', () => {
+        const { renderer, store, node } = setUp();
+        const paint = newPaint();
+
+        applyOpacity(renderer, store, options({ lightTheme: true, paint }));
+        applyOpacity(renderer, store, options({ lightTheme: false, paint }));
+
+        expect(paint.painted.size).toBe(0);
+        expect([...paint.releasing.keys()].sort()).toEqual(['middle.md', 'new.md']);
+        expect(node('new.md').color?.rgb).toBe(GREY);
+        expect(node('new.md').circle?.tint).toBe(GREY);
+        expect(node('new.md').color?.a).toBe(DEFAULT_SETTINGS.maxOpacity);
+    });
+
     it('still lets an unpainted note past 1, which is what a high maximum is for', () => {
         const { renderer, store, node } = setUp();
 
@@ -85,5 +125,20 @@ describe('painted colours', () => {
 
         expect(node('new.md').color?.a).toBeGreaterThan(1);
         expect(node('new.md').color?.rgb).toBe(GREY);
+    });
+});
+
+describe('deepenRgb', () => {
+    // The mirror of the renderer past full alpha on a dark background: each
+    // channel's distance from white is multiplied rather than the channel.
+    it('leaves a colour itself at 1 and sinks it to black', () => {
+        expect(deepenRgb(0x5c5c5c, 1)).toBe(0x5c5c5c);
+        expect(deepenRgb(0x5c5c5c, 1.5)).toBe(0x0a0a0a);
+        expect(deepenRgb(0x5c5c5c, 2)).toBe(0x000000);
+        expect(deepenRgb(0x5c5c5c, 3)).toBe(0x000000);
+    });
+
+    it('works on each channel apart, as a group colour needs', () => {
+        expect(deepenRgb(0xe05050, 1.5)).toBe(0xd00000);
     });
 });
