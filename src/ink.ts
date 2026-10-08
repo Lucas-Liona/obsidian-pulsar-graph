@@ -37,7 +37,6 @@ const options: InkOptions = { enabled: false, minutes: 5, mode: 'colour' };
 /** The custom properties the stylesheet draws fresh writing with. */
 export interface InkColours {
     '--pulsar-ink': string;
-    '--pulsar-ink-pin': string;
     '--pulsar-ink-dim': string;
 }
 
@@ -46,18 +45,8 @@ let colours: InkColours | null = null;
 /** Moves every mark one shade colder. */
 const cool = StateEffect.define<null>();
 
-/**
- * Drops every mark that is cooling, so whatever is on the page now counts as
- * old. Pins stay: they were set on purpose, and cooling is about what was
- * written, not about what was marked.
- */
+/** Drops every mark, so whatever is on the page now counts as old. */
 const forget = StateEffect.define<null>();
-
-/** Drops every pin, which is the one thing cooling leaves alone. */
-const unpin = StateEffect.define<null>();
-
-/** Holds a stretch at full strength until it is cleared. */
-const pin = StateEffect.define<{ from: number; to: number }>();
 
 /**
  * Nothing in the document changed, but the settings did.
@@ -69,21 +58,8 @@ const pin = StateEffect.define<{ from: number; to: number }>();
  */
 const refresh = StateEffect.define<null>();
 
-/**
- * A stretch marked to come back to.
- *
- * It does not cool. A pin answers "deal with this", and a marker that quietly
- * fades is one you will miss — which also makes it the clear opposite of fresh
- * writing: what cools is new, what does not is deliberate.
- */
-const pinMark = Decoration.mark({ class: 'pulsar-ink-pin', pinned: true });
-
-/** Everything on screen that is neither fresh nor pinned, for the dim mode. */
+/** Everything on screen that is not fresh, for the dim mode. */
 const coldMark = Decoration.mark({ class: 'pulsar-ink-cold' });
-
-function isPin(decoration: Decoration): boolean {
-    return (decoration.spec as { pinned?: boolean }).pinned === true;
-}
 
 /**
  * One decoration per shade, reused.
@@ -106,11 +82,6 @@ function cooled(set: DecorationSet): DecorationSet {
     const next: Range<Decoration>[] = [];
 
     for (const iter = set.iter(); iter.value !== null; iter.next()) {
-        if (isPin(iter.value)) {
-            next.push(iter.value.range(iter.from, iter.to));
-            continue;
-        }
-
         const shade = shadeOf(iter.value) + 1;
 
         if (shade < STEPS) {
@@ -136,34 +107,11 @@ const inkField = StateField.define<DecorationSet>({
     create: () => Decoration.none,
 
     update(set, transaction) {
+        if (transaction.effects.some((effect) => effect.is(forget))) {
+            return Decoration.none;
+        }
+
         set = set.map(transaction.changes);
-
-        for (const effect of transaction.effects) {
-            if (effect.is(forget)) {
-                return set.update({ filter: (_from, _to, value) => isPin(value) });
-            }
-
-            if (effect.is(unpin)) {
-                set = set.update({ filter: (_from, _to, value) => !isPin(value) });
-            }
-        }
-
-        for (const effect of transaction.effects) {
-            if (!effect.is(pin)) {
-                continue;
-            }
-
-            const { from, to } = effect.value;
-
-            // Anything already lit under the pin is dropped rather than left
-            // nested inside it, since the innermost span wins and a pin whose
-            // middle is a different colour reads as two marks.
-            set = set.update({
-                filter: (at, until, value) => isPin(value) || until <= from || at >= to,
-                add: [pinMark.range(from, to)],
-                sort: true
-            });
-        }
 
         if (transaction.effects.some((effect) => effect.is(cool))) {
             set = cooled(set);
@@ -334,7 +282,7 @@ const dimmer = ViewPlugin.fromClass(
 let listener: ((view: EditorView) => void) | null = null;
 
 /**
- * Reports changes to the marks: writing, a cooling step, a pin. A field that
+ * Reports changes to the marks: writing, or a cooling step. A field that
  * did not change is the same object afterwards, so everything else — moving
  * the cursor, scrolling — costs one comparison.
  */
@@ -367,7 +315,7 @@ const painter = ViewPlugin.define((view) => {
 });
 
 function paintColours(element: HTMLElement, using: InkColours | null = colours): void {
-    for (const property of ['--pulsar-ink', '--pulsar-ink-pin', '--pulsar-ink-dim'] as const) {
+    for (const property of ['--pulsar-ink', '--pulsar-ink-dim'] as const) {
         if (using) {
             element.style.setProperty(property, using[property]);
         } else {
@@ -407,69 +355,25 @@ export function setInkListener(next: ((view: EditorView) => void) | null): void 
     listener = next;
 }
 
-/** Marks a stretch to come back to. Returns false when there was nothing to mark. */
-export function pinInk(editor: EditorView): boolean {
-    const { state } = editor;
-
-    if (state.field(inkField, false) === undefined) {
-        return false;
-    }
-
-    const selection = state.selection.main;
-    let from = selection.from;
-    let to = selection.to;
-
-    if (from === to) {
-        // Nothing selected: the lit stretch under the cursor, or failing that
-        // the line, which is what makes this usable on text you did not just
-        // write.
-        let found = false;
-
-        state.field(inkField).between(from, to, (start, end) => {
-            from = start;
-            to = end;
-            found = true;
-        });
-
-        if (!found) {
-            const line = state.doc.lineAt(selection.head);
-            from = line.from;
-            to = line.to;
-        }
-    }
-
-    if (to <= from) {
-        return false;
-    }
-
-    editor.dispatch({ effects: pin.of({ from, to }) });
-    return true;
-}
-
 /**
- * How many characters still look lit, and how many are pinned.
+ * How many characters still look lit.
  *
  * The last shade is left out: it is a step away from ordinary text and reads
  * as ordinary text, so counting it reported writing nobody could see.
  */
-export function inkCounts(editor: EditorView): { lit: number; pinned: number } {
+export function inkLit(editor: EditorView): number {
     const set = editor.state.field(inkField, false);
     let lit = 0;
-    let pinned = 0;
 
     if (set) {
         for (const iter = set.iter(); iter.value !== null; iter.next()) {
-            const width = iter.to - iter.from;
-
-            if (isPin(iter.value)) {
-                pinned += width;
-            } else if (shadeOf(iter.value) < STEPS - 1) {
-                lit += width;
+            if (shadeOf(iter.value) < STEPS - 1) {
+                lit += iter.to - iter.from;
             }
         }
     }
 
-    return { lit, pinned };
+    return lit;
 }
 
 /**
@@ -499,7 +403,7 @@ export function setInkOptions(next: InkOptions, editors: EditorView[]): void {
     }
 }
 
-/** Cools every editor at once. Pins stay. */
+/** Cools every editor at once. */
 export function forgetInk(editors: EditorView[]): void {
     for (const editor of editors) {
         if (editor.state.field(inkField, false) !== undefined) {
@@ -508,18 +412,7 @@ export function forgetInk(editors: EditorView[]): void {
     }
 }
 
-/** Cools one editor, for a count that is only about that note. Pins stay. */
+/** Cools one editor, for a count that is only about that note. */
 export function coolInk(editor: EditorView): void {
     forgetInk([editor]);
 }
-
-/** Takes every pin out of one editor. Returns false when it had none. */
-export function unpinInk(editor: EditorView): boolean {
-    if (inkCounts(editor).pinned === 0) {
-        return false;
-    }
-
-    editor.dispatch({ effects: unpin.of(null) });
-    return true;
-}
-

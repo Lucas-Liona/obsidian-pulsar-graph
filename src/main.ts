@@ -12,7 +12,7 @@ import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
-import { coolInk, forgetInk, inkCounts, inkExtension, pinInk, setInkColours, setInkListener, setInkOptions, unpinInk } from './ink';
+import { coolInk, forgetInk, inkExtension, inkLit, setInkColours, setInkListener, setInkOptions } from './ink';
 import { LinkDotSource, LinkLook, linkDotsExtension, ReadingDots, refreshLinkDots } from './link-dots';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
@@ -248,39 +248,6 @@ export default class PulsarGraphPlugin extends Plugin {
             id: 'cool-fresh-writing',
             name: 'Cool fresh writing',
             callback: () => this.forgetInk()
-        });
-
-        this.addCommand({
-            id: 'pin-writing',
-            name: 'Pin this writing',
-            editorCallback: (_editor, view) => {
-                const editor = (view as { editor?: { cm?: EditorView } }).editor?.cm;
-
-                if (!this.settings.enabled || !this.settings.ink) {
-                    new Notice('Fresh writing is switched off.');
-                    return;
-                }
-
-                if (editor && !pinInk(editor)) {
-                    new Notice('Nothing here to pin.');
-                }
-
-                this.updateStatusBar();
-            }
-        });
-
-        this.addCommand({
-            id: 'unpin-writing',
-            name: 'Unpin writing in this note',
-            editorCallback: (_editor, view) => {
-                const editor = (view as { editor?: { cm?: EditorView } }).editor?.cm;
-
-                if (editor && !unpinInk(editor)) {
-                    new Notice('Nothing pinned in this note.');
-                }
-
-                this.updateStatusBar();
-            }
         });
 
         this.addCommand({
@@ -847,7 +814,6 @@ export default class PulsarGraphPlugin extends Plugin {
     private syncInk(): void {
         setInkColours({
             '--pulsar-ink': this.settings.inkColor,
-            '--pulsar-ink-pin': this.settings.inkPinColor,
             '--pulsar-ink-dim': `${Math.round((1 - this.settings.inkDim) * 100)}%`
         }, this.editors());
 
@@ -1569,45 +1535,12 @@ export default class PulsarGraphPlugin extends Plugin {
             this.updateInkItem();
         });
 
-        item.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-
-            const editor = this.activeEditor();
-            if (!editor) {
-                return;
-            }
-
-            const { lit, pinned } = inkCounts(editor);
-            const menu = new Menu();
-
-            menu.addItem((entry) => entry
-                .setTitle('Cool this note\'s writing')
-                .setIcon('paint-bucket')
-                .setDisabled(lit === 0)
-                .onClick(() => {
-                    coolInk(editor);
-                    this.updateInkItem();
-                }));
-
-            menu.addItem((entry) => entry
-                .setTitle('Unpin this note\'s writing')
-                .setIcon('pin-off')
-                .setDisabled(pinned === 0)
-                .onClick(() => {
-                    unpinInk(editor);
-                    this.updateInkItem();
-                }));
-
-            menu.showAtMouseEvent(event);
-        });
-
         return item;
     }
 
     /**
      * Only there while something in the open note is lit, so the status bar
-     * is not carrying a permanent zero. The pins are counted in the tooltip:
-     * they do not cool, so they are not what the number is tracking.
+     * is not carrying a permanent zero.
      */
     private updateInkItem(): void {
         const item = this.inkItemEl;
@@ -1616,20 +1549,15 @@ export default class PulsarGraphPlugin extends Plugin {
         }
 
         const editor = this.settings.ink ? this.activeEditor() : null;
-        const { lit, pinned } = editor ? inkCounts(editor) : { lit: 0, pinned: 0 };
+        const lit = editor ? inkLit(editor) : 0;
 
-        if (lit === 0 && pinned === 0) {
+        if (lit === 0) {
             item.hide();
             return;
         }
 
-        const characters = (count: number): string => `${count} ${count === 1 ? 'character' : 'characters'}`;
-
-        // Pins alone leave the bucket and no number, since none of it is cooling.
-        item.find('.pulsar-graph-status-ink-count')?.setText(lit > 0 ? String(lit) : '');
-        item.setAttr('aria-label', lit > 0
-            ? `${characters(lit)} of fresh writing${pinned > 0 ? `, ${pinned} pinned` : ''}. Click to cool this note's writing, right-click for more`
-            : `${characters(pinned)} pinned. Right-click to unpin`);
+        item.find('.pulsar-graph-status-ink-count')?.setText(String(lit));
+        item.setAttr('aria-label', `${lit} ${lit === 1 ? 'character' : 'characters'} of fresh writing. Click to cool this note's writing`);
         item.show();
     }
 

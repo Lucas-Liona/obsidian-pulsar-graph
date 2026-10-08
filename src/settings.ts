@@ -142,7 +142,6 @@ export interface PulsarGraphSettings {
     inkMode: InkMode;
     inkMinutes: number;
     inkColor: string;
-    inkPinColor: string;
     inkDim: number;
     nodeSizeByAge: boolean;
     nodeSizeSmallest: number;
@@ -283,7 +282,6 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     inkMode: 'colour',
     inkMinutes: 5,
     inkColor: '#ff7a45',
-    inkPinColor: '#ffc53d',
     inkDim: 0.45,
     nodeSizeByAge: false,
     nodeSizeSmallest: 0.7,
@@ -611,7 +609,6 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         saved: parseSaved(data.saved),
         ink: parseBoolean(data.ink, DEFAULT_SETTINGS.ink),
         inkMode: INK_MODES.find((mode) => mode === data.inkMode) ?? DEFAULT_SETTINGS.inkMode,
-        inkPinColor: parseColor(data.inkPinColor, DEFAULT_SETTINGS.inkPinColor),
         inkDim: clamp(parseNumber(data.inkDim, DEFAULT_SETTINGS.inkDim), INK_DIM_RANGE.lowest, INK_DIM_RANGE.highest),
         inkMinutes: clamp(parseNumber(data.inkMinutes, DEFAULT_SETTINGS.inkMinutes), INK_MINUTES.lowest, INK_MINUTES.highest),
         inkColor: parseColor(data.inkColor, DEFAULT_SETTINGS.inkColor),
@@ -987,7 +984,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             .setName('Unpin every note')
             .setDesc(pinned === 0
                 ? 'Nothing is pinned'
-                : `${pinned} ${pinned === 1 ? 'note is' : 'notes are'} pinned in the graph. Pinned writing in a note is separate, and has a command of its own`)
+                : `${pinned} ${pinned === 1 ? 'note is' : 'notes are'} pinned in the graph`)
             .addButton((button) => {
                 button.setButtonText('Unpin all').setWarning().setDisabled(pinned === 0);
                 button.onClick(confirmTwice(
@@ -1859,19 +1856,8 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName('Pinned colour')
-                .setDesc('What a stretch you have pinned is drawn in. A pin does not cool — it is a marker rather than a timestamp, and one that faded is one you would miss')
-                .addColorPicker((picker) => picker
-                    .setValue(settings.inkPinColor)
-                    .onChange(async (value) => {
-                        settings.inkPinColor = value;
-                        await this.plugin.saveSettings();
-                    })
-                );
-
-            new Setting(containerEl)
                 .setName('Start again')
-                .setDesc('Cools every open note at once, so what is on the page counts as old and the next thing you write stands on its own. Pinned writing stays pinned. Also a command')
+                .setDesc('Cools every open note at once, so what is on the page counts as old and the next thing you write stands on its own. Also a command')
                 .addButton((button) => button
                     .setButtonText('Cool it all')
                     .onClick(() => this.plugin.forgetInk())

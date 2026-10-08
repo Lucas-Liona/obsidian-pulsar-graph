@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Removed
+
+- **Pinned writing.** *Pin this writing*, *Unpin writing in this note* and the
+  *Pinned colour* setting are gone, along with the status bar's right-click
+  menu, which only existed to unpin. A pin lived in the open editor alone and
+  was lost when the note closed, and Obsidian's own highlighting
+  (`==like this==`) marks text to come back to better: it is saved in the
+  note and can be searched. Pinning a note in the graph is unchanged. A hotkey
+  set on either command is dropped with it.
+
 ### Changed
 
 - **Fresh writing can cool in as little as a second**, and still over as long
