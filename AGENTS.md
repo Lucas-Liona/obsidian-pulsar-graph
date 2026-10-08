@@ -31,6 +31,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `link-dots.ts` | The dot after each link in a note, in editing and reading view |
 | `hover.ts` | The per-renderer hover hook |
 | `age.ts` | A timestamp into words |
+| `duration.ts` | Round durations for a slider that runs from seconds to hours, and where its unit changes |
 | `pins.ts` | The notes held bright whatever their dates say |
 | `history.ts` | The edit history: sittings per note, in `history.json` and its backup |
 | `file-recovery.ts` | Core File Recovery's snapshot times, read as earlier history; never their contents |

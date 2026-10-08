@@ -450,8 +450,9 @@
  * the newest edit, which is the right answer. It also means old marks never have
  * to be clipped against new ones.
  */
+/* As long as one shade lasts, up to 1.5s; set on each editor from "cools over". */
 .pulsar-ink {
-	transition: color 1.5s linear;
+	transition: color var(--pulsar-ink-ease, 1.5s) linear;
 }
 
 .pulsar-ink-0 {
@@ -753,4 +754,71 @@
 /* The first setting inside a container has the container's own line above it. */
 .pulsar-graph-section-body .setting-item:first-of-type {
 	border-top: none;
+}
+
+/*
+ * A duration slider: one position per round value, from seconds to hours, so
+ * the thumb's position is an index and not an amount. A mark crosses the track
+ * where the unit changes, and the unit's name sits under its own stretch.
+ *
+ * `--pulsar-at` is a fraction of the way along the track. A thumb's centre
+ * never reaches the ends of the input — it stops half a thumb short of each —
+ * so a fraction is placed over the span the centre actually travels.
+ */
+.pulsar-duration {
+	display: flex;
+	flex-direction: column;
+	width: 220px;
+}
+
+.pulsar-duration-track,
+.pulsar-duration-units {
+	position: relative;
+}
+
+.pulsar-duration-track {
+	display: flex;
+	align-items: center;
+}
+
+.pulsar-duration-track input[type='range'] {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	margin: 0;
+}
+
+.pulsar-duration-units {
+	height: 1.2em;
+}
+
+.pulsar-duration-mark,
+.pulsar-duration-unit {
+	position: absolute;
+	left: calc(var(--slider-thumb-width, 18px) / 2 + var(--pulsar-at) * (100% - var(--slider-thumb-width, 18px)));
+	pointer-events: none;
+}
+
+.pulsar-duration-mark {
+	top: 50%;
+	width: 2px;
+	height: 12px;
+	transform: translate(-50%, -50%);
+	border-radius: 1px;
+	background-color: var(--text-faint);
+}
+
+.pulsar-duration-unit {
+	top: 0;
+	transform: translateX(-50%);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.2;
+}
+
+.pulsar-duration-readout {
+	min-width: 4.5em;
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
 }

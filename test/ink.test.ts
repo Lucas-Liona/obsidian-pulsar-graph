@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorSelection, EditorState, TransactionSpec } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
-import { coolInk, forgetInk, InkColours, inkCounts, inkExtension, pinInk, setInkColours, setInkOptions, unpinInk } from '../src/ink';
+import { EditorView, ViewUpdate } from '@codemirror/view';
+import { coolInk, forgetInk, InkClock, InkColours, inkCounts, inkExtension, pinInk, setInkColours, setInkOptions, unpinInk } from '../src/ink';
 
 /**
  * Just enough of an editor for the functions under test, which only read its
@@ -149,5 +149,107 @@ describe('fresh writing colours', () => {
         setInkColours(null, [view]);
 
         expect(style.size).toBe(0);
+    });
+});
+
+describe('fresh writing, cooling', () => {
+    const SECOND = 1 / 60;
+
+    afterEach(() => {
+        setInkOptions({ enabled: false, minutes: 5, mode: 'colour' }, []);
+        vi.useRealTimers();
+    });
+
+    /**
+     * An editor with its clock running: the clock's window is the test's own,
+     * so fake time reaches it, and every dispatch is handed to it as an update
+     * the way CodeMirror would.
+     */
+    function clocked(minutes: number) {
+        vi.useFakeTimers();
+        setInkOptions({ enabled: true, minutes, mode: 'colour' }, []);
+
+        const style = new Map<string, string>();
+        let clock: InkClock | undefined;
+        const fake = {
+            state: EditorState.create({ doc: '', extensions: inkExtension() }),
+            dom: {
+                win: window,
+                style: {
+                    setProperty: (name: string, value: string) => style.set(name, value),
+                    removeProperty: (name: string) => style.delete(name)
+                }
+            },
+            dispatch(spec: TransactionSpec) {
+                const transaction = fake.state.update(spec);
+                fake.state = transaction.state;
+                clock?.update({ docChanged: transaction.docChanged, transactions: [transaction] } as unknown as ViewUpdate);
+            }
+        };
+        const view = fake as unknown as EditorView;
+        clock = new InkClock(view);
+
+        return { view, clock, style };
+    }
+
+    // With each shade floored at a second, as it was while a minute was the
+    // shortest setting, this took eight.
+    it('cools a second of writing in a second', () => {
+        const { view } = clocked(SECOND);
+        type(view, 'flash');
+
+        vi.advanceTimersByTime(500);
+        expect(inkCounts(view).lit).toBe(5);
+
+        vi.advanceTimersByTime(500);
+        expect(inkCounts(view).lit).toBe(0);
+    });
+
+    it('stops its clock once nothing is left to cool', () => {
+        const { view } = clocked(SECOND);
+        type(view, 'flash');
+        expect(vi.getTimerCount()).toBe(1);
+
+        vi.advanceTimersByTime(1000);
+
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('runs no clock in a note nobody is writing in', () => {
+        clocked(SECOND);
+
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('stops its clock when the editor goes', () => {
+        const { view, clock } = clocked(SECOND);
+        type(view, 'flash');
+
+        clock.destroy();
+
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    // The tick length is fixed when the clock starts; a new one has to replace it.
+    it('starts again at the new pace when cools over changes', () => {
+        const { view } = clocked(240);
+        type(view, 'slow');
+
+        setInkOptions({ enabled: true, minutes: SECOND, mode: 'colour' }, [view]);
+        vi.advanceTimersByTime(1000);
+
+        expect(inkCounts(view).lit).toBe(0);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    // Easing for longer than a shade lasts would leave a second's writing lit after it was dropped.
+    it('eases each shade for no longer than it lasts', () => {
+        const { view, style } = clocked(5);
+
+        setInkOptions({ enabled: true, minutes: 5, mode: 'colour' }, [view]);
+        expect(style.get('--pulsar-ink-ease')).toBe('1500ms');
+
+        setInkOptions({ enabled: true, minutes: SECOND, mode: 'colour' }, [view]);
+        expect(style.get('--pulsar-ink-ease')).toBe('125ms');
     });
 });

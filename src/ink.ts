@@ -20,7 +20,10 @@ export type InkMode = 'colour' | 'dim';
 
 export interface InkOptions {
     enabled: boolean;
-    /** Minutes for fresh writing to cool all the way back to ordinary text. */
+    /**
+     * Minutes for fresh writing to cool all the way back to ordinary text. A
+     * fraction for anything under a minute, down to a second.
+     */
     minutes: number;
     mode: InkMode;
 }
@@ -191,60 +194,84 @@ const inkField = StateField.define<DecorationSet>({
 });
 
 /**
+ * The shortest a shade may last. A second's cooling is eight shades of 125 ms,
+ * so this is only reached by a stored value below anything the slider offers.
+ */
+const FASTEST_SHADE_MS = 100;
+
+/**
+ * How long each shade lasts: the whole cooling time split evenly across them.
+ * It was floored at a second while a minute was the shortest setting, which
+ * would have held a one-second setting to eight.
+ */
+export function shadeMs(minutes: number): number {
+    return Math.max(FASTEST_SHADE_MS, (minutes * 60 * 1000) / STEPS);
+}
+
+/**
+ * How long the colour takes to ease from one shade to the next. A shade's own
+ * length, up to a second and a half: easing for longer than a shade lasts left
+ * fast cooling trailing behind itself, still lit after it had been dropped.
+ */
+function easeMs(minutes: number): number {
+    return Math.min(1500, shadeMs(minutes));
+}
+
+/**
  * The clock.
  *
  * One timer per open editor, and it only runs while that editor has something
  * left to cool — a note you are not writing in costs nothing at all. New
- * writing restarts it.
+ * writing restarts it. Exported for the tests, which drive it with a fake
+ * editor and fake time; everything else reaches it through the extension.
  */
-const ticker = ViewPlugin.fromClass(
-    class {
-        private timer = 0;
+export class InkClock {
+    private timer = 0;
 
-        constructor(private readonly view: EditorView) {
-            this.sync();
-        }
+    constructor(private readonly view: EditorView) {
+        this.sync();
+    }
 
-        update(update: ViewUpdate): void {
-            if (update.transactions.some((transaction) => transaction.effects.some((effect) => effect.is(refresh)))) {
-                // The tick length is baked in when the interval is made, so a
-                // changed "cools over" needs the old one thrown away.
-                this.stop();
-            }
-
-            if (update.docChanged || update.transactions.length > 0) {
-                this.sync();
-            }
-        }
-
-        destroy(): void {
+    update(update: ViewUpdate): void {
+        if (update.transactions.some((transaction) => transaction.effects.some((effect) => effect.is(refresh)))) {
+            // The tick length is baked in when the interval is made, so a
+            // changed "cools over" needs the old one thrown away.
             this.stop();
         }
 
-        private sync(): void {
-            const live = this.view.state.field(inkField).size > 0;
-
-            if (!live || !options.enabled) {
-                this.stop();
-                return;
-            }
-
-            if (this.timer === 0) {
-                const every = Math.max(1000, (options.minutes * 60 * 1000) / STEPS);
-                this.timer = this.view.dom.win.setInterval(() => {
-                    this.view.dispatch({ effects: cool.of(null) });
-                }, every);
-            }
-        }
-
-        private stop(): void {
-            if (this.timer !== 0) {
-                this.view.dom.win.clearInterval(this.timer);
-                this.timer = 0;
-            }
+        if (update.docChanged || update.transactions.length > 0) {
+            this.sync();
         }
     }
-);
+
+    destroy(): void {
+        this.stop();
+    }
+
+    private sync(): void {
+        const live = this.view.state.field(inkField).size > 0;
+
+        if (!live || !options.enabled) {
+            this.stop();
+            return;
+        }
+
+        if (this.timer === 0) {
+            this.timer = this.view.dom.win.setInterval(() => {
+                this.view.dispatch({ effects: cool.of(null) });
+            }, shadeMs(options.minutes));
+        }
+    }
+
+    private stop(): void {
+        if (this.timer !== 0) {
+            this.view.dom.win.clearInterval(this.timer);
+            this.timer = 0;
+        }
+    }
+}
+
+const ticker = ViewPlugin.fromClass(InkClock);
 
 /**
  * Everything on screen that is not lit, so the page can be dimmed around fresh
@@ -329,9 +356,13 @@ const watcher = EditorView.updateListener.of((update) => {
  */
 const painter = ViewPlugin.define((view) => {
     paintColours(view.dom);
+    paintEase(view.dom);
 
     return {
-        destroy: () => paintColours(view.dom, null)
+        destroy: () => {
+            paintColours(view.dom, null);
+            paintEase(view.dom, false);
+        }
     };
 });
 
@@ -342,6 +373,15 @@ function paintColours(element: HTMLElement, using: InkColours | null = colours):
         } else {
             element.style.removeProperty(property);
         }
+    }
+}
+
+/** How long a shade eases into the next, read by the stylesheet's transition. */
+function paintEase(element: HTMLElement, on = true): void {
+    if (on) {
+        element.style.setProperty('--pulsar-ink-ease', `${easeMs(options.minutes)}ms`);
+    } else {
+        element.style.removeProperty('--pulsar-ink-ease');
     }
 }
 
@@ -453,6 +493,7 @@ export function setInkOptions(next: InkOptions, editors: EditorView[]): void {
 
     for (const editor of editors) {
         if (editor.state.field(inkField, false) !== undefined) {
+            paintEase(editor.dom);
             editor.dispatch({ effects: refresh.of(null) });
         }
     }
