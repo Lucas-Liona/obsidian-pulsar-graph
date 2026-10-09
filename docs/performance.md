@@ -60,7 +60,8 @@ timed, a load with fresh writing on is no slower in 1.40.0 than in 1.38.0
   0.8 sd, all of it from two consecutive seconds at 0.17 and 0.16 cores while the graph
   was not drawing; without them 1.40.0 reads 0.073 ± 0.004 cores.
 - **1.40.0 looked slower on load with fresh writing on, and was not.** It no longer
-  reconfigures every open editor on load while fresh writing is off, the default. With it
+  reconfigures every open editor on load while fresh writing is off, which was the default
+  when this was measured; new installs have had it on since 2026-10-08. With it
   on, the one remaining call measured 14.7 ms against 7.2 ms for 1.38.0's two, because
   the call now included a restyle of the whole window. Timed with every restyle forced,
   a load cost 25–28 ms against 31–34 ms in 1.38.0, and 1.41.0 (#125) removed most of the
@@ -77,7 +78,7 @@ Pulsar's work happens on five occasions: when Obsidian hands a graph new data, w
 graph draws a frame, when the active note changes, when the plugin loads, and when the
 edit history is written. Its only timers repaint the tab bar every 30 seconds and the
 status bar every minute; the 30-second one repaints the graph too, but only while the
-spotlight is set to a time window, which is off by default.
+spotlight is set to a time window rather than a count, which is not the default.
 
 ### A graph rebuild: the data hook
 

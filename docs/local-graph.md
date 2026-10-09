@@ -4,8 +4,9 @@ Obsidian has two graphs. The big one shows your vault; the small one — *Open
 local graph* in a note's menu, usually parked in the sidebar — shows one note
 and whatever is linked to it, a few jumps out.
 
-Pulsar treats them the same by default, and that default is wrong often enough
-to be worth a setting.
+Pulsar used to treat them the same, and that was wrong often enough to be worth
+a setting: a new install measures a local graph against its own panel.
+Settings saved before that keep measuring against the vault.
 
 ## Why it needs its own answer
 
@@ -112,13 +113,14 @@ disagreeing with itself.
 
 ## What a small panel can afford
 
-Two things the whole graph cannot, both off by default.
+Two things the whole graph cannot.
 
 ### Write every age
 
 The ages above node titles are one setting for both graphs, and *with titles* on
 a two-thousand-node graph is noise. On a panel of twelve it is free information,
-so a local graph can be told to write them whatever the big graph is doing.
+so a local graph can be told to write them whatever the big graph is doing. A
+new install does.
 
 They ride along with the titles, which Obsidian hides below a zoom you control —
 in a sidebar-width panel that usually means the handful of names you can

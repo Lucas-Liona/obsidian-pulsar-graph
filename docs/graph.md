@@ -137,6 +137,10 @@ of its brightest neighbour, and **Glow reach** decides how many links that
 travels along — each step carries the fraction again, so it falls away with
 distance.
 
+It starts at 0.35, one link out. On the default curve that lifts about one note
+in nine in the demo vault, the neighbours of what you're working on, for 4% of
+the graph's contrast; at 0.5 it is nearly one in five.
+
 Worth knowing: the glow travels along links, and grouping by *island of linked
 notes* draws its boundaries along those same links. The glow runs first for
 exactly that reason — warming first would hand every node neighbours identical to
@@ -186,8 +190,8 @@ through, which leaves the busiest half of the picture saying nothing about time.
 
 That second one is worth it for the discovery thing: a bright line running out of
 today's work and dimming into something you wrote a year ago is exactly the note
-you'd forgotten you had. Off by default, like everything that changes how the
-graph is drawn beyond the nodes themselves.
+you'd forgotten you had. *Fade between the two* is on by default, so a new install
+shows it straight away.
 
 ## What you wrote together
 
@@ -203,7 +207,7 @@ already marks 246 of 692 links, and stretching it to 4 hours only reaches 312,
 which says most of my linked notes were written in genuine bursts rather than
 drifting together over an afternoon.
 
-Off by default, with its own colour kept clear of the spotlight's. **Trail
+On by default, with its own colour kept clear of the spotlight's. **Trail
 strength** mixes that colour with the one links are normally drawn in — at full
 strength it is a stripe of neon, and a little under half way reads as a warmer
 line, which is much easier to sit with.

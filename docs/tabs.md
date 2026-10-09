@@ -66,18 +66,19 @@ place. A pinned tab is never marked — pinning is a deliberate statement that i
 should stay — and neither is the tab you're in, which reports no idle time at
 all.
 
-Both off by default.
+A new install has the dot on, fades tabs by how long since you looked at them
+— the icon and title, not the whole tab — and marks the ones left alone with a
+💤.
 
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in
-sight. On by default: it puts something in a part of Obsidian the plugin doesn't
-otherwise touch, which would usually keep it off, but it says what the whole
-plugin is about in four words. Switch it off under **Elsewhere**.
+sight. On by default, since it says what the whole plugin is about in four
+words. Switch it off under **Elsewhere**.
 
 The spotlight paints the most recently modified note a colour of your own, so
 the thing you touched last is findable at a glance. It can cover the last few
-notes instead, up to 25, or everything touched within a window. It's off by default,
-because it's the one feature here that changes a node's colour rather than its
+notes instead, up to 25, or everything touched within a window. It's on by
+default. It's the one feature here that changes a node's colour rather than its
 opacity, and it puts the original colour back the moment the newest note changes,
 you turn it off, or the plugin unloads.
 

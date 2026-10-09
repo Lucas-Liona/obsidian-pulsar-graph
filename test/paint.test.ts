@@ -2,19 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
 import { applyOpacity, deepenRgb, GraphNode, GraphRenderer, newPaint, OpacityOptions } from '../src/graph';
 import { OpacityStore } from '../src/opacity-store';
-import { DEFAULT_SETTINGS } from '../src/settings';
+import { DEFAULT_SETTINGS, PulsarGraphSettings } from '../src/settings';
+import { FEATURES_OFF } from './features-off';
 
 const GREY = 0x908caa;
 const GREEN = 0x4dff91;
 const PURPLE = 0xc084fc;
 
-/** Three notes a day apart, under the shipped settings, whose maximum is 3. */
+/** The settings these were written against, whose maximum is 3. */
+const SETTINGS: PulsarGraphSettings = { ...DEFAULT_SETTINGS, ...FEATURES_OFF };
+
+/** Three notes, a day and then ninety days apart. */
 function setUp(): { renderer: GraphRenderer; store: OpacityStore; node: (path: string) => GraphNode } {
     const now = Date.UTC(2026, 9, 7);
     const day = 24 * 60 * 60 * 1000;
     const mtimes: [string, number][] = [['new.md', now], ['middle.md', now - day], ['old.md', now - 90 * day]];
 
-    const store = new OpacityStore(() => DEFAULT_SETTINGS);
+    const store = new OpacityStore(() => SETTINGS);
     store.build(mtimes.map(([path, mtime]) => Object.assign(new TFile(), { path, stat: { mtime, ctime: mtime, size: 1 } })));
 
     const nodeLookup: Record<string, GraphNode> = {};
@@ -40,7 +44,7 @@ function options(overrides: Partial<OpacityOptions>): OpacityOptions {
         clusterWarmth: 0,
         clusterBy: 'folder',
         pinned: new Set(),
-        pinOpacity: DEFAULT_SETTINGS.maxOpacity,
+        pinOpacity: SETTINGS.maxOpacity,
         pinMark: true,
         pinRgb: PURPLE,
         pinStrength: 1,
@@ -65,7 +69,7 @@ describe('painted colours', () => {
 
         const drawn = applyOpacity(renderer, store, options({ pinned: new Set(['old.md']) }));
 
-        expect(drawn?.get('old.md')).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(drawn?.get('old.md')).toBe(SETTINGS.maxOpacity);
         expect(node('old.md').color).toEqual({ a: 1, rgb: PURPLE });
     });
 
@@ -87,7 +91,7 @@ describe('painted colours', () => {
         const drawn = applyOpacity(renderer, store, options({ lightTheme: true }));
         const middle = drawn?.get('middle.md') ?? NaN;
 
-        expect(drawn?.get('new.md')).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(drawn?.get('new.md')).toBe(SETTINGS.maxOpacity);
         expect(node('new.md').color).toEqual({ a: 1, rgb: 0x000000 });
         expect(node('middle.md').color).toEqual({ a: 1, rgb: deepenRgb(GREY, middle) });
         expect(node('middle.md').circle?.tint).toBe(deepenRgb(GREY, middle));
@@ -115,7 +119,7 @@ describe('painted colours', () => {
         expect([...paint.releasing.keys()].sort()).toEqual(['middle.md', 'new.md']);
         expect(node('new.md').color?.rgb).toBe(GREY);
         expect(node('new.md').circle?.tint).toBe(GREY);
-        expect(node('new.md').color?.a).toBe(DEFAULT_SETTINGS.maxOpacity);
+        expect(node('new.md').color?.a).toBe(SETTINGS.maxOpacity);
     });
 
     // Every node is handed a colour here, so one with none of its own carried

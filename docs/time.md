@@ -77,6 +77,11 @@ The trade is that rank hides *how much* older something is. Two notes a year
 apart look as different as two notes a day apart, if nothing else sits between
 them. Even and logarithmic keep that information; rank spends it on contrast.
 
+Rank is the default, with a maximum opacity of 1.5. Even with a maximum of 3,
+the default until 1.43, drew 95% of a 1,121 note vault and 87.5% of the demo
+vault at full white; ranked at 1.5, the middle 80% of that vault runs from 0.14
+to 0.81 of full white.
+
 **By half-life** is the only one of the four that is *absolute*. The other three
 measure each note against the rest of your vault, so what a note is worth depends
 on what else is in there — one note from 2019 stretches the range and darkens

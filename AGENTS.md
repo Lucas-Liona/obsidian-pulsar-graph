@@ -132,9 +132,24 @@ shrink to, with a seed that replays it.
 - Local and offline only: no network calls, no telemetry, and nothing read from a
   note beyond its timestamps.
 - Never change the manifest `id` after release; keep command IDs stable.
-- Every feature past the core fade is optional and off by default. Anything that
-  changes a colour, or puts something in a part of Obsidian the plugin does not
-  otherwise touch, starts off.
+- Every feature is optional, and a new install starts with most of them on, so
+  a first look shows what Pulsar does; each switches off on its own. A feature
+  starts off when it would make the plugin look broken or wrong to someone who
+  did not choose it: anything that hides notes (the age filter), anything that
+  flattens the fade (group temperature, which averages a group to one
+  brightness), anything that reads a history a new install does not have yet
+  (the edit-intensity blend), and anything that changes what a brightness
+  means (measuring from the note in the middle). A default that changes how
+  bright things are is checked against a real vault's spread, not just the
+  demo's. Anything on by default has to pass the all-on check: a fresh install
+  with every default-on feature, against the core fade alone, on the
+  20,000-note bench vault and a real vault, no worse than two standard
+  deviations on any metric in `docs/performance.md`. A default colour has to
+  read on a light theme as well as a dark one; the spotlight's white and the
+  fresh-writing colours do not yet, and are open. Changing a default never
+  changes a saved setting: every key is saved once anything is, so a new
+  default reaches new installs, *Reset all settings*, and anyone who never
+  changed a thing.
 
 ## Working with Obsidian's graph
 

@@ -1,6 +1,7 @@
 import { bench, describe } from 'vitest';
 import type PulsarGraphPlugin from '../src/main';
 import type { PulsarGraphSettings } from '../src/settings';
+import { FEATURES_OFF } from './features-off';
 import { createWorld, loadPlugin, settle, unloadPlugin, type NoteSpec, type World } from './harness';
 import { fakeVault } from './vault';
 
@@ -15,8 +16,18 @@ import { fakeVault } from './vault';
  * unloading are in the numbers too, alike before and after any change.
  */
 
+/**
+ * The core fade alone. The arms named "filter off" and "filter on" were
+ * recorded against the defaults from before most features were switched on
+ * for a new install, and keep them, so they stay comparable with the baseline.
+ */
+const CORE: Partial<PulsarGraphSettings> = FEATURES_OFF;
+
 /** Keeps the oldest stretch of the curve, which in these vaults is about a third of the notes. */
-const FILTER: Partial<PulsarGraphSettings> = { filterEnabled: true, filterRanges: [{ from: 0, to: 0.3 }], filterAxis: 'curve' };
+const FILTER: Partial<PulsarGraphSettings> = { ...CORE, filterEnabled: true, filterRanges: [{ from: 0, to: 0.3 }], filterAxis: 'curve' };
+
+/** A new install: no saved settings, so every default, with most features on. */
+const ALL_ON: Partial<PulsarGraphSettings> = {};
 
 /** The bench vault, each note linking to one other so the renderer has links to build. */
 function vaultOf(size: number): NoteSpec[] {
@@ -79,8 +90,9 @@ for (const size of [1_000, 10_000, 50_000]) {
         };
 
         bench('open and close a graph, no plugin', ...openAndClose(null));
-        bench('open and close a graph, filter off', ...openAndClose({}));
+        bench('open and close a graph, filter off', ...openAndClose(CORE));
         bench('open and close a graph, filter on', ...openAndClose(FILTER));
+        bench('open and close a graph, all on (new defaults)', ...openAndClose(ALL_ON));
 
         const startUp = (settings: Partial<PulsarGraphSettings>) => async (): Promise<void> => {
             const starting = createWorld({ notes, layoutReady: false });
@@ -93,7 +105,8 @@ for (const size of [1_000, 10_000, 50_000]) {
             await unloadPlugin(loaded);
         };
 
-        bench('start up with a graph restored, filter off', startUp({}), SLOW);
+        bench('start up with a graph restored, filter off', startUp(CORE), SLOW);
         bench('start up with a graph restored, filter on', startUp(FILTER), SLOW);
+        bench('start up with a graph restored, all on (new defaults)', startUp(ALL_ON), SLOW);
     });
 }

@@ -26,6 +26,43 @@
 
 ### Changed
 
+- **A new install starts with most features on**, so the first look shows what
+  Pulsar does, and each can be switched off on its own. Newly on:
+  - the spotlight on the newest note;
+  - nodes sized by age;
+  - links aged, fading from the newer note to the older;
+  - a dot after each link in a note;
+  - fresh writing, cooling over five minutes;
+  - a dot beside each tab, tabs fading by how long since you looked at them
+    (the icon and title, not the whole tab), and a 💤 on tabs left alone;
+  - the graph's own timelapse lit as it plays;
+  - a local graph measured against its own notes, with every age written;
+  - links between notes written in the same sitting, traced in their own
+    colour;
+  - neighbour glow at 0.35, one link out, which lifts about one note in nine
+    in the demo vault for 4% of the graph's contrast.
+
+  These stay off, because each would make the plugin look broken or wrong to
+  someone who did not choose it:
+  - the age filter, which hides notes;
+  - group temperature, which averages a whole group to one brightness;
+  - the edit-intensity blend, which reads a history a new install doesn't
+    have yet;
+  - measuring a local graph from the note in the middle, which changes what a
+    brightness means.
+
+- **The fade starts ranked, with a maximum of 1.5**, rather than even with a
+  maximum of 3. One very old note squeezes every other note against the top of
+  an even scale, and a maximum of 3 then draws most of them at full white: 95%
+  of a real 1,121-note vault and 87.5% of the demo vault. Ranked at 1.5, the
+  middle 80% of that vault runs from 0.14 to 0.81 of full white, and 8% of the
+  demo is at full.
+
+  Both of these only change what a fresh install starts with. Anyone who has
+  saved settings once has every one of them saved and keeps what they had.
+  *Reset all settings* now goes to these, and anyone who never changed a
+  setting gets them on upgrade.
+
 - **Sharpness replaces Fade type.** One slider from × 0.25 to × 6 shapes the
   whole fade: × 1 is a straight line, higher keeps only the newest notes
   bright, lower keeps more of the vault lit. *Step* becomes a *Bands* switch
