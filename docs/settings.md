@@ -26,14 +26,15 @@ looking at a graph rather than from a dialog in front of it:
 
 | Heading | Controls |
 |---|---|
-| **Nodes** | Dimmest, Brightest, Curve, Glow, Size by age, Spotlight |
+| **Nodes** | Dimmest, Brightest, Curve, Glow, Size by age, Stars, Spotlight |
 | **Links** | Age, Trace sittings |
 | **Text** | Title size, Ages |
 | **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
 
 They are the same settings, not copies: moving one moves the other. Dimmest and
 Brightest are the minimum and maximum opacity, Curve is the fade type, Glow is
-Neighbour glow, Size by age is Size nodes by age, Spotlight is Spotlight the
+Neighbour glow, Size by age is Size nodes by age, Stars is Draw the newest notes
+as stars, Spotlight is Spotlight the
 newest note, the links' Age is Age the links too, Trace sittings is Trace what
 was written together, and Ages is Show note age. Both run over the same range in either place. Sliders apply
 while you drag and are saved once you stop.
@@ -108,6 +109,9 @@ default changed keep their value.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | The graph (switch on the header) | on / off | on | all | Off hands every graph back as Obsidian draws it |
+| Draw the newest notes as stars | on / off | off | all | A soft halo around the newest notes: a glow on a dark theme, black on a light one |
+| How many | 1 – 250 | 10 | Stars on | How many of the newest notes get one |
+| Pulse | on / off | off | Stars on | Each one breathes. Draws a still graph 30 times a second while it is on screen; holds still while the system asks for reduced motion |
 | Fade type | Linear, Exponential, Step | Linear | all | How opacity falls from newest to oldest |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
 | Maximum opacity | 0.0 – 12.0 | 1.5 | all | How bright the newest note gets |

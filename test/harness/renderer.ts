@@ -289,7 +289,8 @@ export class FakeRenderer implements GraphRenderer {
     /** What the view's own hover handlers were told, as its page preview would be. */
     readonly previews: string[] = [];
 
-    private idleFrames = 0;
+    /** Frames since anything moved; past 60 the loop is asleep, as Obsidian's is. */
+    idleFrames = 0;
     private queued = false;
     private hovered: FakeNode | null = null;
     private graphics = true;

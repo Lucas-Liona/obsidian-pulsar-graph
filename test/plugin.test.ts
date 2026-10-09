@@ -819,3 +819,26 @@ describe('a fresh install', () => {
         expect({ workspace: world.workspace.listenerCount(), vault: world.vault.listenerCount() }).toEqual(listening);
     });
 });
+
+describe('stars', () => {
+    it('start off', async () => {
+        const plugin = await loadPlugin(vault());
+
+        expect(plugin.settings.stars).toBe(false);
+        expect(plugin.settings.starPulse).toBe(false);
+        await unloadPlugin(plugin);
+    });
+
+    // The fake renderer's titles are not PIXI text, so there is nothing to
+    // build a halo from, which is what a future Obsidian without them would
+    // look like. A pulse with nothing to pulse must not keep the graph awake.
+    it('let a graph they cannot be drawn on go to sleep, pulse and all', async () => {
+        const world = vault();
+        const plugin = await loadPlugin(world, { stars: true, starPulse: true, starCount: 3 });
+        const view = world.workspace.openGraph();
+        await settle();
+
+        expect(view.renderer.frames(1000)).toBeLessThan(100);
+        await unloadPlugin(plugin);
+    });
+});

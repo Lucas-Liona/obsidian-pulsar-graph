@@ -101,6 +101,14 @@ export function panelGroups(settings: () => PulsarGraphSettings, change: (apply:
                 },
                 {
                     kind: 'toggle',
+                    name: 'Stars',
+                    value: () => settings().stars,
+                    onChange: (value) => change(() => {
+                        settings().stars = value;
+                    })
+                },
+                {
+                    kind: 'toggle',
                     name: 'Spotlight',
                     value: () => settings().spotlightNewest,
                     onChange: (value) => change(() => {
