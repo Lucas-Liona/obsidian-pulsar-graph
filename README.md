@@ -27,10 +27,10 @@ part of your vault you're actually working in lights up and the rest sinks back.
 <p align="center"><i>Sweeping the fade from hardest to softest. The green dot is the note I touched last.</i></p>
 
 <p align="center">
-  <img src="docs/assets/sky.png" width="880" alt="A graph of 20,000 notes seen whole, a round cloud of grey and white points on a dark background. Scattered through it, the newest notes glow with soft white halos, like the brightest stars in a cluster.">
+  <img src="docs/assets/sky-pair.png" width="880" alt="The same graph of 20,000 notes twice, side by side, each a round cloud of points. On the left, on a dark background, the newest notes glow with soft white halos like the brightest stars in a cluster. On the right, on a white background, the same notes sit in soft black halos.">
 </p>
 
-<p align="center"><i>20,000 notes with stars on: the 250 newest glow.</i></p>
+<p align="center"><i>20,000 notes with stars on: the 250 newest glow, and on a light theme they're black holes.</i></p>
 
 ## Why I made it
 
@@ -71,18 +71,73 @@ node's opacity.
 Every surface has a page. Start wherever you are curious; nothing here depends on
 being read in order.
 
-| | |
-|---|---|
-| **[Time](docs/time.md)** | What counts as old, measuring against your vault or a window, the age scales and the fade curves. The number everything else reads. |
-| **[The graph](docs/graph.md)** | Stars around the newest notes, node size, the age drawn above a node, the spotlight — on the newest few notes or on anything touched in the last so many minutes — the glow between neighbours, folder temperature, and what the links carry. |
-| **[The age filter](docs/filter.md)** | Taking notes out of the graph entirely rather than dimming them, the scrubber inside the graph's own panel, and how to read the bar. |
-| **[The local graph](docs/local-graph.md)** | The panel around one note. It can be measured against its own notes rather than against the vault, or from the note in the middle — how close in time each neighbour is, rather than how recent. |
-| **[Pins](docs/pins.md)** | Notes you choose to hold bright whatever their dates say, in the graph and in the tab bar. The one place you overrule the clock. |
-| **[Tabs](docs/tabs.md)** | The tab bar as a readout of attention: fading by how long since you looked, a brightness dot, and marking the ones you have left alone. |
-| **[Fresh writing](docs/writing.md)** | The part that works inside a note. Text takes a colour as you type it and cools back to normal. |
-| **[Edit history](docs/history.md)** | Pulsar's own record of when each note was worked on, and why it is worth nothing until it has been running a while. |
-| **[A note's history](docs/beads.md)** | The record drawn as beads down the sidebar, one per sitting, so a note's bursts and quiet stretches read at a glance. |
-| **[Every setting](docs/settings.md)** | The reference table, with defaults and what each one applies to. |
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/time.md"><img src="docs/assets/cards/time.png" width="100%" alt="A demo graph drawn at three sharpnesses, from most of the vault lit to only the newest notes bright."></a><br>
+      <b><a href="docs/time.md">Time</a></b><br>
+      What counts as old, and how an age becomes a brightness. The number everything else reads.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/graph.md"><img src="docs/assets/cards/graph.png" width="100%" alt="A small graph on a dark theme and on a light one. The newest notes are green, with a soft glow around them on the dark side and a soft shadow on the light side."></a><br>
+      <b><a href="docs/graph.md">The graph</a></b><br>
+      Stars around the newest notes, size by age, the age above a node, the spotlight, the glow between neighbours, and what links carry.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/filter.md"><img src="docs/assets/cards/filter.png" width="100%" alt="A graph with a line across the top reading “110 of 110 notes, 2 hours ago back to 11 months ago”."></a><br>
+      <b><a href="docs/filter.md">The age filter</a></b><br>
+      Taking notes out of the graph rather than dimming them, with a scrubber in the graph's own panel.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/local-graph.md"><img src="docs/assets/cards/local-graph.png" width="100%" alt="A local graph around one note, its neighbours drawn at different brightnesses with their ages written above them."></a><br>
+      <b><a href="docs/local-graph.md">The local graph</a></b><br>
+      The panel around one note, measured against its own notes, or from the note in the middle.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/pins.md"><img src="docs/assets/cards/pins.png" width="100%" alt="A graph in which a few old notes are drawn in purple at full strength among faded ones."></a><br>
+      <b><a href="docs/pins.md">Pins</a></b><br>
+      Notes you hold bright whatever their dates say. The one place you overrule the clock.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/tabs.md"><img src="docs/assets/cards/tabs.png" width="100%" alt="Three moments of a tab bar: a faded tab marked asleep, the pointer clicking it, and the tab opened."></a><br>
+      <b><a href="docs/tabs.md">Tabs</a></b><br>
+      The tab bar as a readout of attention: tabs fade by how long since you looked, and the ones you have left alone sleep.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/writing.md"><img src="docs/assets/cards/writing.png" width="100%" alt="A note on a dark theme in which the most recently typed sentences are green."></a><br>
+      <b><a href="docs/writing.md">Fresh writing</a></b><br>
+      Text takes a colour as you type it and cools back to normal.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/beads.md"><img src="docs/assets/cards/history.png" width="100%" alt="A vertical rail with beads along it, labelled 2 days ago at the top and 4 months ago at the bottom."></a><br>
+      <b><a href="docs/beads.md">A note's history</a></b><br>
+      Each sitting on a note as a bead down the sidebar, from Pulsar's own <a href="docs/history.md">edit history</a>.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/performance.md"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/perf/open-20k-dark.svg">
+        <img src="docs/assets/perf/open-20k-light.svg" width="100%" alt="Horizontal bars, seconds, for opening a graph of 20,000 notes. Until the layout settles: Pulsar off 30.65, 1.38.0 10.94, 1.39.0 6.16, 1.40.0 6.14. Main thread blocked: Pulsar off 25.84, 1.38.0 5.02, 1.39.0 0.30, 1.40.0 0.28.">
+      </picture></a><br>
+      <b><a href="docs/performance.md">Performance</a></b><br>
+      What Pulsar costs at 20,000 notes, where the time goes, and how it was measured.
+    </td>
+    <td width="50%" valign="top">
+      <b><a href="docs/settings.md">Every setting</a></b><br>
+      The reference table, with every default and what each one applies to.
+      <br><br>
+      <b><a href="docs/README.md">All the docs</a></b><br>
+      The same pages, and where every picture here came from.
+    </td>
+  </tr>
+</table>
 
 ## Switching it off
 
@@ -92,9 +147,9 @@ anything of ours, no status bar item, and every graph handed back its own
 colours. The settings page collapses to that one switch.
 
 Every feature below it can also be switched off on its own. A new install
-starts with most of them on, so the first look shows what Pulsar does; the ones
-that would hide notes or flatten the fade, such as the age filter, neighbour
-glow and the trails, start off.
+starts with most of them on, so the first look shows what Pulsar does. The ones
+that would hide notes or change what a brightness means start off: the age
+filter, group temperature, and the blend with how much each note was edited.
 
 ## Worth knowing
 
@@ -113,10 +168,9 @@ glow and the trails, start off.
   pin paints nothing until you pin something.
 - **A faded node is still there.** Obsidian draws labels, links and physics with
   their own opacity, so a note at minimum opacity still has a visible title and
-  stays clickable. This is a fade, not a filter — that's
-  [a separate idea](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues/23).
-  Turning the text fade threshold up is the fix today, and it's the better way to
-  use it anyway.
+  stays clickable. To take notes out of the graph instead, that's the
+  [age filter](docs/filter.md). To quiet the titles, turn up the text fade
+  threshold, which is the better way to use it anyway.
 - **Opacity isn't polled.** It's reapplied when a note changes, when a graph
   rebuilds, and when you change a setting — never on a timer. The only timers in
   the plugin belong to the features that fade against the clock rather than against
@@ -133,6 +187,28 @@ glow and the trails, start off.
   one place it reads outside the vault is core *File recovery*'s snapshot
   database, and only when you press **Import earlier history** — it takes the
   timestamps and cannot reach the note text those snapshots contain.
+
+## What it costs
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/perf/open-20k-dark.svg">
+    <img src="docs/assets/perf/open-20k-light.svg" width="720" alt="Horizontal bars, seconds. Until the layout settles: Pulsar off 30.65, 1.38.0 10.94, 1.39.0 6.16, 1.40.0 6.14. Main thread blocked: Pulsar off 25.84, 1.38.0 5.02, 1.39.0 0.30, 1.40.0 0.28.">
+  </picture>
+</p>
+
+Measured in a vault of 20,000 generated notes, and in the demo vault:
+
+- **Opening the graph with the age filter on** settles in 6.1 seconds, against
+  30.7 for Obsidian on its own, and blocks the window for 0.3 seconds rather
+  than 25.8, because Obsidian is handed the 4,168 notes the filter keeps instead
+  of all 20,000.
+- **Switching notes** at 20,000 notes blocks for 75 ± 6 ms.
+- **A graph at rest stays asleep.** In the demo vault, after its timelapse has
+  run, the graph's renderer uses 0.078 of a core, against 0.072 with Pulsar off.
+
+Those are 1.40.0's figures. Every run, the machine, the method and what it
+gets wrong are on the [performance page](docs/performance.md).
 
 ## Install
 
@@ -158,17 +234,15 @@ I made this to do one thing well, and I'd rather keep it that way than bolt on
 everything. That said, time is a bigger idea than opacity, and the direction is
 making time easier to see throughout the graph.
 
-Most of what used to be listed here is now in: the age on hover, the spotlight on
-what you edited last, the curve preview, and a half-life that measures each note
-against the calendar instead of against your vault's own range. What's next is
-less about adding surfaces than about what the graph is *measured against* — a
-local graph that answers for its own panel, a replay of the vault's history where
-notes flare as you wrote them, and playing nicely with other ways of exploring a
-graph.
+Most of what used to be listed here is in now: a local graph measured against
+its own notes, the graph's timelapse lit as it plays, the age filter, and stars.
+What's next is a first look that says what the plugin is doing, and ages in more
+of Obsidian: search and the quick switcher, the note itself, and Bases.
 
-It's all in the [issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues)
-and grouped into [milestones](https://github.com/Lucas-Liona/obsidian-pulsar-graph/milestones).
-If you use this and something is missing, open one.
+It's all in the [issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues).
+The ones marked
+[help wanted](https://github.com/Lucas-Liona/obsidian-pulsar-graph/labels/help%20wanted)
+are open to anyone. If you use this and something is missing, open one.
 
 ## Development
 
@@ -187,9 +261,13 @@ in a vault's plugin folder and reload the plugin.
 
 ## Credits
 
-Written by me. The 1.0 cleanup — splitting it into modules, the build and release
-setup, and a pile of bug fixes — I did with Claude, in my free time, to get the
-repo into shape so other people could actually use it.
+Written by me. I built the first version on my own, and since 1.0 most of the
+code has been written with Claude: the edit history, tabs, fresh writing, the age
+filter, stars and the performance work. Every change went in as a pull request
+with its measurements in it, and I decided what shipped. All of it in my free
+time.
+
+More of what I make is at [lucasliona.tech](https://lucasliona.tech).
 
 ## License
 
