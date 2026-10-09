@@ -177,7 +177,7 @@ filter, group temperature, and the blend with how much each note was edited.
   the vault: the status bar re-reads it once a minute, the tabs twice a minute,
   and fresh writing once per shade — and that last one only runs in an editor
   that still has something left to cool. The one exception is a star's pulse,
-  off unless you turn it on: it draws the graph 30 times a second while the
+  off unless you turn it on: it draws the graph up to 30 times a second while the
   graph is otherwise still, and stops when the pulse does.
 - **It reads timestamps and file sizes, never contents.** How recently a note was
   modified, and how long it is. Fresh writing adds one more of the same kind:
