@@ -20,6 +20,10 @@ On a light theme light on white changes nothing, so the glow is black instead,
 and the newest notes sit in a pool of it. Same notes, same shape; it switches
 when the theme does.
 
+<p align="center">
+  <img src="assets/stars.png" width="760" alt="The same graph of 112 notes twice, dark on the left and light on the right. On the dark one, a soft white glow surrounds each of the ten newest notes, widest around the newest; on the light one each sits in a soft black pool instead. The notes keep their own colours inside the glow: green for the spotlight, purple for pins.">
+</p>
+
 **How many** is a count of the newest notes, ten unless you change it, up to
 250. In a local graph measured against its own notes it is that graph's own
 newest, the same rule the spotlight follows. Nothing is drawn during the
