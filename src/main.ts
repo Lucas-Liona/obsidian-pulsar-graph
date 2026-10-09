@@ -7,7 +7,7 @@ import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
 import { FilterCaption, panelGroups, PulsarPanel } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, legibleOnLight, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -1043,7 +1043,7 @@ export default class PulsarGraphPlugin extends Plugin {
             return this.settings.pinColor;
         }
 
-        return spotlit.has(path) ? this.settings.spotlightColor : null;
+        return spotlit.has(path) ? `#${this.spotlightRgb().toString(16).padStart(6, '0')}` : null;
     }
 
     /**
@@ -1878,6 +1878,18 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     /**
+     * The spotlight's colour as it is drawn: as chosen on a dark theme, and on
+     * a light one darkened until it stands out from the page, since the
+     * colours that glow on a dark background are the ones that vanish on a
+     * light one.
+     */
+    private spotlightRgb(): number {
+        const chosen = parseHexColor(this.settings.spotlightColor);
+
+        return this.lightTheme() ? legibleOnLight(chosen) : chosen;
+    }
+
+    /**
      * Whether the theme is a light one. `isDarkMode` is Obsidian's own answer
      * from 1.10; before that, the class it puts on the body says the same.
      */
@@ -1970,7 +1982,7 @@ export default class PulsarGraphPlugin extends Plugin {
 
         graph.pooled.byPath = applyOpacity(renderer, this.store, {
             spotlit,
-            spotlightRgb: parseHexColor(this.settings.spotlightColor),
+            spotlightRgb: this.spotlightRgb(),
             spotlightStrength: this.settings.spotlightStrength,
             pinned: this.pins.all(),
             pinOpacity: this.settings.maxOpacity,

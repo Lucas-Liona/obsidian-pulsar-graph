@@ -996,6 +996,66 @@ export function deepenRgb(rgb: number, strength: number): number {
     return (sink(16) << 16) | (sink(8) << 8) | sink(0);
 }
 
+/**
+ * How far a colour of ours has to stand off a light page: WCAG's floor for
+ * anything graphical, as a contrast ratio against white.
+ */
+export const LIGHT_CONTRAST = 3;
+
+/**
+ * A colour picked to stand out on a dark theme, made to stand out on a light
+ * one too.
+ *
+ * A colour that glows on a dark background is usually pale, and pale is what
+ * vanishes on a light one: the spotlight's green #4dff91 stands 1.31:1 off
+ * white, against 6.69:1 for Moonstone's node grey #5c5c5c, so the note being
+ * picked out was the faintest thing on the graph. On a light theme such a
+ * colour is darkened until it stands `LIGHT_CONTRAST` off white, every channel
+ * by the same factor so the hue holds. A colour already that dark is left
+ * exactly as it is.
+ */
+export function legibleOnLight(rgb: number): number {
+    if (contrastWithWhite(rgb) >= LIGHT_CONTRAST) {
+        return rgb;
+    }
+
+    // The largest factor that still passes. Luminance only falls as the
+    // factor does, so halving the gap converges on it.
+    let passes = 0;
+    let fails = 1;
+
+    for (let step = 0; step < 20; step++) {
+        const middle = (passes + fails) / 2;
+
+        if (contrastWithWhite(scaleRgb(rgb, middle)) >= LIGHT_CONTRAST) {
+            passes = middle;
+        } else {
+            fails = middle;
+        }
+    }
+
+    return scaleRgb(rgb, passes);
+}
+
+/** Every channel times a factor, rounded down so the result is never lighter than asked. */
+function scaleRgb(rgb: number, factor: number): number {
+    const scale = (shift: number): number => Math.floor(((rgb >> shift) & 0xff) * factor);
+
+    return (scale(16) << 16) | (scale(8) << 8) | scale(0);
+}
+
+/** WCAG's contrast ratio between a packed colour and white. */
+export function contrastWithWhite(rgb: number): number {
+    const linear = (shift: number): number => {
+        const channel = ((rgb >> shift) & 0xff) / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    };
+
+    const luminance = 0.2126 * linear(16) + 0.7152 * linear(8) + 0.0722 * linear(0);
+
+    return 1.05 / (luminance + 0.05);
+}
+
 /** Mixes two packed colours channel by channel. */
 export function blendRgb(from: number, to: number, amount: number): number {
     const mix = (shift: number): number => {

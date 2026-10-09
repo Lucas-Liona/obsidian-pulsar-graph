@@ -25,6 +25,16 @@
 
 ### Changed
 
+- **The spotlight is green**, `#4dff91`, rather than white, which vanished on a
+  light theme. And on a light theme any spotlight colour is now drawn darker
+  until it stands 3:1 off the page, keeping its hue: pale colours are the ones
+  that glow on a dark theme and the ones that disappear on a light one, and the
+  green there stood 1.31:1 off white against 6.69:1 for an ordinary node. It is
+  drawn `#33a960` on a light theme, in the graph and in a tab's dot. A colour
+  already dark enough is left exactly as picked. A new install starts green; a
+  colour already saved is kept, white included, and white is drawn as the grey
+  `#949494` on a light theme rather than not at all.
+
 - **A note's history is drawn on one scale for every note**, logarithmic back
   from now, instead of each rail being scaled to its own note. A rail covering
   twenty minutes used to look exactly like one covering a year. Now the top is
