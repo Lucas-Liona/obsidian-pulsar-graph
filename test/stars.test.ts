@@ -44,26 +44,16 @@ class FakeTitle extends FakeSprite {}
 class FakeCircle {
     tint = 0;
     visible = true;
-    eventMode = 'static';
-    parent: FakeCircle | null = null;
-    destroyed = false;
-    children: (FakeSprite | FakeCircle)[] = [];
+    children: FakeSprite[] = [];
 
-    /** The shape, which a circle built over another's shares. */
-    constructor(readonly geometry: object = {}) {}
-
-    addChild(child: FakeSprite | FakeCircle): void {
+    addChild(child: FakeSprite): void {
         this.children.push(child);
         child.parent = this;
     }
 
-    removeChild(child: FakeSprite | FakeCircle): void {
+    removeChild(child: FakeSprite): void {
         this.children = this.children.filter((each) => each !== child);
         child.parent = null;
-    }
-
-    destroy(): void {
-        this.destroyed = true;
     }
 
     getLocalBounds(): { x: number; y: number; width: number; height: number } {
@@ -148,15 +138,9 @@ function sleepy(renderer: GraphRenderer): { drawn: () => number; woken: () => nu
     return { drawn: () => drawn, woken: () => woken };
 }
 
-/** A star is two children: the halo, and the circle drawn again over it. */
 function halo(circle: FakeCircle): FakeSprite {
-    expect(circle.children).toHaveLength(2);
-    return circle.children[0] as FakeSprite;
-}
-
-function core(circle: FakeCircle): FakeCircle {
-    expect(circle.children).toHaveLength(2);
-    return circle.children[1] as FakeCircle;
+    expect(circle.children).toHaveLength(1);
+    return circle.children[0];
 }
 
 describe('stars', () => {
@@ -178,30 +162,6 @@ describe('stars', () => {
         expect(newest.eventMode).toBe('none');
     });
 
-    it('keeps the note its own colour, drawing its circle again over the halo in the tint the renderer gives it', () => {
-        const { renderer, circle } = graph(['a.md']);
-        const stars = new Stars(renderer, paint);
-        circle('a.md').tint = 0x4dff91;
-
-        stars.set({ paths: ['a.md'], light: false, pulse: false });
-        stars.sync(0);
-
-        const over = core(circle('a.md'));
-        expect(over.geometry).toBe(circle('a.md').geometry);
-        expect(over.tint).toBe(0x4dff91);
-        expect(over.eventMode).toBe('none');
-
-        // The renderer eases the circle's tint per frame; the copy follows.
-        circle('a.md').tint = 0xc084fc;
-        stars.sync(16);
-        expect(over.tint).toBe(0xc084fc);
-
-        stars.set({ paths: [], light: false, pulse: false });
-        stars.sync(32);
-        expect(over.destroyed).toBe(true);
-        expect(circle('a.md').children).toHaveLength(0);
-    });
-
     it('draws the newest widest and strongest', () => {
         const { renderer, circle } = graph(['a.md', 'b.md', 'c.md']);
         const stars = new Stars(renderer, paint);
@@ -218,20 +178,26 @@ describe('stars', () => {
         expect(a.scale.x).toBeCloseTo((6 * 200) / 256);
     });
 
-    it('adds light on a dark theme and multiplies dark in on a light one', () => {
+    it('draws white light on a dark theme and black on a light one, behind the note either way', () => {
         const { renderer, circle } = graph(['a.md']);
-        const stars = new Stars(renderer, paint);
+        const painted: boolean[] = [];
+        const stars = new Stars(renderer, (light) => {
+            painted.push(light);
+            return paint();
+        });
 
         stars.set({ paths: ['a.md'], light: false, pulse: false });
         stars.sync(0);
         const star = halo(circle('a.md'));
-        expect(star.blendMode).toBe(1);
+        // Destination-over: behind what is drawn, so the node keeps its colour.
+        expect(star.blendMode).toBe(24);
 
         stars.set({ paths: ['a.md'], light: true, pulse: false });
         stars.sync(0);
         const hole = halo(circle('a.md'));
 
-        expect(hole.blendMode).toBe(2);
+        expect(painted).toEqual([false, true]);
+        expect(hole.blendMode).toBe(24);
         expect(hole).not.toBe(star);
         expect(star.destroyed).toBe(true);
         // A new texture in the other colour, and the old one freed.
@@ -267,7 +233,7 @@ describe('stars', () => {
         stars.sync(0);
 
         expect(circle('b.md').children).toHaveLength(0);
-        expect(circle('c.md').children).toHaveLength(2);
+        expect(circle('c.md').children).toHaveLength(1);
         // a.md went from newest to second, and is drawn at the second's width.
         expect(halo(circle('a.md')).scale.x).toBeCloseTo(narrowed);
     });

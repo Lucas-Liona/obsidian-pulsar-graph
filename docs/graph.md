@@ -16,9 +16,9 @@ which is newer. A star is drawn around the node instead of in it: a soft glow,
 six node widths across on the newest note and narrowing to three on the last
 one counted, strongest on the newest.
 
-On a light theme adding light to white changes nothing, so the glow is black
-and multiplied into the page instead, and the newest notes sink into it. Same
-notes, same shape; it switches when the theme does.
+On a light theme light on white changes nothing, so the glow is black instead,
+and the newest notes sit in a pool of it. Same notes, same shape; it switches
+when the theme does.
 
 **How many** is a count of the newest notes, ten unless you change it, up to
 250. In a local graph measured against its own notes it is that graph's own
@@ -36,8 +36,10 @@ holds still while your system asks for reduced motion (on Windows, with
 animation effects turned off), and the setting says so when it does.
 
 Each glow hangs off its node's own circle, so it moves, zooms, dims on hover and
-leaves the screen with the node without being told. It never takes the pointer:
-hovering where a glow is drawn does what it would do with no glow there.
+leaves the screen with the node without being told. It is drawn behind the
+node, so a note keeps its own colour, the spotlight's and a pin's included, and
+the links in front of it stay in front. It never takes the pointer: hovering
+where a glow is drawn does what it would do with no glow there.
 
 ## Size
 

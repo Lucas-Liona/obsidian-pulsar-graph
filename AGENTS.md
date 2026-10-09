@@ -305,14 +305,26 @@ position, zoom, culling and alpha, which is how a star's halo follows its node.
 The circle is hit-tested by PIXI itself (`eventMode` `static`,
 `interactiveChildren` true, with `pointerover` and `pointerout` listeners), so a
 child left at the default `eventMode` widens the area that hovers the note to
-the child's size. Give anything added there `eventMode = 'none'`.
+the child's size. Give anything added there `eventMode = 'none'`. Measured on
+28 stars in the demo: with `none`, every point tested hit exactly what it hit
+with no halo there; left at the default, all 28 hovered from 2.5 radii out.
+
+**A child is drawn over its node; blend it behind instead.** Light added by a
+halo drawn after its circle landed on the node too, and turned the spotlight's
+`#4dff91` and a pin's purple pure white. The graph's canvas is transparent
+(`backgroundAlpha: 0`), so PIXI's destination-over, blend mode 24 in Obsidian's
+copy (`ONE_MINUS_DST_ALPHA, ONE`), puts a child behind everything already drawn
+that frame: the node keeps its own colour at any alpha, and lines drawn earlier
+cross in front. Drawing the circle again over the halo also restored the colour,
+but made a node below full strength more opaque, since it is then drawn twice.
 
 **PIXI's classes are reachable through a title.** A title is a PIXI text, and a
 text is a sprite, so `Object.getPrototypeOf(node.text.constructor)` is the same
 sprite class a link's line is built from, and `node.text.texture.constructor`
 has the static `from` that builds a texture from a canvas. Every node has a
 title, which a line cannot promise. Blend modes are PIXI 7's numbers: 1 adds,
-2 multiplies.
+2 multiplies, 24 is destination-over. `renderer.px.renderer.state.blendModes`
+lists the WebGL factors behind each.
 
 **A renderer's `width` and `height` are 0 while its leaf is hidden**, which
 silently breaks any screen-space maths. Reveal the leaf first.

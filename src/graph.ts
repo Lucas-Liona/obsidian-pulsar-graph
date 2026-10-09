@@ -102,8 +102,6 @@ export interface GraphCircle {
     addChild?: (child: unknown) => unknown;
     removeChild?: (child: unknown) => unknown;
     getLocalBounds?: () => { x: number; y: number; width: number; height: number };
-    /** The shape it draws, which another PIXI graphics object can be built over. */
-    geometry?: unknown;
 }
 
 export interface GraphNodeLookup {
