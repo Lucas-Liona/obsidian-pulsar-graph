@@ -13,6 +13,7 @@ import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
 import { confirmTwice } from './confirm';
 import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, HALF_LIFE_STOPS, nearestStop, REPLAY_TRAIL_STOPS, SITTING_STOPS, SPOTLIGHT_WINDOW_STOPS, SPREAD_FLOOR_STOPS, STALE_TAB_STOPS, TAB_FADE_STOPS, WINDOW_STOPS } from './duration';
+import { reducedMotion } from './stars';
 
 export type NormalizeBy = 'vault' | 'window' | 'shown';
 
@@ -97,6 +98,12 @@ export interface PulsarGraphSettings {
     statusBarAge: boolean;
     /** A dot after each link to a note, at that note's brightness. */
     linkDots: boolean;
+    /** A halo around the newest notes: stars on a dark theme, black holes on a light one. */
+    stars: boolean;
+    /** How many of the newest notes get one. */
+    starCount: number;
+    /** Whether the halos breathe, which keeps the graph drawing while it is on screen. */
+    starPulse: boolean;
     spotlightNewest: boolean;
     spotlightColor: string;
     spotlightStrength: number;
@@ -240,6 +247,9 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     linkRecency: 'off',
     statusBarAge: true,
     linkDots: false,
+    stars: false,
+    starCount: 10,
+    starPulse: false,
     spotlightNewest: false,
     spotlightColor: '#ffffff',
     spotlightStrength: 1,
@@ -379,6 +389,9 @@ const INK_MODE_LABELS: Record<InkMode, string> = {
 
 /** How many of the most recently edited notes the spotlight covers. */
 const SPOTLIGHT_COUNT_RANGE = { lowest: 1, highest: 25, step: 1 };
+
+/** How many of the newest notes are drawn as stars. */
+const STAR_COUNT_RANGE = { lowest: 1, highest: 250, step: 1 };
 
 /** Up to a day, so "everything I worked on today" can be said. Minutes. */
 const SPOTLIGHT_WINDOW_MINUTES = boundsOf(SPOTLIGHT_WINDOW_STOPS, MINUTE_SECONDS);
@@ -588,6 +601,9 @@ export function parseSettings(stored: unknown): PulsarGraphSettings {
         linkRecency: LINK_MODES.find((mode) => mode === data.linkRecency) ?? DEFAULT_SETTINGS.linkRecency,
         statusBarAge: parseBoolean(data.statusBarAge, DEFAULT_SETTINGS.statusBarAge),
         linkDots: parseBoolean(data.linkDots, DEFAULT_SETTINGS.linkDots),
+        stars: parseBoolean(data.stars, DEFAULT_SETTINGS.stars),
+        starCount: Math.round(clamp(parseNumber(data.starCount, DEFAULT_SETTINGS.starCount), STAR_COUNT_RANGE.lowest, STAR_COUNT_RANGE.highest)),
+        starPulse: parseBoolean(data.starPulse, DEFAULT_SETTINGS.starPulse),
         spotlightNewest: parseBoolean(data.spotlightNewest, DEFAULT_SETTINGS.spotlightNewest),
         spotlightColor: parseColor(data.spotlightColor, DEFAULT_SETTINGS.spotlightColor),
         spotlightCount: Math.round(clamp(parseNumber(data.spotlightCount, DEFAULT_SETTINGS.spotlightCount), SPOTLIGHT_COUNT_RANGE.lowest, SPOTLIGHT_COUNT_RANGE.highest)),
@@ -853,6 +869,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         });
 
         if (graph) {
+            this.buildStars(graph, settings);
             this.buildGraphFade(graph, settings);
             this.buildSize(graph, settings);
             this.buildLabels(graph, settings);
@@ -1077,6 +1094,52 @@ export class PulsarSettingTab extends PluginSettingTab {
                 );
             }
         }
+    }
+
+    private buildStars(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Stars and black holes', 'A halo around the newest notes, for when the top of the fade is all one white');
+
+        new Setting(containerEl)
+            .setName('Draw the newest notes as stars')
+            .setDesc('A soft glow around each of the newest notes, widest and strongest on the newest. On a light theme the glow is black instead, and the notes sink into it')
+            .addToggle((toggle) => toggle
+                .setValue(settings.stars)
+                .onChange(async (value) => {
+                    settings.stars = value;
+                    await this.plugin.saveSettings();
+                    // How many, and the pulse, only apply when it is on.
+                    this.display();
+                })
+            );
+
+        if (!settings.stars) {
+            return;
+        }
+
+        new NumberControl(
+            new Setting(containerEl)
+                .setName('How many')
+                .setDesc('The newest notes, counted. In a local graph measured against itself, its own newest'),
+            STAR_COUNT_RANGE,
+            settings.starCount,
+            (value) => {
+                settings.starCount = Math.round(value);
+                this.save();
+            }
+        );
+
+        new Setting(containerEl)
+            .setName('Pulse')
+            .setDesc(reducedMotion()
+                ? 'Each one breathes, slowly and out of step. Your system is asking for reduced motion, so they hold still until it stops'
+                : 'Each one breathes, slowly and out of step. A still graph stops drawing, and this keeps it drawing 30 times a second, which costs some power')
+            .addToggle((toggle) => toggle
+                .setValue(settings.starPulse)
+                .onChange(async (value) => {
+                    settings.starPulse = value;
+                    await this.plugin.saveSettings();
+                })
+            );
     }
 
     private buildGraphFade(containerEl: HTMLElement, settings: PulsarGraphSettings): void {

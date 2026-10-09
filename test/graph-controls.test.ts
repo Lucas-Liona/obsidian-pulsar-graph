@@ -28,10 +28,26 @@ describe('the graph panel', () => {
         const { groups } = panel();
 
         expect(groups.map((group) => [group.heading, group.controls.map((each) => each.name)])).toEqual([
-            ['Nodes', ['Dimmest', 'Brightest', 'Curve', 'Glow', 'Size by age', 'Spotlight']],
+            ['Nodes', ['Dimmest', 'Brightest', 'Curve', 'Glow', 'Size by age', 'Stars', 'Spotlight']],
             ['Links', ['Age', 'Trace sittings']],
             ['Text', ['Title size', 'Ages']]
         ]);
+    });
+
+    it('switches stars on and off, and they start off', () => {
+        const { settings, control, changes } = panel();
+        const stars = control('Stars');
+        if (stars.kind !== 'toggle') throw new Error('not a toggle');
+
+        expect(stars.value()).toBe(false);
+
+        stars.onChange(true);
+        expect(settings.stars).toBe(true);
+        expect(stars.value()).toBe(true);
+
+        stars.onChange(false);
+        expect(settings.stars).toBe(false);
+        expect(changes()).toBe(2);
     });
 
     it('switches trails on and off, through the one path that applies and saves', () => {
