@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EditorSelection, EditorState, TransactionSpec } from '@codemirror/state';
+import { EditorState, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
-import { coolInk, forgetInk, InkClock, InkColours, inkCounts, inkExtension, pinInk, setInkColours, setInkOptions, unpinInk } from '../src/ink';
+import { coolInk, forgetInk, InkClock, InkColours, inkExtension, inkLit, setInkColours, setInkOptions } from '../src/ink';
 
 /**
  * Just enough of an editor for the functions under test, which only read its
@@ -24,10 +24,6 @@ function type(view: EditorView, text: string): void {
     view.dispatch({ changes: { from: view.state.doc.length, insert: text } });
 }
 
-function select(view: EditorView, from: number, to: number): void {
-    view.dispatch({ selection: EditorSelection.single(from, to) });
-}
-
 describe('fresh writing', () => {
     beforeEach(() => {
         setInkOptions({ enabled: true, minutes: 5, mode: 'colour' }, []);
@@ -41,53 +37,37 @@ describe('fresh writing', () => {
         const view = editor('old text. ');
         type(view, 'new');
 
-        expect(inkCounts(view)).toEqual({ lit: 3, pinned: 0 });
+        expect(inkLit(view)).toBe(3);
     });
 
-    // Pins were set on purpose; cooling is about what was written.
-    it('cools one note without touching its pins', () => {
+    it('cools one note', () => {
         const view = editor();
-        type(view, 'keep this. ');
-        select(view, 0, 9);
-        pinInk(view);
         type(view, 'and this cools');
 
         coolInk(view);
 
-        expect(inkCounts(view)).toEqual({ lit: 0, pinned: 9 });
+        expect(inkLit(view)).toBe(0);
     });
 
-    it('cools every open note without touching their pins', () => {
+    it('cools every open note', () => {
         const first = editor();
         const second = editor();
         type(first, 'abc');
-        type(second, 'pinned');
-        select(second, 0, 6);
-        pinInk(second);
+        type(second, 'defgh');
 
         forgetInk([first, second]);
 
-        expect(inkCounts(first)).toEqual({ lit: 0, pinned: 0 });
-        expect(inkCounts(second)).toEqual({ lit: 0, pinned: 6 });
+        expect(inkLit(first)).toBe(0);
+        expect(inkLit(second)).toBe(0);
     });
 
-    it('unpins one note and leaves its fresh writing lit', () => {
+    it('lights what is written after cooling', () => {
         const view = editor();
-        type(view, 'pinned ');
-        select(view, 0, 6);
-        pinInk(view);
+        type(view, 'old');
+        coolInk(view);
         type(view, 'fresh');
 
-        expect(unpinInk(view)).toBe(true);
-        expect(inkCounts(view)).toEqual({ lit: 5, pinned: 0 });
-    });
-
-    it('says so when there is nothing to unpin', () => {
-        const view = editor();
-        type(view, 'fresh');
-
-        expect(unpinInk(view)).toBe(false);
-        expect(inkCounts(view).lit).toBe(5);
+        expect(inkLit(view)).toBe(5);
     });
 
     it('lights nothing while switched off', () => {
@@ -95,12 +75,12 @@ describe('fresh writing', () => {
         const view = editor();
         type(view, 'written while off');
 
-        expect(inkCounts(view)).toEqual({ lit: 0, pinned: 0 });
+        expect(inkLit(view)).toBe(0);
     });
 });
 
 describe('fresh writing colours', () => {
-    const COLOURS: InkColours = { '--pulsar-ink': '#ff8800', '--pulsar-ink-pin': '#8888ff', '--pulsar-ink-dim': '45%' };
+    const COLOURS: InkColours = { '--pulsar-ink': '#ff8800', '--pulsar-ink-dim': '45%' };
 
     /** An editor element's inline style, which is all the colours touch. */
     function withStyle(view: EditorView): Map<string, string> {
@@ -199,10 +179,10 @@ describe('fresh writing, cooling', () => {
         type(view, 'flash');
 
         vi.advanceTimersByTime(500);
-        expect(inkCounts(view).lit).toBe(5);
+        expect(inkLit(view)).toBe(5);
 
         vi.advanceTimersByTime(500);
-        expect(inkCounts(view).lit).toBe(0);
+        expect(inkLit(view)).toBe(0);
     });
 
     it('stops its clock once nothing is left to cool', () => {
@@ -238,7 +218,7 @@ describe('fresh writing, cooling', () => {
         setInkOptions({ enabled: true, minutes: SECOND, mode: 'colour' }, [view]);
         vi.advanceTimersByTime(1000);
 
-        expect(inkCounts(view).lit).toBe(0);
+        expect(inkLit(view)).toBe(0);
         expect(vi.getTimerCount()).toBe(0);
     });
 
