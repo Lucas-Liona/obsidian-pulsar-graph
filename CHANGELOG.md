@@ -26,6 +26,14 @@
 
 ### Changed
 
+- **Sharpness replaces Fade type.** One slider from × 0.25 to × 6 shapes the
+  whole fade: × 1 is a straight line, higher keeps only the newest notes
+  bright, lower keeps more of the vault lit. *Step* becomes a *Bands* switch
+  with its *Number of bands*. The graph's own panel has a *Sharpness* slider in
+  place of *Curve*. Nothing saved changes meaning: *Linear* is × 1,
+  *Exponential* is its steepness, *Step* is Bands, and a version from before
+  reads what this one saves.
+
 - **The spotlight is green**, `#4dff91`, rather than white, which vanished on a
   light theme. And on a light theme any spotlight colour is now drawn darker
   until it stands 3:1 off the page, keeping its hue: pale colours are the ones

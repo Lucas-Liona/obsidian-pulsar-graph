@@ -1,6 +1,7 @@
 import { Setting, setIcon } from 'obsidian';
 import { AgeMode } from './age-label';
-import { FADE_TYPE_LABELS, FadeType } from './fade';
+import { curveAt, formatSharpness, SHARPNESS_STOPS, sharpnessOf } from './fade';
+import { nearestStop } from './duration';
 import { OpacityRange } from './filter';
 import { LinkRecency } from './links';
 import { RangeBar, Spread } from './range-bar';
@@ -16,6 +17,15 @@ export type QuickControl =
         kind: 'slider';
         name: string;
         limits: { lowest: number; highest: number; step: number };
+        value: () => number;
+        onChange: (value: number) => void;
+    }
+    | {
+        /** A slider over a few chosen values, the value written beside it. */
+        kind: 'stops';
+        name: string;
+        stops: readonly number[];
+        label: (value: number) => string;
         value: () => number;
         onChange: (value: number) => void;
     }
@@ -74,12 +84,15 @@ export function panelGroups(settings: () => PulsarGraphSettings, change: (apply:
                     })
                 },
                 {
-                    kind: 'dropdown',
-                    name: 'Curve',
-                    options: FADE_TYPE_LABELS,
-                    value: () => settings().fadeType,
+                    // Moving it asks for a smooth curve of that sharpness, so it
+                    // also leaves bands, which the settings tab switches on.
+                    kind: 'stops',
+                    name: 'Sharpness',
+                    stops: SHARPNESS_STOPS,
+                    label: formatSharpness,
+                    value: () => sharpnessOf(settings()),
                     onChange: (value) => change(() => {
-                        settings().fadeType = value as FadeType;
+                        Object.assign(settings(), curveAt(value));
                     })
                 },
                 {
@@ -281,6 +294,45 @@ export class PulsarPanel {
                     if (Math.abs(slider.getValue() - value) >= control.limits.step / 2) {
                         syncing = true;
                         slider.setValue(value);
+                        syncing = false;
+                    }
+                });
+            });
+            return;
+        }
+
+        if (control.kind === 'stops') {
+            setting.settingEl.addClass('mod-slider');
+
+            setting.addSlider((slider) => {
+                slider
+                    .setLimits(0, control.stops.length - 1, 1)
+                    .setValue(nearestStop(control.stops, control.value()))
+                    .setInstant(true)
+                    .onChange((index) => {
+                        if (!syncing) {
+                            control.onChange(control.stops[index]);
+                        }
+                    });
+
+                // The slider's value is only the index of a stop. The readout
+                // takes its place, before the slider, where the panel's other
+                // sliders show theirs.
+                setting.controlEl.querySelector(':scope > .slider-value')?.remove();
+                const readout = setting.controlEl.createSpan({ cls: 'pulsar-stops-readout', text: control.label(control.value()) });
+                slider.sliderEl.before(readout);
+                slider.sliderEl.addEventListener('input', () => {
+                    readout.setText(control.label(control.stops[Number(slider.sliderEl.value)]));
+                });
+
+                this.syncs.push(() => {
+                    const value = control.value();
+                    const index = nearestStop(control.stops, value);
+
+                    readout.setText(control.label(value));
+                    if (slider.getValue() !== index) {
+                        syncing = true;
+                        slider.setValue(index);
                         syncing = false;
                     }
                 });

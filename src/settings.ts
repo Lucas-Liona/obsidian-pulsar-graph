@@ -8,7 +8,7 @@ import { OpacityRange, rangeOntoCurve, WHOLE_RANGE } from './filter';
 import { parseSharedPresets, PresetSettings, PRESETS, SavedPreset, snapshot } from './presets';
 import { RangeBar } from './range-bar';
 import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
-import { FADE_TYPES, FADE_TYPE_LABELS, FadeType } from './fade';
+import { banded, curveAt, FADE_TYPES, FadeType, formatSharpness, SHARPNESS_STOPS, sharpnessOf } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
 import { confirmTwice } from './confirm';
@@ -556,6 +556,33 @@ class DurationControl {
 
             track.prepend(slider.sliderEl);
         });
+
+        // Obsidian writes a slider's raw value beside it, which here is only
+        // the index of a stop; the readout says what it means.
+        setting.controlEl.querySelector(':scope > .slider-value')?.remove();
+    }
+}
+
+/**
+ * A slider over a short list of chosen values, with the value written beside
+ * it. As with the duration sliders, the thumb sits on the stop nearest the
+ * stored value, which is only replaced once the slider is moved: a sharpness
+ * of 7 saved before there was a slider stays 7, and says so.
+ */
+class StopsControl {
+    constructor(setting: Setting, stops: readonly number[], value: number, label: (value: number) => string, commit: (value: number) => void) {
+        setting.addSlider((slider) => {
+            slider
+                .setLimits(0, stops.length - 1, 1)
+                .setValue(nearestStop(stops, value))
+                .onChange((index) => commit(stops[index]));
+
+            slider.sliderEl.addEventListener('input', () => {
+                readout.setText(label(stops[Number(slider.sliderEl.value)]));
+            });
+        });
+
+        const readout = setting.controlEl.createSpan({ cls: 'pulsar-stops-readout', text: label(value) });
 
         // Obsidian writes a slider's raw value beside it, which here is only
         // the index of a stop; the readout says what it means.
@@ -1145,22 +1172,6 @@ export class PulsarSettingTab extends PluginSettingTab {
     private buildGraphFade(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Graph fade', 'How strongly each node in the graph is drawn, which is the thing the plugin is for');
 
-        new Setting(containerEl)
-            .setName('Fade type')
-            .setDesc('How opacity falls off between your oldest and newest note')
-            .addDropdown((dropdown) => {
-                for (const fadeType of FADE_TYPES) {
-                    dropdown.addOption(fadeType, FADE_TYPE_LABELS[fadeType]);
-                }
-
-                dropdown.setValue(settings.fadeType).onChange(async (value) => {
-                    settings.fadeType = value as FadeType;
-                    await this.plugin.saveSettings();
-                    // The curve controls below depend on the selected type.
-                    this.display();
-                });
-            });
-
         // Each control carries the other along rather than refusing to move, so
         // the range can never invert and the correction is visible as it happens.
         let minOpacity: NumberControl | undefined;
@@ -1202,25 +1213,41 @@ export class PulsarSettingTab extends PluginSettingTab {
             }
         );
 
-        if (settings.fadeType === 'exponential') {
-            new NumberControl(
+        // One exponent for the whole curve, written into the two settings the
+        // fade type dropdown used to write, so either version reads the other.
+        if (settings.fadeType !== 'step') {
+            new StopsControl(
                 new Setting(containerEl)
-                    .setName('Steepness')
-                    .setDesc('Higher values keep only the newest notes bright'),
-                STEEPNESS_RANGE,
-                settings.steepness,
+                    .setName('Sharpness')
+                    .setDesc('How quickly brightness drops away from the newest note. At 1 it falls in a straight line; higher keeps only the newest bright, lower keeps more of the vault lit'),
+                SHARPNESS_STOPS,
+                sharpnessOf(settings),
+                formatSharpness,
                 (value) => {
-                    settings.steepness = value;
+                    Object.assign(settings, curveAt(value));
                     this.save();
                 }
             );
         }
 
+        new Setting(containerEl)
+            .setName('Bands')
+            .setDesc('Snaps brightness to a few distinct levels, so the graph reads as layers of age rather than a gradient')
+            .addToggle((toggle) => toggle
+                .setValue(settings.fadeType === 'step')
+                .onChange(async (value) => {
+                    Object.assign(settings, value ? banded(settings) : curveAt(sharpnessOf(settings)));
+                    await this.plugin.saveSettings();
+                    // Sharpness and the number of bands each apply to one of the two.
+                    this.display();
+                })
+            );
+
         if (settings.fadeType === 'step') {
             new NumberControl(
                 new Setting(containerEl)
-                    .setName('Number of steps')
-                    .setDesc('How many distinct bands of age the graph is divided into'),
+                    .setName('Number of bands')
+                    .setDesc('How many distinct levels of age the graph is divided into'),
                 STEPS_RANGE,
                 settings.numSteps,
                 (value) => {
