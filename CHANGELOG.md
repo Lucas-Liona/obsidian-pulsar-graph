@@ -27,6 +27,10 @@
 
 ### Changed
 
+- **The settings section for the timelapse is called *Animate*** rather than
+  *Replay*, after the button under *Display* in the graph's panel that plays
+  it, and says where that button is. Nothing saved changes.
+
 - **A new install starts with most features on**, so the first look shows what
   Pulsar does, and each can be switched off on its own. Newly on:
   - the spotlight on the newest note;
