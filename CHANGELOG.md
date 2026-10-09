@@ -7,11 +7,12 @@
 - **Stars and black holes**, off unless you turn them on: a soft glow around
   the newest notes, widest and strongest on the newest, for when the top of the
   fade is all one white. On a light theme the glow is black, and the newest
-  notes sink into it. *How many* counts the newest notes (10 to start, up to
+  notes sit in a pool of it. Each is drawn behind its note, which keeps its
+  own colour. *How many* counts the newest notes (10 to start, up to
   250), and *Pulse* makes each one breathe, drawing a still graph 30 times a
-  second while it is on screen, and holds still under reduced motion. At the top of *The
-  graph* in the settings, and a *Stars* switch under *Nodes* in the graph's own
-  panel.
+  second while it is on screen, and holds still under reduced motion. At the
+  top of *The graph* in the settings, and a *Stars* switch under *Nodes* in the
+  graph's own panel.
 
 - **More of Pulsar in the graph's own panel.** Under *Nodes*, a *Glow* slider
   and switches for *Size by age* and the *Spotlight*; and a new *Links* group
