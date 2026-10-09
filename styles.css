@@ -815,7 +815,8 @@
 	line-height: 1.2;
 }
 
-.pulsar-duration-readout {
+.pulsar-duration-readout,
+.pulsar-stops-readout {
 	min-width: 4.5em;
 	color: var(--text-muted);
 	font-variant-numeric: tabular-nums;

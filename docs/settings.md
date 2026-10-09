@@ -26,13 +26,14 @@ looking at a graph rather than from a dialog in front of it:
 
 | Heading | Controls |
 |---|---|
-| **Nodes** | Dimmest, Brightest, Curve, Glow, Size by age, Stars, Spotlight |
+| **Nodes** | Dimmest, Brightest, Sharpness, Glow, Size by age, Stars, Spotlight |
 | **Links** | Age, Trace sittings |
 | **Text** | Title size, Ages |
 | **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
 
 They are the same settings, not copies: moving one moves the other. Dimmest and
-Brightest are the minimum and maximum opacity, Curve is the fade type, Glow is
+Brightest are the minimum and maximum opacity, Sharpness is Sharpness (moving it
+in the panel also leaves bands), Glow is
 Neighbour glow, Size by age is Size nodes by age, Stars is Draw the newest notes
 as stars, Spotlight is Spotlight the
 newest note, the links' Age is Age the links too, Trace sittings is Trace what
@@ -110,11 +111,11 @@ The tables below follow the settings tab from top to bottom.
 | Draw the newest notes as stars | on / off | off | all | A soft halo around the newest notes: a glow on a dark theme, black on a light one |
 | How many | 1 – 250 | 10 | Stars on | How many of the newest notes get one |
 | Pulse | on / off | off | Stars on | Each one breathes. Draws a still graph 30 times a second while it is on screen; holds still while the system asks for reduced motion |
-| Fade type | Linear, Exponential, Step | Linear | all | How opacity falls from newest to oldest |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all | How bright the newest note gets |
-| Steepness | 0.1 – 10.0 | 2.0 | Exponential | Higher keeps only the newest notes bright |
-| Number of steps | 1 – 20 | 5 | Step | How many bands of age |
+| Sharpness | × 0.25 – × 6, in steps | × 1 | Bands off | How quickly brightness drops away from the newest note. × 1 is a straight line, higher keeps only the newest bright, lower keeps more lit. A value saved outside the steps (up to 10) is kept until the slider moves |
+| Bands | on / off | off | all | Brightness snapped to a few levels, so the graph reads as layers of age |
+| Number of bands | 1 – 20 | 5 | Bands on | How many levels |
 | Size nodes by age | on / off | off | all | Scales each node by age, on top of Obsidian's own size |
 | Oldest at | 0.2 – 3.0 | 0.7 | Sizing on | What the dimmest note's size is multiplied by |
 | Newest at | 0.2 – 3.0 | 1.8 | Sizing on | What the brightest note's size is multiplied by. Below Oldest at reverses it |
