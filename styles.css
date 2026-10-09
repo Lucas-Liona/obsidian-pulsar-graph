@@ -822,3 +822,15 @@
 	font-variant-numeric: tabular-nums;
 	text-align: right;
 }
+
+/* A multiplier reads as one word: "× 2" never breaks across two lines. */
+.pulsar-stops-readout {
+	flex: none;
+	white-space: nowrap;
+}
+
+/* In the graph's panel it sits where the other sliders show their value. */
+.pulsar-graph-quick .pulsar-stops-readout {
+	min-width: 0;
+	text-align: left;
+}

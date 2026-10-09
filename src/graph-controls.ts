@@ -315,9 +315,12 @@ export class PulsarPanel {
                         }
                     });
 
-                // The slider's value is only the index of a stop.
+                // The slider's value is only the index of a stop. The readout
+                // takes its place, before the slider, where the panel's other
+                // sliders show theirs.
                 setting.controlEl.querySelector(':scope > .slider-value')?.remove();
                 const readout = setting.controlEl.createSpan({ cls: 'pulsar-stops-readout', text: control.label(control.value()) });
+                slider.sliderEl.before(readout);
                 slider.sliderEl.addEventListener('input', () => {
                     readout.setText(control.label(control.stops[Number(slider.sliderEl.value)]));
                 });
