@@ -40,9 +40,9 @@ holds still while your system asks for reduced motion (on Windows, with
 animation effects turned off), and the setting says so when it does.
 
 Each glow hangs off its node's own circle, so it moves, zooms, dims on hover and
-leaves the screen with the node without being told. It is drawn behind the
-node, so a note keeps its own colour, the spotlight's and a pin's included, and
-the links in front of it stay in front. It never takes the pointer: hovering
+leaves the screen with the node without being told. The note is drawn
+again over its own glow, so it keeps its colour, the spotlight's and a pin's
+included, while the light falls on the links and notes around it. It never takes the pointer: hovering
 where a glow is drawn does what it would do with no glow there.
 
 ## Size
