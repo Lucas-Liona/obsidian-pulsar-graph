@@ -123,8 +123,8 @@ being read in order.
   <tr>
     <td width="50%" valign="top">
       <a href="docs/performance.md"><picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/perf/open-20k-dark.svg">
-        <img src="docs/assets/perf/open-20k-light.svg" width="100%" alt="Horizontal bars, seconds, for opening a graph of 20,000 notes. Until the layout settles: Pulsar off 30.65, 1.38.0 10.94, 1.39.0 6.16, 1.40.0 6.14. Main thread blocked: Pulsar off 25.84, 1.38.0 5.02, 1.39.0 0.30, 1.40.0 0.28.">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/perf/scale-dark.svg">
+        <img src="docs/assets/perf/scale-light.svg" width="100%" alt="Dot plot on a logarithmic time axis, one row per operation, before and after, with Pulsar off where measured: opening the graph, note switches, a load with fresh writing on, a graph at rest after its timelapse, a refilter and a keystroke.">
       </picture></a><br>
       <b><a href="docs/performance.md">Performance</a></b><br>
       What Pulsar costs at 20,000 notes, where the time goes, and how it was measured.
