@@ -146,8 +146,11 @@ curve — the preview shows you when that is happening. On a light theme it is
 the mirror: the colour deepens instead, so the theme's grey goes toward black
 (Moonstone's `#5c5c5c` is near black by 1.5 and black from 2), since lightening
 there would fade a recent note into the page. The spotlight and pin colours are
-kept exactly as you picked them; a graph group's colour is lightened or
-deepened like anything else. The
+never lightened or deepened past full strength; a graph group's colour is,
+like anything else. On a light theme the spotlight's colour is darkened
+instead, as far as it takes to stand 3:1 off white and no further, since the
+colours that glow on a dark theme are pale and pale is what vanishes on a
+light one: the default green `#4dff91` is drawn `#33a960` there. The
 two opacity sliders can't cross — move one past the other and it takes the other
 with it.
 
@@ -156,7 +159,7 @@ with it.
 | Setting | Range | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | Spotlight the newest note | on / off | off | all | Paints the most recently modified notes a colour of your own |
-| Spotlight colour | any | white `#ffffff` | Spotlight on | |
+| Spotlight colour | any | green `#4dff91` | Spotlight on | On a light theme, drawn darker until it stands 3:1 off the page |
 | Spotlight strength | 0.0 – 1.0 | 1.0 | Spotlight on | How far the colour overrides the node's own |
 | What it covers | The newest few notes, Anything touched recently | The newest few notes | Spotlight on | A count, or a window of time |
 | How many notes | 1 – 25 | 1 | The newest few notes | How many of the newest notes are lit |

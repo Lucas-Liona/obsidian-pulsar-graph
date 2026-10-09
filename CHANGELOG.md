@@ -7,11 +7,12 @@
 - **Stars and black holes**, off unless you turn them on: a soft glow around
   the newest notes, widest and strongest on the newest, for when the top of the
   fade is all one white. On a light theme the glow is black, and the newest
-  notes sink into it. *How many* counts the newest notes (10 to start, up to
+  notes sit in a pool of it. Each is drawn behind its note, which keeps its
+  own colour. *How many* counts the newest notes (10 to start, up to
   250), and *Pulse* makes each one breathe, drawing a still graph 30 times a
-  second while it is on screen, and holds still under reduced motion. At the top of *The
-  graph* in the settings, and a *Stars* switch under *Nodes* in the graph's own
-  panel.
+  second while it is on screen, and holds still under reduced motion. At the
+  top of *The graph* in the settings, and a *Stars* switch under *Nodes* in the
+  graph's own panel.
 
 - **More of Pulsar in the graph's own panel.** Under *Nodes*, a *Glow* slider
   and switches for *Size by age* and the *Spotlight*; and a new *Links* group
@@ -24,6 +25,16 @@
   it, so there was nothing to hover; a click on it still lands on the tab.
 
 ### Changed
+
+- **The spotlight is green**, `#4dff91`, rather than white, which vanished on a
+  light theme. And on a light theme any spotlight colour is now drawn darker
+  until it stands 3:1 off the page, keeping its hue: pale colours are the ones
+  that glow on a dark theme and the ones that disappear on a light one, and the
+  green there stood 1.31:1 off white against 6.69:1 for an ordinary node. It is
+  drawn `#33a960` on a light theme, in the graph and in a tab's dot. A colour
+  already dark enough is left exactly as picked. A new install starts green; a
+  colour already saved is kept, white included, and white is drawn as the grey
+  `#949494` on a light theme rather than not at all.
 
 - **A note's history is drawn on one scale for every note**, logarithmic back
   from now, instead of each rail being scaled to its own note. A rail covering
