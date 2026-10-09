@@ -214,9 +214,9 @@ line, which is much easier to sit with.
 
 ## The replay
 
-Obsidian's graph has a timelapse of its own — the clock icon in its control
-panel, *Start timelapse animation*. It empties the graph and rebuilds it in the
-order the notes were created.
+Obsidian's graph has a timelapse of its own — the **Animate** button under
+*Display* in its control panel. It empties the graph and rebuilds it in the
+order the notes were created. In the settings this is the *Animate* section.
 
 Run it with Pulsar on and it is almost black. Every note it draws is drawn at the
 brightness it has **today**, and the notes that existed early are the old ones,
