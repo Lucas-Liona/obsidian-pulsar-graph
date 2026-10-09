@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GraphNode, GraphRenderer } from '../src/graph';
-import { BREATH_FRAME_MS, breath, Stars, strengthAt, widthAt } from '../src/stars';
+import { BREATH_FRAME_MS, rhythmOf, shimmer, Stars, strengthAt, widthAt } from '../src/stars';
 
 // The parts of Obsidian's PIXI the halos are built from, shaped the way the
 // live graph has them: a title is a text, a text is a sprite, a sprite is drawn
@@ -321,7 +321,21 @@ describe('stars', () => {
 
         expect(seen.size).toBeGreaterThan(5);
         expect(Math.max(...seen)).toBeLessThanOrEqual(100);
-        expect(Math.min(...seen)).toBeGreaterThanOrEqual(35);
+        expect(Math.min(...seen)).toBeGreaterThanOrEqual(56);
+    });
+
+    it('keeps a star its own pace when a newer note pushes it down the list', () => {
+        const { renderer, circle } = graph(['a.md', 'b.md', 'c.md']);
+        const stars = new Stars(renderer, paint);
+
+        stars.set({ paths: ['a.md', 'b.md'], light: false, pulse: true });
+        stars.sync(0);
+        stars.set({ paths: ['c.md', 'a.md', 'b.md'], light: false, pulse: true });
+
+        for (const now of [500, 1700, 2900]) {
+            stars.sync(now);
+            expect(halo(circle('a.md')).alpha).toBeCloseTo(shimmer(now, strengthAt(1, 3), rhythmOf('a.md')), 10);
+        }
     });
 
     it('breathes about 30 times a second once the graph sleeps, without waking it', () => {
@@ -448,13 +462,68 @@ describe('the shape of a list of stars', () => {
         expect([widthAt(0, 1), strengthAt(0, 1)]).toEqual([6, 1]);
     });
 
-    it('never breathes all the way out', () => {
-        for (let now = 0; now < 8000; now += 37) {
-            for (const rank of [0, 3, 9]) {
-                const value = breath(now, rank, 10);
-                expect(value).toBeGreaterThanOrEqual(0.35);
-                expect(value).toBeLessThanOrEqual(1);
+    it('never goes above full or all the way out, and peaks at full on the newest', () => {
+        for (const path of ['a.md', 'notes/b.md', 'Zeta 2026.md']) {
+            const rhythm = rhythmOf(path);
+            let highest = 0;
+            for (let now = 0; now < 8000; now += 7) {
+                for (const strength of [strengthAt(0, 10), strengthAt(9, 10)]) {
+                    const value = shimmer(now, strength, rhythm);
+                    expect(value).toBeGreaterThan(0.05);
+                    expect(value).toBeLessThanOrEqual(1);
+                }
+
+                highest = Math.max(highest, shimmer(now, 1, rhythm));
             }
+
+            expect(highest).toBeGreaterThan(0.999);
+        }
+    });
+
+    it('swings every star by the same amount around its own level', () => {
+        const rhythm = rhythmOf('a.md');
+        const spread = (strength: number): number => {
+            const values = Array.from({ length: 4000 }, (_, i) => shimmer(i * 2, strength, rhythm));
+            return Math.max(...values) - Math.min(...values);
+        };
+
+        expect(spread(1)).toBeCloseTo(spread(0.4), 3);
+        expect(shimmer(0, 1, rhythm) - shimmer(0, 0.4, rhythm)).toBeCloseTo(0.6 * 0.78, 10);
+    });
+});
+
+describe('a star\'s pace', () => {
+    const paths = Array.from({ length: 2000 }, (_, i) => `Folder ${i % 7}/Note ${i}.md`);
+    const periods = paths.map((path) => rhythmOf(path).period);
+
+    it('is the same every time for the same note, and differs between notes', () => {
+        expect(rhythmOf('a.md')).toEqual(rhythmOf('a.md'));
+        expect(new Set(periods.map((period) => Math.round(period))).size).toBeGreaterThan(1500);
+    });
+
+    it('takes four seconds give or take about one, between two and seven', () => {
+        const mean = periods.reduce((sum, period) => sum + period, 0) / periods.length;
+        const sd = Math.sqrt(periods.reduce((sum, period) => sum + (period - mean) ** 2, 0) / periods.length);
+
+        expect(Math.min(...periods)).toBeGreaterThanOrEqual(2000);
+        expect(Math.max(...periods)).toBeLessThanOrEqual(7000);
+        expect(mean).toBeGreaterThan(3850);
+        expect(mean).toBeLessThan(4150);
+        expect(sd).toBeGreaterThan(1050);
+        expect(sd).toBeLessThan(1300);
+    });
+
+    it('starts each note at its own point in the breath', () => {
+        const phases = paths.map((path) => rhythmOf(path).phase);
+        const quarters = [0, 0, 0, 0];
+        for (const phase of phases) {
+            expect(phase).toBeGreaterThanOrEqual(0);
+            expect(phase).toBeLessThan(2 * Math.PI);
+            quarters[Math.floor(phase / (Math.PI / 2))]++;
+        }
+
+        for (const count of quarters) {
+            expect(count).toBeGreaterThan(400);
         }
     });
 });
