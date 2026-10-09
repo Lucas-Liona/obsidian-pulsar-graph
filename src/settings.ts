@@ -1288,7 +1288,7 @@ export class PulsarSettingTab extends PluginSettingTab {
      * is showing.
      */
     private buildReplay(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Replay', "The graph's own timelapse, in the graph's control panel, lit as it plays");
+        heading(containerEl, 'Animate', "Obsidian's own timelapse, played by the Animate button under Display in the graph's panel, lit as it plays");
 
         new Setting(containerEl)
             .setName('Light the timelapse as it plays')
