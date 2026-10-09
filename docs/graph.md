@@ -1,8 +1,40 @@
 # The graph
 
-What Pulsar draws on the graph beyond the fade itself: size, the age above a
-node, the newest note, the glow between neighbours, folder temperature, and what
-the links carry.
+What Pulsar draws on the graph beyond the fade itself: stars, size, the age
+above a node, the newest note, the glow between neighbours, folder temperature,
+and what the links carry.
+
+## Stars and black holes
+
+Off unless you turn it on, at the top of *The graph* in the settings or under
+*Nodes* in the graph's own panel.
+
+The top of the fade runs out of room. Past full strength the renderer lightens
+a node channel by channel until every channel is at its limit, so the newest
+notes of a vault all end up the same white and nothing in their colour says
+which is newer. A star is drawn around the node instead of in it: a soft glow,
+six node widths across on the newest note and narrowing to three on the last
+one counted, strongest on the newest.
+
+On a light theme adding light to white changes nothing, so the glow is black
+and multiplied into the page instead, and the newest notes sink into it. Same
+notes, same shape; it switches when the theme does.
+
+**How many** is a count of the newest notes, ten unless you change it, up to
+250. In a local graph measured against its own notes it is that graph's own
+newest, the same rule the spotlight follows. Nothing is drawn during the
+graph's replay, which is about the past.
+
+**Pulse** makes each one breathe, slowly and out of step with the others, never
+all the way out. It costs something a still graph does not: Obsidian stops
+drawing a graph once nothing has moved for about a second, and a pulse never
+stops moving, so the graph keeps drawing for as long as it is on screen. A
+graph in a background tab or a minimized window draws nothing and costs
+nothing. The pulse stays still while your system asks for reduced motion.
+
+Each glow hangs off its node's own circle, so it moves, zooms, dims on hover and
+leaves the screen with the node without being told. It never takes the pointer:
+hovering where a glow is drawn does what it would do with no glow there.
 
 ## Size
 

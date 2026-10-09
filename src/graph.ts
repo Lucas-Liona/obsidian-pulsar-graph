@@ -29,6 +29,8 @@ export interface GraphText {
     y: number;
     scale: { x: number; y: number };
     style: { fontFamily?: unknown };
+    /** A title is a sprite drawn from a texture, like a link's line. */
+    texture?: GraphTexture;
     anchor: { set: (x: number, y: number) => void };
     children: GraphText[];
     /** What it is drawn inside. Null once removed, which destroying a parent does. */
@@ -44,6 +46,8 @@ export type GraphTextConstructor = new (text: string, style: unknown) => GraphTe
 /** The image a link's line is drawn from. Swapped to fade one along its length. */
 export interface GraphTexture {
     width: number;
+    /** Frees it, and with `true` the image under it too. */
+    destroy?: (base?: boolean) => void;
 }
 
 /** Builds one from a canvas. Reached through an existing texture, never a global. */
@@ -81,8 +85,23 @@ export interface GraphNode {
     forward?: Record<string, unknown>;
     reverse?: Record<string, unknown>;
     text?: GraphText | null;
-    circle?: { tint: number; visible: boolean; renderable?: boolean } | null;
+    circle?: GraphCircle | null;
     getSize?: () => number;
+}
+
+/**
+ * A node's circle: a PIXI graphics object drawn as a circle of radius 100
+ * around (100, 100), pivoted on that centre and scaled down to the node's size.
+ * Anything added to its children is drawn just after it, in the same space,
+ * and inherits its position, zoom, visibility and alpha.
+ */
+export interface GraphCircle {
+    tint: number;
+    visible: boolean;
+    renderable?: boolean;
+    addChild?: (child: unknown) => unknown;
+    removeChild?: (child: unknown) => unknown;
+    getLocalBounds?: () => { x: number; y: number; width: number; height: number };
 }
 
 export interface GraphNodeLookup {

@@ -27,6 +27,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `opacity-store.ts` | mtime and opacity caches, the range being measured against, the rank order |
 | `graph.ts` | Obsidian's undocumented graph internals, node colour and size, neighbour and group pooling |
 | `age-label.ts` | The age drawn above a node |
+| `stars.ts` | Stars and black holes: the halo around the newest notes |
 | `links.ts` | Age and session trails carried into the links |
 | `link-dots.ts` | The dot after each link in a note, in editing and reading view |
 | `hover.ts` | The per-renderer hover hook |
@@ -289,6 +290,23 @@ also has to set it back.
 
 **A link's line is a stretched, rotated sprite** whose local x axis runs source to
 target, so a horizontal ramp texture maps onto it with no extra maths.
+
+**A node's circle is a PIXI graphics object, not a sprite**: a circle of radius
+100 around (100, 100), pivoted on that centre and scaled to
+`getSize() * nodeScale / 100`, read from Obsidian 1.14.4's PIXI 7.2.4. Anything
+added to its children is drawn just after it in the same space, inheriting its
+position, zoom, culling and alpha, which is how a star's halo follows its node.
+The circle is hit-tested by PIXI itself (`eventMode` `static`,
+`interactiveChildren` true, with `pointerover` and `pointerout` listeners), so a
+child left at the default `eventMode` widens the area that hovers the note to
+the child's size. Give anything added there `eventMode = 'none'`.
+
+**PIXI's classes are reachable through a title.** A title is a PIXI text, and a
+text is a sprite, so `Object.getPrototypeOf(node.text.constructor)` is the same
+sprite class a link's line is built from, and `node.text.texture.constructor`
+has the static `from` that builds a texture from a canvas. Every node has a
+title, which a line cannot promise. Blend modes are PIXI 7's numbers: 1 adds,
+2 multiplies.
 
 **A renderer's `width` and `height` are 0 while its leaf is hidden**, which
 silently breaks any screen-space maths. Reveal the leaf first.

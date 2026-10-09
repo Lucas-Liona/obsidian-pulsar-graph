@@ -20,6 +20,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
+import { Stars } from './stars';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
@@ -33,6 +34,8 @@ interface AttachedGraph {
     release: Unhook;
     labels: AgeLabels;
     links: LinkShading;
+    /** The halos around the newest notes, when they are on. */
+    stars: Stars;
     /** What each node was last drawn at, once neighbours have had their say. */
     pooled: { byPath: Map<string, number> | null };
     /** Kept so it can be re-installed when Obsidian rebuilds its graphics. */
@@ -1719,6 +1722,7 @@ export default class PulsarGraphPlugin extends Plugin {
         };
 
         const links = new LinkShading(renderer, strengthOf, (id) => this.store.mtimeFor(id), linkRevision);
+        const stars = new Stars(renderer);
         links.setMode(this.settings.linkRecency);
         links.setTrails(this.settings.sessionTrails
             ? { gapMs: this.settings.sessionGapMinutes * 60 * 1000, rgb: parseHexColor(this.settings.trailColor), strength: this.settings.trailStrength }
@@ -1747,6 +1751,15 @@ export default class PulsarGraphPlugin extends Plugin {
 
             labels.sync();
             links.sync();
+
+            // A pulse is the one thing here that has to keep the graph
+            // drawing. The renderer stops once nothing has moved for a
+            // second, and waking it from inside a frame is what keeps a
+            // breath going.
+            if (stars.sync(performance.now())) {
+                renderer.changed?.();
+            }
+
             holdPaintTint(renderer, paint);
             settleReleases(renderer, paint);
 
@@ -1791,6 +1804,7 @@ export default class PulsarGraphPlugin extends Plugin {
             replaying,
             labels,
             links,
+            stars,
             pooled,
             frames: hookRendererFrame(renderer, onFrame),
             onFrame,
@@ -1811,6 +1825,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 graph.frames?.release();
                 labels.destroy();
                 links.destroy();
+                stars.destroy();
                 panel?.destroy();
                 if (preview.shown) {
                     clearPreviewFilter(renderer);
@@ -1979,6 +1994,16 @@ export default class PulsarGraphPlugin extends Plugin {
             lightTheme: this.lightTheme()
         });
 
+        // Measured against the same notes as the spotlight, and for the same
+        // reason. Not during a replay, which is a question about the past.
+        graph.stars.set({
+            paths: this.settings.stars && replayAt === null
+                ? this.store.newestAmong(scoped ? pathsIn(renderer) : this.store.paths(), this.settings.starCount)
+                : NO_STARS,
+            light: this.lightTheme(),
+            pulse: this.settings.starPulse && !reducedMotion()
+        });
+
         applySizes(renderer, {
             spotlit: new Set(spotlit),
             spotlightSize: this.settings.spotlightSize,
@@ -1991,6 +2016,14 @@ export default class PulsarGraphPlugin extends Plugin {
 
         repaint(renderer);
     }
+}
+
+/** What a graph with stars off is handed, the same each time so nothing is rebuilt. */
+const NO_STARS: readonly string[] = [];
+
+/** Whether the system has asked for less motion, which a pulse is. Outside a window nothing has. */
+function reducedMotion(): boolean {
+    return typeof activeWindow !== 'undefined' && (activeWindow.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
 }
 
 /** What a note's dot says when hovered, in a tab or after a link. */
