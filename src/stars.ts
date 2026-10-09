@@ -10,21 +10,21 @@ import { GraphCircle, GraphNode, GraphRenderer, GraphTexture } from './graph';
  * of them is newer. A halo is drawn around the node instead of in it, so it
  * has room the colour does not.
  *
- * On a dark theme the halo is white light, and glows. On a light one light on
- * white changes nothing, so it is black instead and the note sits in a pool of
- * it. Same notes, same shape, and it follows the theme when the theme changes.
+ * On a dark theme a halo is added to what is under it, and glows. On a light
+ * one adding light to white changes nothing, so the halo is multiplied in
+ * instead and the note sits in a pool of black. Same notes, same shape, and
+ * it follows the theme when the theme changes.
+ *
+ * Added over what is there, not drawn behind it. Destination-over kept every
+ * colour exact, and hid the glow wherever anything had been drawn first: in a
+ * 20,000-note graph faint nodes and links cover the whole canvas, and the
+ * stars vanished. The node's own circle is drawn again over its halo instead,
+ * so the note keeps its colour while the light falls on what is around it.
  */
 
-/**
- * PIXI 7's destination-over, as Obsidian's copy numbers it: what is drawn is
- * put behind whatever is already on the canvas, which is transparent until the
- * graph draws on it. A halo is a child of its node's circle, and a child is
- * drawn after its parent; blended normally it lands on the node, and the light
- * at its middle turned the spotlight's green and a pin's purple white. Behind,
- * the node keeps its own colour at whatever strength it is drawn, and links
- * already drawn cross in front of the glow.
- */
-const BLEND_BEHIND = 24;
+/** PIXI 7's numbers for the two blend modes, as Obsidian's copy has them. */
+const BLEND_ADD = 1;
+const BLEND_MULTIPLY = 2;
 
 /** The halo is drawn once at this size and scaled to each node. */
 const TEXTURE_SIZE = 256;
@@ -83,6 +83,16 @@ interface HaloSprite {
 
 type SpriteConstructor = new (texture: GraphTexture) => HaloSprite;
 
+/** The parts of PIXI's graphics this needs, for the circle drawn again over a halo. */
+interface Core {
+    tint: number;
+    eventMode?: string;
+    parent?: unknown;
+    destroy: () => void;
+}
+
+type CoreConstructor = new (geometry: unknown) => Core;
+
 /** What a halo is built from, found on the graph rather than taken from a global. */
 interface Kit {
     Sprite: SpriteConstructor;
@@ -91,6 +101,15 @@ interface Kit {
 
 interface Halo {
     sprite: HaloSprite;
+    /**
+     * The node's own circle drawn again over the halo. A child is always drawn
+     * after its parent, so a halo added to the circle lands on top of it, and
+     * light added at its middle turned the spotlight's green and a pin's
+     * purple white. This puts the note's own colour back over it. A note drawn
+     * below full strength is drawn twice, so it comes out a little more
+     * opaque; a star is one of the newest notes, which are rarely faint.
+     */
+    core: Core | null;
     circle: GraphCircle;
     /** How many circle widths across it is drawn, so a change of rank resizes it. */
     width: number;
@@ -209,6 +228,12 @@ export class Stars {
 
             const strength = strengthAt(rank, count);
             halo.sprite.alpha = this.pulse ? strength * breath(now, rank, count) : strength;
+
+            // The renderer eases the circle's tint every frame and a child
+            // inherits none of it. Its alpha, position and zoom it does.
+            if (halo.core && halo.core.tint !== circle.tint) {
+                halo.core.tint = circle.tint;
+            }
         }
 
         const breathing = this.pulse && this.halos.size > 0;
@@ -298,7 +323,7 @@ export class Stars {
         sprite.anchor.set(0.5);
         sprite.position.set(bounds ? bounds.x + bounds.width / 2 : 100, bounds ? bounds.y + bounds.height / 2 : 100);
         sprite.scale.set(width * across / TEXTURE_SIZE);
-        sprite.blendMode = BLEND_BEHIND;
+        sprite.blendMode = this.light ? BLEND_MULTIPLY : BLEND_ADD;
         // A circle is hit-tested by PIXI, children and all, so a halo left
         // to the default would make six times the area hover the note.
         sprite.eventMode = 'none';
@@ -306,7 +331,18 @@ export class Stars {
 
         circle.addChild(sprite);
 
-        const halo: Halo = { sprite, circle, width, across };
+        // Built over the circle's own shape, so it is exactly the circle and
+        // shares what it is drawn from rather than copying it.
+        const Graphics = (circle as { constructor?: unknown }).constructor as CoreConstructor | undefined;
+        let core: Core | null = null;
+        if (typeof Graphics === 'function' && circle.geometry) {
+            core = new Graphics(circle.geometry);
+            core.eventMode = 'none';
+            core.tint = circle.tint;
+            circle.addChild(core);
+        }
+
+        const halo: Halo = { sprite, core, circle, width, across };
         this.halos.set(this.paths[rank], halo);
 
         return halo;
@@ -414,8 +450,14 @@ function paintHalo(light: boolean): HTMLCanvasElement | null {
 
 /** From whatever it is drawn in, which after a rebuild may be nothing. */
 function detach(halo: Halo): void {
-    const parent = halo.sprite.parent as GraphCircle | null | undefined;
+    for (const each of [halo.sprite, halo.core]) {
+        if (!each) {
+            continue;
+        }
 
-    parent?.removeChild?.(halo.sprite);
-    halo.sprite.destroy();
+        (each.parent as GraphCircle | null | undefined)?.removeChild?.(each);
+        // A graphics object built over another's shape lets go of it here and
+        // leaves it to the circle that still draws it.
+        each.destroy();
+    }
 }

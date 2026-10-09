@@ -1752,12 +1752,16 @@ export default class PulsarGraphPlugin extends Plugin {
             labels.sync();
             links.sync();
 
-            // A pulse rides these frames while there are any, and draws its
-            // own, slower, once the renderer has gone to sleep.
-            stars.sync(performance.now());
-
             holdPaintTint(renderer, paint);
             settleReleases(renderer, paint);
+
+            // After the paint record, which assigns tints on frames: a star's
+            // circle is drawn again over its halo in whatever tint the circle
+            // has, and a tint handed back here on the last frame before the
+            // graph sleeps was otherwise never copied. A pulse rides these
+            // frames while there are any, and draws its own, slower, once the
+            // renderer has gone to sleep.
+            stars.sync(performance.now());
 
             // Once per move of a handle, not once per frame: nothing but this
             // sets `renderable`, so what it hid stays hidden until the range

@@ -14,6 +14,44 @@ export interface FadeOptions {
 }
 
 /**
+ * What the sharpness slider offers. One exponent shapes the whole curve: 1 is
+ * a straight line, above it only the newest notes stay bright, and below it
+ * more of the vault stays lit.
+ */
+export const SHARPNESS_STOPS = [0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3, 4, 6] as const;
+
+/** The two settings a curve is stored in. */
+export interface FadeShape {
+    fadeType: FadeType;
+    steepness: number;
+}
+
+/**
+ * The exponent a curve is drawn with. A straight line is 1 and an exponential
+ * curve is its steepness, which is all the sharpness is: the slider writes the
+ * same two settings the old dropdown did, so a saved setting means the same in
+ * a version from before it. Bands keep the sharpness they go back to.
+ */
+export function sharpnessOf(shape: FadeShape): number {
+    return shape.fadeType === 'linear' ? 1 : shape.steepness;
+}
+
+/** A smooth curve of this sharpness, as it is stored. */
+export function curveAt(sharpness: number): FadeShape {
+    return { fadeType: sharpness === 1 ? 'linear' : 'exponential', steepness: sharpness };
+}
+
+/** Bands, keeping the sharpness to go back to when they are switched off. */
+export function banded(shape: FadeShape): FadeShape {
+    return { fadeType: 'step', steepness: sharpnessOf(shape) };
+}
+
+/** A sharpness as the slider writes it beside itself. */
+export function formatSharpness(sharpness: number): string {
+    return `× ${Math.round(sharpness * 100) / 100}`;
+}
+
+/**
  * Shapes a note's recency (0 for the oldest note in the vault, 1 for the
  * newest) into the fraction of the opacity range it should receive.
  */

@@ -324,14 +324,17 @@ the child's size. Give anything added there `eventMode = 'none'`. Measured on
 28 stars in the demo: with `none`, every point tested hit exactly what it hit
 with no halo there; left at the default, all 28 hovered from 2.5 radii out.
 
-**A child is drawn over its node; blend it behind instead.** Light added by a
-halo drawn after its circle landed on the node too, and turned the spotlight's
-`#4dff91` and a pin's purple pure white. The graph's canvas is transparent
-(`backgroundAlpha: 0`), so PIXI's destination-over, blend mode 24 in Obsidian's
-copy (`ONE_MINUS_DST_ALPHA, ONE`), puts a child behind everything already drawn
-that frame: the node keeps its own colour at any alpha, and lines drawn earlier
-cross in front. Drawing the circle again over the halo also restored the colour,
-but made a node below full strength more opaque, since it is then drawn twice.
+**A child is drawn over its node, and drawing it behind hides it.** Light added
+by a halo drawn after its circle landed on the node too, and turned the
+spotlight's `#4dff91` and a pin's purple pure white. PIXI's destination-over,
+blend mode 24 in Obsidian's copy (`ONE_MINUS_DST_ALPHA, ONE`), puts a child
+behind whatever is already on the canvas, which is transparent where nothing has
+been drawn (`backgroundAlpha: 0`). That kept every colour exact in the 112-note
+demo, and in the 20,000-note bench hid every halo: faint nodes and links had
+covered the whole canvas first. What works is to add the light and then draw
+the node's circle again over it, a graphics object built on the circle's own
+`geometry` taking the circle's `tint` each frame; a node below full strength is
+then drawn twice and comes out a little more opaque.
 
 **PIXI's classes are reachable through a title.** A title is a PIXI text, and a
 text is a sprite, so `Object.getPrototypeOf(node.text.constructor)` is the same

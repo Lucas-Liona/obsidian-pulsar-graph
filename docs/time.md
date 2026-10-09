@@ -103,13 +103,27 @@ same six notes before and after:
 It's also the scale that needs no **Measure age against** setting, because there
 is no range to measure against — so that row disappears when you pick it.
 
-## Fade curves
+## The shape of the fade
 
-| Curve | What it does | Good for |
+**Sharpness** is one exponent for the whole curve: a note's place between the
+oldest and the newest, from 0 to 1, raised to it. At × 1 brightness falls in a
+straight line. Above 1 it falls away fast from the newest note, so only recent
+work stays bright; below 1 it holds up longer, so more of the vault stays lit.
+
+| Sharpness | A note halfway between the oldest and the newest gets | Good for |
 | --- | --- | --- |
-| Linear | Opacity tracks recency evenly | An even spread across the vault's history |
-| Exponential | `recency ^ steepness` | Picking out very recent work. Steepness above 1 is sharper, below 1 gentler |
-| Step | Recency rounded onto evenly spaced levels | Reading the graph as distinct bands of age |
+| × 0.5 | 71% of the range | Keeping most of the vault visible |
+| × 1 | 50% | An even spread across the vault's history |
+| × 2 | 25% | Picking out recent work |
+| × 4 | 6% | Only the newest notes bright |
+
+**Bands** snaps that number onto a few evenly spaced levels instead, so the
+graph reads as layers of age rather than a gradient. Switching them off goes
+back to the sharpness you had.
+
+Sharpness replaced a choice of three fade types: *Linear* is × 1, *Exponential*
+is its steepness, and *Step* is Bands. It is stored the same way, so a saved
+setting means the same thing in either version.
 
 ---
 

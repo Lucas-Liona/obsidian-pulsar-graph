@@ -26,6 +26,12 @@ part of your vault you're actually working in lights up and the rest sinks back.
 
 <p align="center"><i>Sweeping the fade from hardest to softest. The green dot is the note I touched last.</i></p>
 
+<p align="center">
+  <img src="docs/assets/sky.png" width="880" alt="A graph of 20,000 notes seen whole, a round cloud of grey and white points on a dark background. Scattered through it, the newest notes glow with soft white halos, like the brightest stars in a cluster.">
+</p>
+
+<p align="center"><i>20,000 notes with stars on: the 250 newest glow.</i></p>
+
 ## Why I made it
 
 I built this plugin a year ago and I've been using it since, and I wanted to share
@@ -68,7 +74,7 @@ being read in order.
 | | |
 |---|---|
 | **[Time](docs/time.md)** | What counts as old, measuring against your vault or a window, the age scales and the fade curves. The number everything else reads. |
-| **[The graph](docs/graph.md)** | Node size, the age drawn above a node, the spotlight — on the newest few notes or on anything touched in the last so many minutes — the glow between neighbours, folder temperature, and what the links carry. |
+| **[The graph](docs/graph.md)** | Stars around the newest notes, node size, the age drawn above a node, the spotlight — on the newest few notes or on anything touched in the last so many minutes — the glow between neighbours, folder temperature, and what the links carry. |
 | **[The age filter](docs/filter.md)** | Taking notes out of the graph entirely rather than dimming them, the scrubber inside the graph's own panel, and how to read the bar. |
 | **[The local graph](docs/local-graph.md)** | The panel around one note. It can be measured against its own notes rather than against the vault, or from the note in the middle — how close in time each neighbour is, rather than how recent. |
 | **[Pins](docs/pins.md)** | Notes you choose to hold bright whatever their dates say, in the graph and in the tab bar. The one place you overrule the clock. |
@@ -116,7 +122,9 @@ glow and the trails, start off.
   the plugin belong to the features that fade against the clock rather than against
   the vault: the status bar re-reads it once a minute, the tabs twice a minute,
   and fresh writing once per shade — and that last one only runs in an editor
-  that still has something left to cool.
+  that still has something left to cool. The one exception is a star's pulse,
+  off unless you turn it on: it draws the graph 30 times a second while the
+  graph is otherwise still, and stops when the pulse does.
 - **It reads timestamps and file sizes, never contents.** How recently a note was
   modified, and how long it is. Fresh writing adds one more of the same kind:
   where in a note an edit landed, and how long it was — never what it said. Not a

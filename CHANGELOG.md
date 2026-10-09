@@ -7,8 +7,8 @@
 - **Stars and black holes**, off unless you turn them on: a soft glow around
   the newest notes, widest and strongest on the newest, for when the top of the
   fade is all one white. On a light theme the glow is black, and the newest
-  notes sit in a pool of it. Each is drawn behind its note, which keeps its
-  own colour. *How many* counts the newest notes (10 to start, up to
+  notes sit in a pool of it. Each note is drawn over its own glow and keeps its
+  colour. *How many* counts the newest notes (10 to start, up to
   250), and *Pulse* makes each one breathe, drawing a still graph 30 times a
   second while it is on screen, and holds still under reduced motion. At the
   top of *The graph* in the settings, and a *Stars* switch under *Nodes* in the
@@ -62,6 +62,14 @@
   saved settings once has every one of them saved and keeps what they had.
   *Reset all settings* now goes to these, and anyone who never changed a
   setting gets them on upgrade.
+
+- **Sharpness replaces Fade type.** One slider from × 0.25 to × 6 shapes the
+  whole fade: × 1 is a straight line, higher keeps only the newest notes
+  bright, lower keeps more of the vault lit. *Step* becomes a *Bands* switch
+  with its *Number of bands*. The graph's own panel has a *Sharpness* slider in
+  place of *Curve*. Nothing saved changes meaning: *Linear* is × 1,
+  *Exponential* is its steepness, *Step* is Bands, and a version from before
+  reads what this one saves.
 
 - **The spotlight is green**, `#4dff91`, rather than white, which vanished on a
   light theme. And on a light theme any spotlight colour is now drawn darker

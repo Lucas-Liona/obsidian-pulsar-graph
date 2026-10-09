@@ -28,10 +28,32 @@ describe('the graph panel', () => {
         const { groups } = panel();
 
         expect(groups.map((group) => [group.heading, group.controls.map((each) => each.name)])).toEqual([
-            ['Nodes', ['Dimmest', 'Brightest', 'Curve', 'Glow', 'Size by age', 'Stars', 'Spotlight']],
+            ['Nodes', ['Dimmest', 'Brightest', 'Sharpness', 'Glow', 'Size by age', 'Stars', 'Spotlight']],
             ['Links', ['Age', 'Trace sittings']],
             ['Text', ['Title size', 'Ages']]
         ]);
+    });
+
+    it('sets the sharpness as the curve the old dropdown stored, and leaves bands for it', () => {
+        const { settings, control, changes } = panel({ fadeType: 'linear', steepness: 2 });
+        const sharpness = control('Sharpness');
+        if (sharpness.kind !== 'stops') throw new Error('not a stops slider');
+
+        // A straight line reads as 1, whatever steepness was left saved.
+        expect(sharpness.value()).toBe(1);
+
+        sharpness.onChange(2.5);
+        expect([settings.fadeType, settings.steepness]).toEqual(['exponential', 2.5]);
+
+        sharpness.onChange(1);
+        expect([settings.fadeType, settings.steepness]).toEqual(['linear', 1]);
+
+        settings.fadeType = 'step';
+        settings.steepness = 4;
+        expect(sharpness.value()).toBe(4);
+        sharpness.onChange(0.5);
+        expect([settings.fadeType, settings.steepness]).toEqual(['exponential', 0.5]);
+        expect(changes()).toBe(3);
     });
 
     it('switches stars on and off, and they start off', () => {
@@ -123,6 +145,8 @@ describe('the graph panel', () => {
                 each.onChange(!each.value());
             } else if (each.kind === 'slider') {
                 each.onChange(each.limits.highest);
+            } else if (each.kind === 'stops') {
+                each.onChange(each.stops[each.stops.length - 1]);
             } else {
                 each.onChange(Object.keys(each.options).find((key) => key !== each.value()) ?? each.value());
             }
