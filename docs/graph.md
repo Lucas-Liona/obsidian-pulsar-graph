@@ -26,11 +26,14 @@ newest, the same rule the spotlight follows. Nothing is drawn during the
 graph's replay, which is about the past.
 
 **Pulse** makes each one breathe, slowly and out of step with the others, never
-all the way out. It costs something a still graph does not: Obsidian stops
-drawing a graph once nothing has moved for about a second, and a pulse never
-stops moving, so the graph keeps drawing for as long as it is on screen. A
-graph in a background tab or a minimized window draws nothing and costs
-nothing. The pulse stays still while your system asks for reduced motion.
+all the way out. It costs something a still graph does not. Obsidian stops
+drawing a graph once nothing has moved for about a second; a pulse draws it
+again 30 times a second without waking it, which measured about a fifth of one
+core between the window and the GPU, against nothing for stars that hold still.
+While anything else is moving, the breath rides Obsidian's own frames instead. A
+graph in a background tab or a minimized window draws nothing for it. The pulse
+holds still while your system asks for reduced motion (on Windows, with
+animation effects turned off), and the setting says so when it does.
 
 Each glow hangs off its node's own circle, so it moves, zooms, dims on hover and
 leaves the screen with the node without being told. It never takes the pointer:

@@ -163,6 +163,12 @@ everything which attaches checks first.
 
 **Repainting.** `renderCallback` returns early once `idleFrames > 60`, so calling
 it directly draws nothing on a settled graph. `renderer.changed()` wakes the loop.
+Waking it buys at least 61 whole frames at the display's rate, every node and
+link rendered in each: a breath kept going by calling `changed()` every frame
+held 161 frames a second and 1.3 cores busy between the window and the GPU, in a
+112-note graph that had nothing else to draw. Something slow that has to move on
+a sleeping graph draws the stage instead, `renderer.px.render()`, on its own
+timer while `idleFrames > 60`; at 30 a second that measured a fifth of a core.
 
 **`setData` is what wipes node colour.** It reassigns every node's colour from
 group data, which is the only reason an earlier version of this plugin polled on

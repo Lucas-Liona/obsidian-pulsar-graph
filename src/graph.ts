@@ -143,6 +143,13 @@ export interface GraphRenderer {
     setData?: (data: unknown) => unknown;
     /** Wakes the render loop and queues a frame. */
     changed?: () => void;
+    /**
+     * Frames drawn since anything last moved. Past 60 the render callback
+     * returns at once and queues nothing, and the loop is asleep.
+     */
+    idleFrames?: number;
+    /** The PIXI application; `render` draws the stage once, as it stands. */
+    px?: { render?: () => void } | null;
 }
 
 interface GraphEngine {

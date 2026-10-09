@@ -20,7 +20,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
-import { Stars } from './stars';
+import { reducedMotion, Stars } from './stars';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
@@ -1752,13 +1752,9 @@ export default class PulsarGraphPlugin extends Plugin {
             labels.sync();
             links.sync();
 
-            // A pulse is the one thing here that has to keep the graph
-            // drawing. The renderer stops once nothing has moved for a
-            // second, and waking it from inside a frame is what keeps a
-            // breath going.
-            if (stars.sync(performance.now())) {
-                renderer.changed?.();
-            }
+            // A pulse rides these frames while there are any, and draws its
+            // own, slower, once the renderer has gone to sleep.
+            stars.sync(performance.now());
 
             holdPaintTint(renderer, paint);
             settleReleases(renderer, paint);
@@ -2020,11 +2016,6 @@ export default class PulsarGraphPlugin extends Plugin {
 
 /** What a graph with stars off is handed, the same each time so nothing is rebuilt. */
 const NO_STARS: readonly string[] = [];
-
-/** Whether the system has asked for less motion, which a pulse is. Outside a window nothing has. */
-function reducedMotion(): boolean {
-    return typeof activeWindow !== 'undefined' && (activeWindow.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-}
 
 /** What a note's dot says when hovered, in a tab or after a link. */
 function editedAgo(mtime: number): string {

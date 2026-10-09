@@ -109,7 +109,7 @@ The tables below follow the settings tab from top to bottom.
 | The graph (switch on the header) | on / off | on | all | Off hands every graph back as Obsidian draws it |
 | Draw the newest notes as stars | on / off | off | all | A soft halo around the newest notes: a glow on a dark theme, black on a light one |
 | How many | 1 – 250 | 10 | Stars on | How many of the newest notes get one |
-| Pulse | on / off | off | Stars on | Each one breathes. Keeps the graph drawing while it is on screen; still while the system asks for reduced motion |
+| Pulse | on / off | off | Stars on | Each one breathes. Draws a still graph 30 times a second while it is on screen; holds still while the system asks for reduced motion |
 | Fade type | Linear, Exponential, Step | Linear | all | How opacity falls from newest to oldest |
 | Minimum opacity | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
 | Maximum opacity | 0.0 – 12.0 | 3.0 | all | How bright the newest note gets |

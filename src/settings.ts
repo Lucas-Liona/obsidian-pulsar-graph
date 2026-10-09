@@ -13,6 +13,7 @@ import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
 import { confirmTwice } from './confirm';
 import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, HALF_LIFE_STOPS, nearestStop, REPLAY_TRAIL_STOPS, SITTING_STOPS, SPOTLIGHT_WINDOW_STOPS, SPREAD_FLOOR_STOPS, STALE_TAB_STOPS, TAB_FADE_STOPS, WINDOW_STOPS } from './duration';
+import { reducedMotion } from './stars';
 
 export type NormalizeBy = 'vault' | 'window' | 'shown';
 
@@ -1129,7 +1130,9 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Pulse')
-            .setDesc('Each one breathes, slowly and out of step. The graph keeps drawing while it is on screen, which a still graph does not, so this costs power. Off while your system asks for reduced motion')
+            .setDesc(reducedMotion()
+                ? 'Each one breathes, slowly and out of step. Your system is asking for reduced motion, so they hold still until it stops'
+                : 'Each one breathes, slowly and out of step. A still graph stops drawing, and this keeps it drawing 30 times a second, which costs some power')
             .addToggle((toggle) => toggle
                 .setValue(settings.starPulse)
                 .onChange(async (value) => {

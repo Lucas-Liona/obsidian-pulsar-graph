@@ -1,3 +1,4 @@
+import type { Timers } from './confirm';
 import { GraphCircle, GraphNode, GraphRenderer, GraphTexture } from './graph';
 
 /**
@@ -36,8 +37,31 @@ const FAINTEST = 0.4;
 /** One slow breath in and out, in milliseconds. */
 const PULSE_MS = 4000;
 
+/**
+ * Whether the system has asked for less motion, which a pulse is. On Windows
+ * that is turning off animation effects. Outside a window nothing has.
+ */
+export function reducedMotion(): boolean {
+    return typeof activeWindow !== 'undefined' && (activeWindow.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+}
+
 /** How far into a breath each halo starts, across the list, so they do not breathe in step. */
 const PHASE_SPREAD = 1.5 * Math.PI;
+
+/**
+ * How often a breath is drawn while the graph is otherwise still. Waking the
+ * renderer's own loop draws every node at the display's rate, 161 frames a
+ * second on the screen this was measured on, which held 1.3 cores busy between
+ * the window and the GPU for ten halos. A breath four seconds long moves an
+ * alpha by under 0.02 between frames at 30 a second.
+ */
+export const BREATH_FRAME_MS = 33;
+
+/** How often a breath looks again while its graph cannot be seen. */
+const UNSEEN_RETRY_MS = 500;
+
+/** Past this many idle frames the renderer's loop has stopped. */
+const ASLEEP_AFTER = 60;
 
 /** The parts of PIXI's sprite this needs. */
 interface HaloSprite {
@@ -94,10 +118,13 @@ export class Stars {
     private texture: GraphTexture | null = null;
     /** Undefined until looked for; null when this graph has nothing to build from. */
     private kit: Kit | null | undefined = undefined;
+    /** The next breath drawn while the renderer sleeps, if one is due. */
+    private breathing: number | null = null;
 
     constructor(
         private readonly renderer: GraphRenderer,
-        private readonly paint: (light: boolean) => HTMLCanvasElement | null = paintHalo
+        private readonly paint: (light: boolean) => HTMLCanvasElement | null = paintHalo,
+        private readonly timers: Timers = window
     ) {}
 
     set(look: StarLook): void {
@@ -118,10 +145,11 @@ export class Stars {
     }
 
     /**
-     * Brings the halos in line with the frame just drawn, and says whether the
-     * graph has to draw another one for them. Only a pulse asks for that: the
-     * renderer stops drawing once nothing has moved for a second, and a halo
-     * that is still has no reason to keep it awake.
+     * Brings the halos in line with the frame just drawn, and says whether
+     * they are breathing. While the renderer's own loop runs they ride it.
+     * Once it has stopped, a breath goes on at its own slower rate without
+     * waking it: see `breathe`. A halo that is still asks for nothing, and
+     * the graph sleeps the way it would without one.
      */
     sync(now: number): boolean {
         if (this.paths.length === 0) {
@@ -129,6 +157,7 @@ export class Stars {
                 this.clear();
             }
 
+            this.stopBreathing();
             return false;
         }
 
@@ -162,6 +191,7 @@ export class Stars {
             if (!halo) {
                 // Nothing to build one from on this graph, and nothing will
                 // appear later that would change that.
+                this.stopBreathing();
                 return false;
             }
 
@@ -175,7 +205,14 @@ export class Stars {
             halo.sprite.alpha = this.pulse ? strength * breath(now, rank, count) : strength;
         }
 
-        return this.pulse && this.halos.size > 0;
+        const breathing = this.pulse && this.halos.size > 0;
+        if (!breathing) {
+            this.stopBreathing();
+        } else if (this.breathing === null && this.asleep()) {
+            this.breathing = this.timers.setTimeout(() => this.breathe(), BREATH_FRAME_MS);
+        }
+
+        return breathing;
     }
 
     clear(): void {
@@ -187,6 +224,7 @@ export class Stars {
     }
 
     destroy(): void {
+        this.stopBreathing();
         this.clear();
         this.dropTexture();
         this.paths = [];
@@ -196,6 +234,45 @@ export class Stars {
     /** How many halos are on the graph now. */
     get drawn(): number {
         return this.halos.size;
+    }
+
+    /**
+     * One breath drawn while the renderer is asleep: the halos moved on, and
+     * the stage drawn once as it stands. Nothing else in a sleeping graph has
+     * moved, so none of the per-node work a frame of its own would do is
+     * needed. Stops as soon as the renderer wakes for anything, whose frames
+     * then carry the breath, and is picked up again by `sync` once it sleeps.
+     */
+    private breathe(): void {
+        this.breathing = null;
+
+        if (!this.pulse || this.halos.size === 0 || !this.asleep()) {
+            return;
+        }
+
+        const view = this.renderer.containerEl;
+        // A hidden tab has a renderer of no width, and a minimized window
+        // draws nothing it is handed. Check back rather than draw.
+        if (!this.renderer.px?.render || (view && (view.clientWidth === 0 || view.ownerDocument.hidden))) {
+            this.breathing = this.timers.setTimeout(() => this.breathe(), UNSEEN_RETRY_MS);
+            return;
+        }
+
+        // Which also queues the next one.
+        if (this.sync(performance.now())) {
+            this.renderer.px.render();
+        }
+    }
+
+    private asleep(): boolean {
+        return (this.renderer.idleFrames ?? 0) > ASLEEP_AFTER;
+    }
+
+    private stopBreathing(): void {
+        if (this.breathing !== null) {
+            this.timers.clearTimeout(this.breathing);
+            this.breathing = null;
+        }
     }
 
     private create(circle: GraphCircle, rank: number): Halo | null {
