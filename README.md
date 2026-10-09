@@ -74,7 +74,7 @@ being read in order.
 <table>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/time.md"><img src="docs/assets/cards/time.png" width="100%" alt="A demo graph drawn at three sharpnesses, from most of the vault lit to only the newest notes bright."></a><br>
+      <a href="docs/time.md"><img src="docs/assets/cards/time.png" width="100%" alt="The same part of a demo graph three times, labelled × 0.25, × 1 and × 6. At × 0.25 most notes are lit; at × 6 only the newest few are, in green, and the rest have nearly gone."></a><br>
       <b><a href="docs/time.md">Time</a></b><br>
       What counts as old, and how an age becomes a brightness. The number everything else reads.
     </td>
@@ -91,14 +91,14 @@ being read in order.
       Taking notes out of the graph rather than dimming them, with a scrubber in the graph's own panel.
     </td>
     <td width="50%" valign="top">
-      <a href="docs/local-graph.md"><img src="docs/assets/cards/local-graph.png" width="100%" alt="A local graph around one note, its neighbours drawn at different brightnesses with their ages written above them."></a><br>
+      <a href="docs/local-graph.md"><img src="docs/assets/cards/local-graph.png" width="100%" alt="A local graph around a note called Reinforcement Learning, with its age, 2 weeks ago, above its title. Its neighbours from the last week are drawn brighter than the ones from four and five months ago, and the newest, 5 days ago, is green."></a><br>
       <b><a href="docs/local-graph.md">The local graph</a></b><br>
       The panel around one note, measured against its own notes, or from the note in the middle.
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/pins.md"><img src="docs/assets/cards/pins.png" width="100%" alt="A graph in which a few old notes are drawn in purple at full strength among faded ones."></a><br>
+      <a href="docs/pins.md"><img src="docs/assets/cards/pins.png" width="100%" alt="Part of a graph with ages above the titles. Three notes from 9 and 11 months ago are pinned and drawn in purple at full strength, while notes from the last few weeks around them are faded."></a><br>
       <b><a href="docs/pins.md">Pins</a></b><br>
       Notes you hold bright whatever their dates say. The one place you overrule the clock.
     </td>
@@ -115,7 +115,7 @@ being read in order.
       Text takes a colour as you type it and cools back to normal.
     </td>
     <td width="50%" valign="top">
-      <a href="docs/beads.md"><img src="docs/assets/cards/history.png" width="100%" alt="A vertical rail with beads along it, labelled 2 days ago at the top and 4 months ago at the bottom."></a><br>
+      <a href="docs/beads.md"><img src="docs/assets/cards/history.png" width="100%" alt="Two notes’ histories side by side, each a rail marked now, 1 hour, 1 day, 1 week, 1 month and 1 year, with a bead for every sitting. One note was worked on ten months ago and again this week; the other only in the last two days, so its rail stops at a week."></a><br>
       <b><a href="docs/beads.md">A note's history</a></b><br>
       Each sitting on a note as a bead down the sidebar, from Pulsar's own <a href="docs/history.md">edit history</a>.
     </td>
