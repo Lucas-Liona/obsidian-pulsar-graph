@@ -24,19 +24,15 @@ replaces a colour you chose, so it suits actually working, where the tint suits 
 screenshot. A note with nothing lit in it is never dimmed at all, so opening a
 vault does not grey it.
 
-**Pin this writing** holds a stretch at full strength and stops it cooling. A pin
-is a marker rather than a timestamp — it answers *come back to this* — so it does
-not fade, and it has its own colour. With nothing selected it pins the lit
-stretch under the cursor, or the current line if there is none, which is what
-makes it usable on text you did not just write. Cooling leaves pins alone.
-**Unpin writing in this note** clears them, and so does closing the note:
-nothing is written to the file, so there is nothing to leave behind.
-
 The status bar carries a paint bucket and how many characters of the note you
 are in still look lit, leaving out the last shade, which already reads as
-ordinary text. Hovering it adds how many are pinned. Clicking it cools that note,
-and right-clicking offers cooling it or unpinning it. It is only there while
-something is lit.
+ordinary text. Clicking it cools that note. It is only there while something is
+lit.
+
+Nothing here marks text to come back to. Obsidian's own highlighting
+(`==like this==`) does that better: it is saved in the note, survives closing
+it, and is searchable. Fresh writing is only ever about how recently something
+was written.
 
 **Start again** cools every open note at once. That is the setting that makes it
 usable rather than exhausting — once everything on the page counts as old, the

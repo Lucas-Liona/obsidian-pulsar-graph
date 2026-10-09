@@ -488,11 +488,6 @@
 	color: color-mix(in oklab, var(--pulsar-ink) 9%, currentColor);
 }
 
-/* A pin does not cool, so it has no shades and no transition. */
-.pulsar-ink-pin {
-	color: var(--pulsar-ink-pin);
-}
-
 /*
  * The other half of the idea: leave the writing alone and take the page down
  * around it. Mixed toward the background rather than faded with opacity, and
