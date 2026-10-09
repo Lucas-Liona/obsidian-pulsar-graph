@@ -36,8 +36,9 @@ breathing as one. A note keeps its pace while it stays a star, and across
 reloads. Every star swings by the same amount either side of its own level, so
 the newest stay the brightest, and none goes all the way out. It costs something a still graph does not. Obsidian stops
 drawing a graph once nothing has moved for about a second; a pulse draws it
-again 30 times a second without waking it, which measured about a fifth of one
-core between the window and the GPU, against nothing for stars that hold still.
+again up to 30 times a second without waking it (22 a second with 250 stars on
+2,887 notes), which measured about a fifth of one core between the window and
+the GPU, against nothing for stars that hold still.
 While anything else is moving, the breath rides Obsidian's own frames instead. A
 graph in a background tab or a minimized window draws nothing for it. It moves
 even while your system asks for reduced motion (on Windows, with animation

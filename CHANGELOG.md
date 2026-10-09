@@ -10,7 +10,7 @@
   notes sit in a pool of it. Each note is drawn over its own glow and keeps its
   colour. *How many* counts the newest notes (10 to start, up to
   250), and *Pulse* makes each one brighten and dim at its own pace, so a
-  field of them shimmers; it draws a still graph 30 times a second while it is
+  field of them shimmers; it draws a still graph up to 30 times a second while it is
   on screen. At the
   top of *The graph* in the settings, and a *Stars* switch under *Nodes* in the
   graph's own panel.

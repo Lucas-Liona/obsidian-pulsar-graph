@@ -1179,8 +1179,8 @@ export class PulsarSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('Pulse')
             .setDesc(reducedMotion()
-                ? 'Each one brightens and dims at its own pace, which keeps a still graph drawing 30 times a second. Your system asks for reduced motion, and this moves anyway once it is on'
-                : 'Each one brightens and dims at its own pace. A still graph stops drawing, and this keeps it drawing 30 times a second, which costs some power')
+                ? 'Each one brightens and dims at its own pace, which keeps a still graph drawing up to 30 times a second. Your system asks for reduced motion, and this moves anyway once it is on'
+                : 'Each one brightens and dims at its own pace. A still graph stops drawing, and this keeps it drawing up to 30 times a second, which costs some power')
             .addToggle((toggle) => toggle
                 .setValue(settings.starPulse)
                 .onChange(async (value) => {
