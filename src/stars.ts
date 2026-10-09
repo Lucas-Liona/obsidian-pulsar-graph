@@ -77,6 +77,16 @@ interface HaloSprite {
 
 type SpriteConstructor = new (texture: GraphTexture) => HaloSprite;
 
+/** The parts of PIXI's graphics this needs, for the circle drawn again over a halo. */
+interface Core {
+    tint: number;
+    eventMode?: string;
+    parent?: unknown;
+    destroy: () => void;
+}
+
+type CoreConstructor = new (geometry: unknown) => Core;
+
 /** What a halo is built from, found on the graph rather than taken from a global. */
 interface Kit {
     Sprite: SpriteConstructor;
@@ -85,6 +95,13 @@ interface Kit {
 
 interface Halo {
     sprite: HaloSprite;
+    /**
+     * The node's own circle drawn again over the halo. A child is always drawn
+     * after its parent, so a halo added to the circle lands on top of it, and
+     * light added at its middle turned the spotlight's green and a pin's
+     * purple white. This puts the note's own colour back over it.
+     */
+    core: Core | null;
     circle: GraphCircle;
     /** How many circle widths across it is drawn, so a change of rank resizes it. */
     width: number;
@@ -203,6 +220,12 @@ export class Stars {
 
             const strength = strengthAt(rank, count);
             halo.sprite.alpha = this.pulse ? strength * breath(now, rank, count) : strength;
+
+            // The renderer eases the circle's tint every frame and a child
+            // inherits none of it. Its alpha, position and zoom it does.
+            if (halo.core && halo.core.tint !== circle.tint) {
+                halo.core.tint = circle.tint;
+            }
         }
 
         const breathing = this.pulse && this.halos.size > 0;
@@ -300,7 +323,18 @@ export class Stars {
 
         circle.addChild(sprite);
 
-        const halo: Halo = { sprite, circle, width, across };
+        // Built over the circle's own shape, so it is exactly the circle and
+        // shares what it is drawn from rather than copying it.
+        const Graphics = (circle as { constructor?: unknown }).constructor as CoreConstructor | undefined;
+        let core: Core | null = null;
+        if (typeof Graphics === 'function' && circle.geometry) {
+            core = new Graphics(circle.geometry);
+            core.eventMode = 'none';
+            core.tint = circle.tint;
+            circle.addChild(core);
+        }
+
+        const halo: Halo = { sprite, core, circle, width, across };
         this.halos.set(this.paths[rank], halo);
 
         return halo;
@@ -408,8 +442,14 @@ function paintHalo(light: boolean): HTMLCanvasElement | null {
 
 /** From whatever it is drawn in, which after a rebuild may be nothing. */
 function detach(halo: Halo): void {
-    const parent = halo.sprite.parent as GraphCircle | null | undefined;
+    for (const each of [halo.sprite, halo.core]) {
+        if (!each) {
+            continue;
+        }
 
-    parent?.removeChild?.(halo.sprite);
-    halo.sprite.destroy();
+        (each.parent as GraphCircle | null | undefined)?.removeChild?.(each);
+        // A graphics object built over another's shape lets go of it here and
+        // leaves it to the circle that still draws it.
+        each.destroy();
+    }
 }
