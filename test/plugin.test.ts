@@ -618,6 +618,31 @@ describe('colour', () => {
         await unloadPlugin(plugin);
     });
 
+    // The default green stands 1.31:1 off white, fainter than an ordinary
+    // node, so the note being picked out was the hardest one to see.
+    it('draws the spotlight darker on a light theme, and as picked on a dark one', async () => {
+        const world = vault();
+        world.workspace.openNote('centre.md');
+        const plugin = await loadPlugin(world, { spotlightNewest: true });
+        const global = world.workspace.openGraph();
+        await settle();
+        global.renderer.frames(100);
+
+        expect(plugin.settings.spotlightColor).toBe('#4dff91');
+        expect(global.renderer.node('centre.md').circle?.tint).toBe(0x4dff91);
+
+        world.setTheme('light');
+        await settle();
+        global.renderer.frames(100);
+        expect(global.renderer.node('centre.md').circle?.tint).toBe(0x33a960);
+
+        world.setTheme('dark');
+        await settle();
+        global.renderer.frames(100);
+        expect(global.renderer.node('centre.md').circle?.tint).toBe(0x4dff91);
+        await unloadPlugin(plugin);
+    });
+
     // AGENTS.md: "Easing a tint upward stalls; downward converges." The pin
     // colour is held by assigning it, and handing a node back has to land the
     // tint exactly: left to the renderer, n2.md would ease from the pin colour
@@ -700,7 +725,7 @@ describe('durations past the old ends', () => {
         global.renderer.frames(100);
 
         expect(plugin.settings.spotlightMinutes).toBe(24 * 60);
-        expect(global.renderer.node('yesterday.md').circle?.tint).toBe(0xffffff);
+        expect(global.renderer.node('yesterday.md').circle?.tint).toBe(0x4dff91);
         expect(global.renderer.node('other.md').circle?.tint).toBe(GREY);
         await unloadPlugin(plugin);
     });
@@ -800,7 +825,7 @@ describe('a fresh install', () => {
         expect(hooks(local.renderer)).toEqual(ONE);
         // Nothing is hidden by default; the newest note is spotlit.
         expect(global.renderer.ids()).toEqual(EVERY_NOTE);
-        expect(global.renderer.node('centre.md').color?.rgb).toBe(0xffffff);
+        expect(global.renderer.node('centre.md').color?.rgb).toBe(0x4dff91);
 
         await unloadPlugin(plugin);
         plugin = await loadPlugin(world);

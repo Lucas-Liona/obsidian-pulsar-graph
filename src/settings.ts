@@ -269,7 +269,7 @@ export const DEFAULT_SETTINGS: PulsarGraphSettings = {
     starCount: 10,
     starPulse: false,
     spotlightNewest: true,
-    spotlightColor: '#ffffff',
+    spotlightColor: '#4dff91',
     spotlightStrength: 1,
     spotlightSize: 2,
     spotlightCount: 1,
@@ -1417,7 +1417,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.spotlightNewest) {
             new Setting(containerEl)
                 .setName('Spotlight colour')
-                .setDesc('White reads well on a dark theme. Pick something darker if yours is light')
+                .setDesc('On a light theme it is drawn darker wherever it would be faint against the page, so a colour that glows on a dark theme still stands out there')
                 .addColorPicker((picker) => picker
                     .setValue(settings.spotlightColor)
                     .onChange(async (value) => {
