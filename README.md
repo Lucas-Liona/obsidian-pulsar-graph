@@ -34,20 +34,32 @@ part of your vault you're actually working in lights up and the rest sinks back.
 
 ## Why I made it
 
-I built this plugin a year ago and I've been using it since, and I wanted to share
+I built this plugin a year ago and I've been using it since so I wanted to finally share
 it with people.
 
-When you have a vault this big, you forget things you used to write. Graph mode
-equalizes everything — a note from two years ago sits there looking exactly like
-the one you wrote this morning. At first it's intimidating, and then it's just
-flat. I wanted the graph to carry time in it, so I could see what I've been
-working on without reading a single label, and so the old stuff would actually
-look old.
+When you have a vault this big, you forget things you used to write. The cool
+features that differentiate obsidian become pretty hard to use. Currently, Graph mode
+equalizes every note so a note from two years ago looks the same as one written this morning.
+I wanted the graph to carry time in it, so I could instantly see what I've been
+working on without reading, and so old actually looks old. To keep the graph load time
+blazingly fast you can filter notes to only show your most recent. I kept extending this idea
+to build time into most other surfaces like tabs, edit history, and writing. It does little to 
+actually track where you put your work in, but that could be an interesting extension. Right now it 
+mainly signals to you what you've been working on.
 
-That turned out to be the useful part. You find concepts you meant to keep up
-with and haven't touched in months — all those learning notes sitting out at the
-dim edge. It makes you want to go write them properly, and it pushes you toward
-real links and well-defined notes, because that's what makes the clusters show up.
+Streaks could be another idea to play with, I would like to hear other peoples ideas too!
+I love community plugins and the obsidian ecosystem. I mainly use
+git sync, dataviews, omnisearch and stylistic ones. You can see an image of my entire 
+setup on [my website](https://lucasliona.tech/uses/). 
+
+I have found that this plugin helps me stay on track, use links better, and build up projects or 
+systems of notes. Features like cluster and link opacity are meant to encourage this.
+Copy/Paste and junk notes show up bright and in your face, where they wouldn't
+be in Recent Notes if you didn't open them. I am writing more often and breaking notes into smaller linked notes.
+
+I also want to see how other people use this plugin, I find I use the graph way more and I like it better 
+than the file system. I use a Zettelkasten vault setup with subfolders for organized structure, but I will 
+find and edit notes with the graph and omnisearch.
 
 ## How I use it
 
@@ -60,6 +72,9 @@ It does the same thing for the local graph. When you're in a note and you can se
 which of its neighbours are alive and which have been sitting there for a year,
 that's a different kind of context than a list of links.
 
+I also like to have lists of links (like an index) in my vault, the icon's next to 
+them make it clear where things are and where I am writing.
+
 ## What it does
 
 Every note gets a recency value between 0 and 1 — 0 at the old end of the range,
@@ -68,8 +83,8 @@ node's opacity.
 
 ## Documentation
 
-Every surface has a page. Start wherever you are curious; nothing here depends on
-being read in order.
+Every surface/setting has a doc page. Start wherever you are curious; nothing here need to be
+read in order.
 
 <table>
   <tr>
@@ -230,14 +245,17 @@ change, but a graph update can still mean it needs a fix here.
 
 ## Where it's going
 
-I made this to do one thing well, and I'd rather keep it that way than bolt on
-everything. That said, time is a bigger idea than opacity, and the direction is
-making time easier to see throughout the graph.
+I originally made this to do one thing well, and I'd rather keep it that way than bolt on
+everything. That said, time is a bigger idea than opacity, and the overall direction
+I have been developing is making time easier to see throughout the graph and obsidian.
+It is currently feature rich but entirely configurable for your own preferences.
 
-Most of what used to be listed here is in now: a local graph measured against
-its own notes, the graph's timelapse lit as it plays, the age filter, and stars.
-What's next is a first look that says what the plugin is doing, and ages in more
-of Obsidian: search and the quick switcher, the note itself, and Bases.
+In the future I would like icons in the file system, search and the quick switcher, the note itself, and Bases view.
+
+I soon might add streaks for notes edited multiple days in a row. It could display the most used notes
+(although this borders on a heatmap/usage tool), I may also add more spontaneous
+random features, but I will let the plugin sit for a while. 
+
 
 It's all in the [issues](https://github.com/Lucas-Liona/obsidian-pulsar-graph/issues).
 The ones marked
@@ -261,8 +279,9 @@ in a vault's plugin folder and reload the plugin.
 
 ## Credits
 
-Written by me. I built the first version on my own, and since 1.0 most of the
-code has been written with Claude: the edit history, tabs, fresh writing, the age
+Written by me. I built the first version on my own (from Obsidians plugin
+template if you would like to try yourself), and since 1.0 most of the
+code has been written with Claude Opus 5.5: the edit history, tabs, fresh writing, the age
 filter, stars and the performance work. Every change went in as a pull request
 with its measurements in it, and I decided what shipped. All of it in my free
 time.
