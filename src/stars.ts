@@ -40,8 +40,41 @@ const NARROWEST = 3;
 const STRONGEST = 1;
 const FAINTEST = 0.4;
 
-/** One slow breath in and out, in milliseconds. */
-const PULSE_MS = 4000;
+/**
+ * How far a pulsing star's alpha swings either side of its own level, the same
+ * for every star, and the least it is ever drawn at. A star's level is its
+ * strength, moved into the room the swing leaves between this floor and full,
+ * so the newest swings between 0.3 and 1, wider than one breath of every star
+ * in step did (0.35 to 1), and the faintest of a list between 0.12 and 0.82.
+ * The same swing as before on a level of 0.47 rather than 0.4 would have left
+ * that faintest star moving by a few grey levels: measured on the 20,000-note
+ * graph, a star other than the newest moved 11 to 22 levels out of 255 with a
+ * swing of 0.22, against 45 for the newest.
+ */
+const SWING = 0.35;
+const DIMMEST = 0.12;
+
+/**
+ * How many circle widths a halo grows by at the top of a breath, back down to
+ * its own width at the bottom. Growing outward rather than either side of it:
+ * the note's circle is drawn again over the middle of its halo, a third of the
+ * way out on the narrowest, so a halo that shrank would spend half its breath
+ * where nothing shows. The same number of widths for every star is a larger
+ * share of a narrow one, which is the one that needed it.
+ */
+const GROW = 2;
+
+/**
+ * How long one star takes to brighten and dim, drawn once per note from a
+ * normal distribution and held inside these. Out of step and at different
+ * speeds, a field of them drifts in and out of phase rather than breathing as
+ * one. The slowest finishes a breath inside five seconds, so every star in a
+ * few seconds of looking is seen to move.
+ */
+const PERIOD_MEAN_MS = 3200;
+const PERIOD_SD_MS = 800;
+const PERIOD_SHORTEST_MS = 2000;
+const PERIOD_LONGEST_MS = 5000;
 
 /**
  * Whether the system has asked for less motion, which a pulse is. On Windows
@@ -51,15 +84,13 @@ export function reducedMotion(): boolean {
     return typeof activeWindow !== 'undefined' && (activeWindow.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
 }
 
-/** How far into a breath each halo starts, across the list, so they do not breathe in step. */
-const PHASE_SPREAD = 1.5 * Math.PI;
-
 /**
  * How often a breath is drawn while the graph is otherwise still. Waking the
  * renderer's own loop draws every node at the display's rate, 161 frames a
  * second on the screen this was measured on, which held 1.3 cores busy between
- * the window and the GPU for ten halos. A breath four seconds long moves an
- * alpha by under 0.02 between frames at 30 a second.
+ * the window and the GPU for ten halos. The quickest star, two seconds a
+ * breath, moves its alpha by under 0.04 and its width by about a tenth of a
+ * circle between frames at 30 a second.
  */
 export const BREATH_FRAME_MS = 33;
 
@@ -111,10 +142,15 @@ interface Halo {
      */
     core: Core | null;
     circle: GraphCircle;
-    /** How many circle widths across it is drawn, so a change of rank resizes it. */
+    /**
+     * How many circle widths across it is drawn now, so a change of rank or a
+     * breath resizes it, and one that has stopped breathing goes back.
+     */
     width: number;
     /** The circle's own width in its own units, measured once. */
     across: number;
+    /** Its note's own pace, kept while the note stays a star. */
+    rhythm: Rhythm;
 }
 
 /** What to draw, worked out per repaint. */
@@ -220,14 +256,18 @@ export class Stars {
                 return false;
             }
 
-            const width = widthAt(rank, count);
+            // Both worked out from the rank every frame and assigned, never
+            // scaled from what was drawn last, so a breath cannot drift.
+            const wave = this.pulse ? waveOf(now, halo.rhythm) : null;
+            const strength = strengthAt(rank, count);
+            const own = widthAt(rank, count);
+            const width = wave === null ? own : swell(own, wave);
             if (halo.width !== width) {
                 halo.width = width;
                 halo.sprite.scale.set(width * halo.across / TEXTURE_SIZE);
             }
 
-            const strength = strengthAt(rank, count);
-            halo.sprite.alpha = this.pulse ? strength * breath(now, rank, count) : strength;
+            halo.sprite.alpha = wave === null ? strength : shimmer(strength, wave);
 
             // The renderer eases the circle's tint every frame and a child
             // inherits none of it. Its alpha, position and zoom it does.
@@ -342,7 +382,7 @@ export class Stars {
             circle.addChild(core);
         }
 
-        const halo: Halo = { sprite, core, circle, width, across };
+        const halo: Halo = { sprite, core, circle, width, across, rhythm: rhythmOf(this.paths[rank]) };
         this.halos.set(this.paths[rank], halo);
 
         return halo;
@@ -409,14 +449,67 @@ export function strengthAt(rank: number, count: number): number {
     return count <= 1 ? STRONGEST : STRONGEST - ((STRONGEST - FAINTEST) * rank) / (count - 1);
 }
 
-/**
- * Where a halo is in its breath, between 0.35 and 1. Never out: a star that
- * went dark between breaths would read as one that had stopped being new.
- */
-export function breath(now: number, rank: number, count: number): number {
-    const phase = (rank / Math.max(1, count)) * PHASE_SPREAD;
+/** A star's pace: how long one breath takes, and where in it the star starts. */
+export interface Rhythm {
+    period: number;
+    phase: number;
+}
 
-    return 0.35 + 0.65 * (0.5 + 0.5 * Math.sin((2 * Math.PI * now) / PULSE_MS - phase));
+/**
+ * A note's own pace, drawn from its path rather than from its place in the
+ * list, so a star keeps its rhythm across a reload and when a newer note
+ * pushes it down the list.
+ */
+export function rhythmOf(path: string): Rhythm {
+    const [first, second, third] = uniforms(path, 3);
+    // Box-Muller: two uniform draws make one from a standard normal.
+    const normal = Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second);
+    const period = Math.min(PERIOD_LONGEST_MS, Math.max(PERIOD_SHORTEST_MS, PERIOD_MEAN_MS + PERIOD_SD_MS * normal));
+
+    return { period, phase: 2 * Math.PI * third };
+}
+
+/** Where a star is in its own breath at a moment, from -1 at the bottom to 1 at the top. */
+export function waveOf(now: number, rhythm: Rhythm): number {
+    return Math.sin((2 * Math.PI * now) / rhythm.period + rhythm.phase);
+}
+
+/**
+ * How strongly a breathing halo is drawn at a point in its breath: its level
+ * plus the swing. Never above full and never out: a star that went dark
+ * between breaths would read as one that had stopped being new.
+ */
+export function shimmer(strength: number, wave: number): number {
+    const share = (strength - FAINTEST) / (STRONGEST - FAINTEST);
+    const level = DIMMEST + SWING + (1 - DIMMEST - 2 * SWING) * share;
+
+    return Math.min(1, Math.max(DIMMEST, level + SWING * wave));
+}
+
+/** How many circle widths across a breathing halo is at a point in its breath. */
+export function swell(width: number, wave: number): number {
+    return width + GROW * (0.5 + 0.5 * wave);
+}
+
+/**
+ * Numbers strictly between 0 and 1 that depend on nothing but the text: a
+ * 32-bit FNV-1a hash of it, stepped with mulberry32.
+ */
+function uniforms(text: string, count: number): number[] {
+    let state = 2166136261;
+    for (let i = 0; i < text.length; i++) {
+        state = Math.imul(state ^ text.charCodeAt(i), 16777619);
+    }
+
+    const out: number[] = [];
+    for (let i = 0; i < count; i++) {
+        state = (state + 0x6d2b79f5) | 0;
+        let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+        mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+        out.push((((mixed ^ (mixed >>> 14)) >>> 0) + 0.5) / 4294967296);
+    }
+
+    return out;
 }
 
 /**

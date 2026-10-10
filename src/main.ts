@@ -20,7 +20,7 @@ import { Spread } from './range-bar';
 import { joinStats, SEPARATOR } from './stats-text';
 import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
-import { reducedMotion, Stars } from './stars';
+import { Stars } from './stars';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
 
 /** Everything this plugin owns for one open graph view. */
@@ -2013,7 +2013,7 @@ export default class PulsarGraphPlugin extends Plugin {
                 ? this.store.newestAmong(scoped ? pathsIn(renderer) : this.store.paths(), this.settings.starCount)
                 : NO_STARS,
             light: this.lightTheme(),
-            pulse: this.settings.starPulse && !reducedMotion()
+            pulse: this.settings.starPulse
         });
 
         applySizes(renderer, {
