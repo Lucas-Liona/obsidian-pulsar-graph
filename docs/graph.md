@@ -30,11 +30,14 @@ newest, the same rule the spotlight follows. Nothing is drawn during the
 graph's replay, which is about the past.
 
 **Pulse** makes each one brighten and dim at its own pace. Each note draws how
-long a breath takes from a normal distribution, four seconds give or take about
-one, so a field of them drifts in and out of step and shimmers rather than
-breathing as one. A note keeps its pace while it stays a star, and across
-reloads. Every star swings by the same amount either side of its own level, so
-the newest stay the brightest, and none goes all the way out. It costs something a still graph does not. Obsidian stops
+long a breath takes from a normal distribution, a little over three seconds and
+never under two or over five, so a field of them drifts in and out of step and
+shimmers rather than breathing as one. A note keeps its pace while it stays a
+star, and across reloads. Every star swings by the same amount either side of
+its own level, so the newest stay the brightest, and none goes all the way out.
+A glow also grows by two of its note's widths at the top of each breath, which
+is what lets the small ones be seen to move: brightness alone barely changed a
+glow three widths across. It costs something a still graph does not. Obsidian stops
 drawing a graph once nothing has moved for about a second; a pulse draws it
 again up to 30 times a second without waking it (22 a second with 250 stars on
 2,887 notes), which measured about a fifth of one core between the window and
