@@ -508,20 +508,26 @@ describe('the shape of a list of stars', () => {
     it('never goes above full or below 0.12 for any star of 250, and peaks at full on the newest', () => {
         for (const path of ['a.md', 'notes/b.md', 'Zeta 2026.md']) {
             const rhythm = rhythmOf(path);
-            let highest = 0;
+            // Gathered first and asserted once: 300,000 expect calls ran past
+            // the 5 s timeout on CI.
+            let lowest = Infinity;
+            let highest = -Infinity;
+            let newestPeak = 0;
             for (let rank = 0; rank < 250; rank++) {
                 const strength = strengthAt(rank, 250);
                 for (let now = 0; now <= rhythm.period; now += rhythm.period / 200) {
                     const value = shimmer(strength, waveOf(now, rhythm));
-                    expect(value).toBeGreaterThanOrEqual(0.12);
-                    expect(value).toBeLessThanOrEqual(1);
+                    lowest = Math.min(lowest, value);
+                    highest = Math.max(highest, value);
                     if (rank === 0) {
-                        highest = Math.max(highest, value);
+                        newestPeak = Math.max(newestPeak, value);
                     }
                 }
             }
 
-            expect(highest).toBeGreaterThan(0.999);
+            expect(lowest).toBeGreaterThanOrEqual(0.12);
+            expect(highest).toBeLessThanOrEqual(1);
+            expect(newestPeak).toBeGreaterThan(0.999);
         }
     });
 
