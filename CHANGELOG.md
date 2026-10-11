@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- **A sitting survives a reload.** Reloading Pulsar while its last write of
+  the edit history was still landing could lose the newest sitting: the new
+  copy read the file before that write finished, then saved over it. It now
+  waits for the write, for up to ten seconds.
+
 - **A damaged or hand-edited file can no longer stop Pulsar loading.** Saved
   presets nested inside saved presets in `data.json` ran Pulsar out of stack
   as it started. A preset never carries presets of its own, so any it is found
