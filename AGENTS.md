@@ -62,7 +62,8 @@ bar, fresh writing, link dots and the history view.
 - `npm run lint` / `npm run lint:fix` — eslint over the whole tree, zero warnings
   enforced. Uses `eslint-plugin-obsidianmd`, which mirrors the checks the
   community directory runs on every release, so keep it clean.
-- `npm run type-check` — `tsc --noEmit`, then the same over `test/`
+- `npm run type-check` — `tsc --noEmit`, then the same over `test/` and
+  `test/e2e/`
 - `npm run bench` — vitest benchmarks over synthetic vaults of 1k, 10k and 50k
   notes, printed as mean ± sd per call by `scripts/bench-table.mjs`.
   `test/plugin.bench.ts` runs the whole plugin through the harness: a graph
@@ -95,6 +96,10 @@ bar, fresh writing, link dots and the history view.
   the way a vault would: notes edited and deleted, leaves focused, graphs
   opened, the plugin reloaded. The local graph losing its own centre (#122)
   passed all 94 module tests and was caught at the second layer.
+- `npm run e2e` — the third layer: a build of the plugin loaded into a real
+  Obsidian by [wdio-obsidian-service](https://jesse-r-s-hines.github.io/wdio-obsidian-service/),
+  on the oldest public release at or above `minAppVersion` and on the latest.
+  Builds first. Needs a display; see below
 
 The harness keeps to the facts under "Working with Obsidian's graph", and
 `test/harness.test.ts` holds it to them: `setData` keeps surviving nodes and
@@ -108,6 +113,39 @@ promises and the repaint owed at the end of a task run. A known bug is written
 as what should happen and marked `it.fails` with the finding it comes from, so
 the day it is fixed vitest says so and it becomes an ordinary test.
 
+The end-to-end tests in `test/e2e/` open the 20-note vault in `test/e2e/vault`,
+spread its notes across a year with `utimes` (a checkout gives every note the
+same modification time), and check what only the real app can show:
+- Pulsar loads with nothing logged as an error.
+- It attaches to a graph that was open before it loaded, and to one opened
+  after, where the newest note is drawn brighter than the oldest.
+- It grades a local graph.
+- After two back-to-back reloads and an unload, every hook is exactly
+  Obsidian's own again.
+- Opening and closing its settings tab writes nothing to `data.json`.
+
+Each check was seen to fail against a build broken on purpose: a `setData`
+wrapper never unlinked, a save when the settings tab opens, and a flat fade.
+
+`OBSIDIAN_VERSIONS` picks what runs, as `app/installer` pairs. The default is
+`1.8.3/earliest latest/latest`. 1.8.3 is the first public release at or above
+`minAppVersion`: 1.8.0 to 1.8.2 only ever went to Insiders, and downloading
+them needs an Insiders login, as any beta does. Move it up with
+`minAppVersion`.
+
+Downloads are kept in `.obsidian-cache/`. Obsidian needs a display: on Linux
+without one, start Xvfb and set `DISPLAY`. Locally a run takes about a minute
+per version.
+
+In CI, `.github/workflows/e2e.yml` runs them on every pull request and push to
+master, by hand, and weekly. The weekly run is the one that notices a new
+Obsidian release when nobody has pushed anything. **GitHub switches scheduled
+workflows off in a public repository after 60 days without activity.** To turn
+it back on, use Actions → E2E → *Enable workflow*, or run
+`gh workflow enable e2e.yml`. The job runs on GitHub's own runners and must
+stay there: the repository is public, and a fork's pull request would run on a
+self-hosted runner too.
+
 A vault checkout that has not been installed since the flat-config migration
 fails lint with `ERR_PACKAGE_PATH_NOT_EXPORTED` for `eslint/config` rather than
 with a lint error; `npm install` fixes it. The lockfile used to be rewritten
@@ -115,6 +153,26 @@ wholesale by every install, which was indentation and nothing else: npm writes
 it with `package.json`'s tabs, and it had been committed with two spaces. It is
 committed in npm's own format now, so an install that changes nothing leaves it
 alone.
+
+Every dependency is a dev dependency; `main.js` bundles none of them. `npm
+audit` is clean, and `overrides` in `package.json` keeps it that way, each one
+replacing a vulnerable package that something else pulls in:
+
+| Override | Pulled in by | Because |
+|---|---|---|
+| `@puppeteer/browsers` 3 | `@wdio/utils` | 2.x needs `extract-zip`, which has no fixed version, and `proxy-agent`, which brings a vulnerable `basic-ftp`. 3.x drops both and still exports everything `@wdio/utils` imports. It asks for Node 22.12 or later, as `obsidian-launcher`'s `@electron/get` already does; the e2e suite also passes on Node 20 |
+| `chokidar` 4, under `mocha` | `mocha` 10 | 3.x pulls in `braces`, which has no fixed version |
+| `moment` 2.31 | `obsidian`'s typings | Older versions have a path traversal |
+| `serialize-javascript` 7.1 | `mocha` 10 | Older versions have a code execution and a denial of service |
+
+Drop an override once the package that pulls it in has moved on.
+
+CI runs on Node 22. Every action in `.github/workflows` is pinned to a commit
+SHA, with its version in a comment. Dependabot proposes updates monthly, at
+most two pull requests at a time: npm minor and patch updates grouped, majors
+on their own, and the actions grouped. It leaves the `obsidian` typings alone:
+they are pinned to the version the build uses, so a build of the source
+reproduces a release, and moving them goes with `minAppVersion`.
 
 The `*.property.test.ts` files are property tests with `fast-check`, pinned to
 an exact version: each states what has to hold for every input — a newer note

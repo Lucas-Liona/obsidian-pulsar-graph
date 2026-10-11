@@ -1,0 +1,30 @@
+# Monthly, grouped, and at most two pull requests open at a time, so the repo
+# can be left alone without a queue of updates building up. Every update runs
+# the same CI as any other pull request, the real-Obsidian tests included.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      # Minor and patch updates together; a major version gets a pull
+      # request of its own.
+      dev-dependencies:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # Pinned on purpose: the typings are the version the build was written
+      # against, so a build of the source reproduces the release. Moving them
+      # goes with a decision about minAppVersion, not a routine update.
+      - dependency-name: obsidian
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]

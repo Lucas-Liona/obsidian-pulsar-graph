@@ -34,6 +34,19 @@ const vault: fc.Arbitrary<[string, number][]> = fc.array(fc.integer({ min: 0, ma
     .chain((ages) => fc.array(fc.constantFrom(...ages), { minLength: 1, maxLength: 40 }))
     .map((ages) => ages.map((age, index): [string, number] => [`n${index}.md`, NOW - age * DAY]));
 
+/**
+ * The same, with times no one would expect: up to a year in the future (a
+ * clock set wrong on another device, then synced), and the epoch itself (a
+ * file whose times were lost).
+ */
+const oddVault: fc.Arbitrary<[string, number][]> = fc.array(fc.oneof(
+    fc.integer({ min: -365, max: 2 * 365 }).map((age) => NOW - age * DAY),
+    fc.constant(0),
+    fc.constant(NOW)
+), { minLength: 1, maxLength: 8 })
+    .chain((times) => fc.array(fc.constantFrom(...times), { minLength: 1, maxLength: 40 }))
+    .map((times) => times.map((mtime, index): [string, number] => [`n${index}.md`, mtime]));
+
 function storeOf(notes: [string, number][], chosen: PulsarGraphSettings): OpacityStore {
     const store = new OpacityStore(() => chosen);
     store.build(notes.map(([path, mtime]) => Object.assign(new TFile(), { path, extension: 'md', stat: { mtime, ctime: mtime, size: 1 } })));
@@ -101,6 +114,24 @@ describe('OpacityStore', () => {
                 }
             }
         }));
+    });
+
+    it('keeps both of those with times in the future and at the epoch', () => {
+        fc.assert(fc.property(oddVault, settings, (notes, chosen) => {
+            const store = storeOf(notes, chosen);
+
+            for (const [path] of notes) {
+                const opacity = store.opacityFor(path) ?? Number.NaN;
+                expect(opacity).toBeGreaterThanOrEqual(chosen.minOpacity - SLACK);
+                expect(opacity).toBeLessThanOrEqual(chosen.maxOpacity + SLACK);
+            }
+
+            for (const [[older, then], [newer, now]] of pairs(notes)) {
+                const a = store.opacityFor(older) ?? Number.NaN;
+                const b = store.opacityFor(newer) ?? Number.NaN;
+                expect(then === now ? a === b : a <= b).toBe(true);
+            }
+        }), { numRuns: 500 });
     });
 
     // Rank places a note by how many notes are strictly older, so notes on
