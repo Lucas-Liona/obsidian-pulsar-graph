@@ -43,6 +43,28 @@ Every slider in the settings has a number box beside it, and a preview at the
 top shows dots at real ages from your own vault at the opacity each would get,
 so you can see what a change does before you close the dialog.
 
+Most groups open with a picture of what their settings change, redrawn as you
+move them:
+
+| Where | The picture |
+|---|---|
+| Time | Brightness against age, on a log scale of age, with every note in your vault on the curve at the colour it is drawn |
+| Stars and black holes | Your five newest notes with their halos, breathing when Pulse is on |
+| Size and labels | Five notes from your vault at the size and brightness each is drawn, ages on hover as in the graph |
+| Links | A link traced between two notes saved in one sitting, a plain one days apart, and what trail strength does to a colour |
+| Clusters | Nine notes in two folders, before and after the glow and group temperature (hover one) |
+| Local graph | A panel around one note, measured the way the setting says |
+| Animate | The timelapse along one line, with a play button and a scrubber |
+| Counts as one sitting | Five saves folded into sittings |
+| Spotlight and pins | The five notes again, with the spotlight and a pin painted as the graph paints them |
+| In a note | A paragraph with a dot after each link and a sentence typed and left to cool, sped up |
+| Tabs | Three tabs, drawn with Obsidian's own tab bar and the plugin's marks |
+| History | An example note's history, as the history view draws it |
+
+Every number in them comes from the plugin's own code and your vault's own
+ages; only the example notes are invented. They draw nothing while Settings is
+closed or scrolled away from them.
+
 **Measurements** shows the numbers behind all of it: how your notes are spread
 across the brightness range, how many distinct brightnesses exist, how much edit
 history there is, how your folders divide up, how many islands of linked notes

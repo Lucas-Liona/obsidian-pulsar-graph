@@ -41,6 +41,12 @@ const ANCHOR_DRIFT_FRACTION = 0.01;
  * every cached value becomes stale as soon as either end of that range moves.
  * Single-note edits in between only need their own entry recomputed.
  */
+/**
+ * What the store reads of a file: where it is and its two timestamps. A vault's
+ * files are these; so are the invented notes the settings pictures measure.
+ */
+export type NoteFile = Pick<TFile, 'path' | 'stat'>;
+
 export class OpacityStore {
     private readonly mtimes = new Map<string, number>();
 
@@ -93,7 +99,7 @@ export class OpacityStore {
         this.sittings = sittings;
     }
 
-    build(files: TFile[]): void {
+    build(files: readonly NoteFile[]): void {
         this.changes++;
         this.mtimes.clear();
         this.creations.clear();
@@ -851,7 +857,7 @@ function clamp(value: number, lowest: number, highest: number): number {
  * copies push a creation time past a modification time, and the earlier of the
  * two is the one no machine invented.
  */
-function createdAt(file: TFile): number {
+function createdAt(file: NoteFile): number {
     return Math.min(file.stat.ctime, file.stat.mtime);
 }
 
