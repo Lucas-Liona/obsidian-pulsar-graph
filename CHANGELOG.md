@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **A sitting survives a reload.** Reloading Pulsar while its last write of
+  the edit history was still landing could lose the newest sitting: the new
+  copy read the file before that write finished, then saved over it. It now
+  waits for the write, for up to ten seconds.
+
+- **A damaged or hand-edited file can no longer stop Pulsar loading.** Saved
+  presets nested inside saved presets in `data.json` ran Pulsar out of stack
+  as it started. A preset never carries presets of its own, so any it is found
+  with are no longer read.
+
+- **The edit history keeps only what it could have written.** A number in
+  `history.json` too large for JavaScript reads back as infinity, and a
+  sitting there, or a last look there, would have been kept and stretched
+  every axis drawn against it. Sittings now have to be real stretches of
+  time with sizes of zero or more, and anything else in the file is skipped.
+
 ### Development
 
 - **Pulsar is tested inside a real Obsidian.** On every pull request, and
@@ -11,6 +29,8 @@
   reloads, and writes nothing when its settings tab is opened and closed. The
   weekly run is what notices an Obsidian update that breaks the graph
   internals the plugin depends on.
+
+
 
 - **The tooling is up to date and its audit is clean.**
   - vitest moves to 4.1 and esbuild to 0.28. Overrides replace the vulnerable

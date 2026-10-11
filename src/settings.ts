@@ -770,9 +770,15 @@ function parseSaved(value: unknown): SavedPreset[] {
     return presets;
 }
 
-/** Repairs a stored snapshot the same way live settings are repaired. */
+/**
+ * Repairs a stored snapshot the same way live settings are repaired. A preset
+ * carries no list of presets (see `snapshot`), so one found inside it is not
+ * read: a file nesting them deep enough ran out of stack and stopped the
+ * plugin loading.
+ */
 export function repairPreset(stored: unknown): PresetSettings {
-    return snapshot(parseSettings(stored));
+    const own = typeof stored === 'object' && stored !== null ? { ...stored, saved: undefined } : stored;
+    return snapshot(parseSettings(own));
 }
 
 /**
