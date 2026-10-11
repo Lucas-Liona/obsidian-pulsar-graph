@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Performance
+
+- **Sizing nodes by age costs a large graph far less each frame.** Every
+  scaled node had a size function of its own, and Obsidian asks every node
+  for its size several times a frame, so a 20,000-note graph handed it
+  20,000 different functions to call. They now share one, which reads each
+  node's own scale: three sizes per node, measured per frame, from 2.2–14.5 ms
+  to 0.35–0.46 ms at 20,000 nodes.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly

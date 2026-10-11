@@ -1539,6 +1539,10 @@ interface SizedNode extends GraphNode {
  * Obsidian's renderer 20,000 different functions to call at one site, every
  * frame; one function that reads a number off the node is the same answer at
  * a fraction of the cost, and leaves that call site with a single target.
+ *
+ * Each looks the prototype's own method up as it runs rather than keeping the
+ * one it found first, so another plugin that patches the prototype later is
+ * still called through.
  */
 const scaledSizes = new WeakMap<object, (this: SizedNode) => number>();
 const scaledStyles = new WeakMap<object, (this: SizedNode) => { fontSize?: number }>();
@@ -1547,9 +1551,8 @@ function scaledSizeFor(proto: SizedNode): (this: SizedNode) => number {
     let scaled = scaledSizes.get(proto);
 
     if (!scaled) {
-        const base = proto.getSize;
         scaled = function (this: SizedNode): number {
-            return (base?.call(this) ?? 8) * (this.pulsarSize ?? 1);
+            return (proto.getSize?.call(this) ?? 8) * (this.pulsarSize ?? 1);
         };
         scaledSizes.set(proto, scaled);
     }
@@ -1561,9 +1564,8 @@ function scaledStyleFor(proto: SizedNode): (this: SizedNode) => { fontSize?: num
     let scaled = scaledStyles.get(proto);
 
     if (!scaled) {
-        const baseStyle = proto.getTextStyle;
         scaled = function (this: SizedNode): { fontSize?: number } {
-            const style = baseStyle?.call(this) ?? {};
+            const style = proto.getTextStyle?.call(this) ?? {};
 
             if (typeof style.fontSize === 'number') {
                 style.fontSize *= this.pulsarTitle ?? 1;
