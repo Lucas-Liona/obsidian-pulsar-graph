@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: An idea
+    url: https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions/categories/ideas
+    about: Something Pulsar could do. Ideas start as discussions.
+  - name: A question
+    url: https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions/categories/q-a
+    about: How something works, or whether it's meant to.
+  - name: A security problem
+    url: https://github.com/Lucas-Liona/obsidian-pulsar-graph/security/advisories/new
+    about: Report it privately, please.

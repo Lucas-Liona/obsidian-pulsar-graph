@@ -11,6 +11,7 @@ import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { banded, curveAt, FADE_TYPES, FadeType, formatSharpness, SHARPNESS_STOPS, sharpnessOf } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
+import { PictureKind, Pictures } from './settings-pictures';
 import { confirmTwice } from './confirm';
 import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, HALF_LIFE_STOPS, nearestStop, REPLAY_TRAIL_STOPS, SITTING_STOPS, SPOTLIGHT_WINDOW_STOPS, SPREAD_FLOOR_STOPS, STALE_TAB_STOPS, TAB_FADE_STOPS, WINDOW_STOPS } from './duration';
 import { reducedMotion } from './stars';
@@ -770,9 +771,15 @@ function parseSaved(value: unknown): SavedPreset[] {
     return presets;
 }
 
-/** Repairs a stored snapshot the same way live settings are repaired. */
+/**
+ * Repairs a stored snapshot the same way live settings are repaired. A preset
+ * carries no list of presets (see `snapshot`), so one found inside it is not
+ * read: a file nesting them deep enough ran out of stack and stopped the
+ * plugin loading.
+ */
 export function repairPreset(stored: unknown): PresetSettings {
-    return snapshot(parseSettings(stored));
+    const own = typeof stored === 'object' && stored !== null ? { ...stored, saved: undefined } : stored;
+    return snapshot(parseSettings(own));
 }
 
 /**
@@ -845,9 +852,15 @@ function clamp(value: number, lowest: number, highest: number): number {
 export class PulsarSettingTab extends PluginSettingTab {
     private previewEl: HTMLElement | null = null;
     private statsEl: HTMLElement | null = null;
+    /** The pictures on this build of the tab, replaced with it. */
+    pictures: Pictures | null = null;
 
     constructor(app: App, private readonly plugin: PulsarGraphPlugin) {
         super(app, plugin);
+
+        // The pictures keep the theme's colours rather than reading them on
+        // every redraw, so a change of theme has to tell them.
+        plugin.registerEvent(app.workspace.on('css-change', () => this.pictures?.restyle()));
     }
 
     display(): void {
@@ -861,6 +874,8 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         containerEl.empty();
         containerEl.addClass('pulsar-graph-settings');
+        this.pictures?.destroy();
+        this.pictures = null;
 
         new Setting(containerEl)
             .setName('Pulsar')
@@ -869,7 +884,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.enabled)
                 .onChange(async (value) => {
                     settings.enabled = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -887,21 +902,25 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
+        this.pictures = new Pictures(this.plugin.pictureSource(), containerEl);
 
         const page = new SettingsPage(containerEl, new Set(settings.collapsed), (collapsed) => {
             settings.collapsed = collapsed;
             void this.plugin.saveSettings();
         });
 
-        // Eight parts, by what each one changes, rather than fifteen headings
+        // Seven parts, by what each one changes, rather than fifteen headings
         // of equal weight. Time comes first because everything else reads the
-        // number it produces.
+        // number it produces, and the shape of the fade is part of that number:
+        // the dots after links and beside tabs read it as much as the graph does.
         const time = page.container('Time', {
-            about: 'What counts as old. Every other part of this page reads the number these settings produce'
+            about: 'What counts as old, and how bright that makes a note. Everything below reads it'
         });
 
         if (time) {
+            this.picture(time, 'curve');
             this.buildTime(time, settings);
+            this.buildShape(time, settings);
         }
 
         const graph = page.container('The graph', {
@@ -918,9 +937,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         if (graph) {
             this.buildStars(graph, settings);
-            this.buildGraphFade(graph, settings);
-            this.buildSize(graph, settings);
-            this.buildLabels(graph, settings);
+            this.buildSizeAndLabels(graph, settings);
             this.buildLinks(graph, settings);
             this.buildClusters(graph, settings);
             this.buildLocalGraph(graph, settings);
@@ -928,16 +945,18 @@ export class PulsarSettingTab extends PluginSettingTab {
             this.buildReplay(graph, settings);
         }
 
-        // Three ways of lighting one thing up on purpose, against a background
-        // that dims by itself. They were in three different parts of the page.
+        // Lighting something up on purpose, against a background that dims by
+        // itself: in the graph, and inside the note you are in. The spotlight,
+        // pins and fresh writing were in three different parts of the page, and
+        // the dot after a link and the status bar's age had a part to
+        // themselves that was neither.
         const marks = page.container('Highlights', {
-            about: 'Picking something out deliberately, rather than letting the clock decide'
+            about: 'Picking things out on purpose, in the graph and in the note you are in'
         });
 
         if (marks) {
-            this.buildSpotlight(marks, settings);
-            this.buildPinSection(marks, settings);
-            this.buildWriting(marks, settings);
+            this.buildSpotlightAndPins(marks, settings);
+            this.buildInANote(marks, settings);
         }
 
         const tabs = page.container('Tabs', {
@@ -953,15 +972,8 @@ export class PulsarSettingTab extends PluginSettingTab {
         });
 
         if (tabs) {
+            this.picture(tabs, 'tabs');
             this.buildTabs(tabs, settings);
-        }
-
-        const elsewhere = page.container('Elsewhere', {
-            about: 'The parts of Obsidian this touches that are neither a graph nor a tab'
-        });
-
-        if (elsewhere) {
-            this.buildElsewhere(elsewhere, settings);
         }
 
         const setup = page.container('Setup', {
@@ -1070,7 +1082,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         // so the range every other scale needs does not apply to it.
         new Setting(containerEl)
             .setName('Age scale')
-            .setDesc('How a gap between two notes becomes a gap in opacity. Rank spreads them evenly, logarithmic magnifies recent differences, and a half-life measures against the clock instead of against the other notes')
+            .setDesc('How a gap between two notes becomes a gap in brightness. Rank spreads them evenly, logarithmic magnifies recent differences, and a half-life measures against the clock instead of the other notes')
             .addDropdown((dropdown) => {
                 for (const scale of AGE_SCALES) {
                     dropdown.addOption(scale, AGE_SCALE_LABELS[scale]);
@@ -1078,7 +1090,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.ageScale).onChange(async (value) => {
                     settings.ageScale = value as AgeScale;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // A half-life replaces the range settings below rather than
                     // adding to them.
                     this.display();
@@ -1089,7 +1101,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new DurationControl(
                 new Setting(containerEl)
                     .setName('Half-life')
-                    .setDesc('How long a note takes to fade halfway. Twice that and it is a quarter as bright, and so on. Nothing else in the vault changes what a note is worth, so adding or deleting notes leaves every other brightness exactly where it was'),
+                    .setDesc('How long a note takes to fade halfway. Twice that and it is a quarter as bright. Adding or deleting notes changes nothing else'),
                 HALF_LIFE_STOPS,
                 settings.halfLifeDays * DAY_SECONDS,
                 (seconds) => {
@@ -1100,7 +1112,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         } else {
             new Setting(containerEl)
                 .setName('Measure age against')
-                .setDesc("The whole history lets one ancient note set the far end for everything else. A window spends the entire range on the last so many days. Whatever the graph is showing re-spreads it across what is on screen")
+                .setDesc("The whole history lets one ancient note set the far end for everything else. A window spends the entire range on the last so many days. Whatever the graph is showing spreads it across what is on screen")
                 .addDropdown((dropdown) => {
                     for (const mode of NORMALIZE_MODES) {
                         dropdown.addOption(mode, NORMALIZE_LABELS[mode]);
@@ -1108,7 +1120,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.normalizeBy).onChange(async (value) => {
                         settings.normalizeBy = value as NormalizeBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         // The window length below only applies in window mode.
                         this.display();
                     });
@@ -1118,7 +1130,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 new DurationControl(
                     new Setting(containerEl)
                         .setName('Never spread across less than')
-                        .setDesc('Narrow the notes being measured far enough and they cover almost no time, and a nine-minute-old note would be drawn as ancient. Below this the range just does not use its full width'),
+                        .setDesc('Three notes from the last ten minutes are all recent. A range narrower than this does not use its full width, so none of them is drawn as ancient'),
                     SPREAD_FLOOR_STOPS,
                     settings.spreadFloorHours * HOUR_SECONDS,
                     (seconds) => {
@@ -1132,7 +1144,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 new DurationControl(
                     new Setting(containerEl)
                         .setName('Window')
-                        .setDesc('How far back the range covers. Anything older sits at minimum opacity'),
+                        .setDesc('How far back the range covers. Anything older sits at the dimmest'),
                     WINDOW_STOPS,
                     settings.windowDays * DAY_SECONDS,
                     (seconds) => {
@@ -1146,15 +1158,16 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildStars(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Stars and black holes', 'A halo around the newest notes, for when the top of the fade is all one white');
+        this.picture(containerEl, 'stars');
 
         new Setting(containerEl)
             .setName('Draw the newest notes as stars')
-            .setDesc('A soft glow around each of the newest notes, widest and strongest on the newest. On a light theme the glow is black instead, and the notes sink into it')
+            .setDesc('A soft glow around each of the newest notes, widest on the newest. On a light theme the glow is black, and the notes sink into it')
             .addToggle((toggle) => toggle
                 .setValue(settings.stars)
                 .onChange(async (value) => {
                     settings.stars = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // How many, and the pulse, only apply when it is on.
                     this.display();
                 })
@@ -1167,7 +1180,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         new NumberControl(
             new Setting(containerEl)
                 .setName('How many')
-                .setDesc('The newest notes, counted. In a local graph measured against itself, its own newest'),
+                .setDesc('How many of the newest notes get one. In a local graph measured against itself, its own newest'),
             STAR_COUNT_RANGE,
             settings.starCount,
             (value) => {
@@ -1185,13 +1198,20 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.starPulse)
                 .onChange(async (value) => {
                     settings.starPulse = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
     }
 
-    private buildGraphFade(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Graph fade', 'How strongly each node in the graph is drawn, which is the thing the plugin is for');
+    /**
+     * The two ends of the brightness range and the curve between them. Under
+     * Time rather than the graph, because the number they make is read by
+     * everything: the dot after a link and the dot beside a tab are as bright
+     * as these say, with the graph switched off or not. The names are the graph
+     * panel's, so the same setting is called the same thing in both places.
+     */
+    private buildShape(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Shape', 'How bright the newest and oldest notes are, and the curve between them');
 
         // Each control carries the other along rather than refusing to move, so
         // the range can never invert and the correction is visible as it happens.
@@ -1200,7 +1220,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         minOpacity = new NumberControl(
             new Setting(containerEl)
-                .setName('Minimum opacity')
+                .setName('Dimmest')
                 .setDesc('How faint the oldest note becomes'),
             { lowest: 0, highest: MIN_OPACITY_LIMIT, step: OPACITY_STEP },
             settings.minOpacity,
@@ -1218,8 +1238,8 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         maxOpacity = new NumberControl(
             new Setting(containerEl)
-                .setName('Maximum opacity')
-                .setDesc('How bright the newest note becomes. Above 1.0 holds it at full strength as the rest of the graph fades'),
+                .setName('Brightest')
+                .setDesc('How bright the newest note becomes. Past 1 it lightens toward white on a dark theme and deepens toward black on a light one'),
             MAX_OPACITY_RANGE,
             settings.maxOpacity,
             (value) => {
@@ -1240,7 +1260,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new StopsControl(
                 new Setting(containerEl)
                     .setName('Sharpness')
-                    .setDesc('How quickly brightness drops away from the newest note. At 1 it falls in a straight line; higher keeps only the newest bright, lower keeps more of the vault lit'),
+                    .setDesc('How quickly brightness drops away from the newest note. At 1 it is a straight line; higher keeps only the newest bright, lower keeps more of the vault lit'),
                 SHARPNESS_STOPS,
                 sharpnessOf(settings),
                 formatSharpness,
@@ -1253,12 +1273,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Bands')
-            .setDesc('Snaps brightness to a few distinct levels, so the graph reads as layers of age rather than a gradient')
+            .setDesc('Snaps brightness to a few levels, so the graph reads as layers of age rather than a gradient')
             .addToggle((toggle) => toggle
                 .setValue(settings.fadeType === 'step')
                 .onChange(async (value) => {
                     Object.assign(settings, value ? banded(settings) : curveAt(sharpnessOf(settings)));
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // Sharpness and the number of bands each apply to one of the two.
                     this.display();
                 })
@@ -1268,7 +1288,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Number of bands')
-                    .setDesc('How many distinct levels of age the graph is divided into'),
+                    .setDesc('How many levels of age'),
                 STEPS_RANGE,
                 settings.numSteps,
                 (value) => {
@@ -1289,15 +1309,16 @@ export class PulsarSettingTab extends PluginSettingTab {
      */
     private buildReplay(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Animate', "Obsidian's own timelapse, played by the Animate button under Display in the graph's panel, lit as it plays");
+        this.picture(containerEl, 'replay');
 
         new Setting(containerEl)
             .setName('Light the timelapse as it plays')
-            .setDesc('Obsidian draws every note in a replay at the brightness it has today, and the notes that existed early are old — so most of a replay is a dark graph that lights up at the end. This measures each note from the moment the replay has reached instead, so a note is brightest as it is written and cools behind the wave')
+            .setDesc('Measures each note from the moment the replay has reached, so a note is brightest as it is written and cools behind the wave. Without it, most of a replay is a dark graph that lights up at the end')
             .addToggle((toggle) => toggle
                 .setValue(settings.replay)
                 .onChange(async (value) => {
                     settings.replay = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1309,7 +1330,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         new DurationControl(
             new Setting(containerEl)
                 .setName('Stays lit for')
-                .setDesc('In vault time, not time spent watching. A note is at full brightness as the wave reaches it and has faded to nothing this long behind it'),
+                .setDesc('In vault time, not time spent watching: how far behind the wave a note has faded to the dimmest'),
             REPLAY_TRAIL_STOPS,
             settings.replayTrailDays * DAY_SECONDS,
             (seconds) => {
@@ -1320,17 +1341,18 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     }
 
-    private buildSize(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Size', 'How big each node and its name are drawn. Obsidian sizes a node by its link count and offers no control over the title at all');
+    private buildSizeAndLabels(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Size and labels', 'How big each node and its name are drawn, and the age written above it');
+        this.picture(containerEl, 'size');
 
         new Setting(containerEl)
             .setName('Size nodes by age')
-            .setDesc('Obsidian sizes a node by link count alone, and that formula does not leave its floor until a note has seven, so most notes come out identical. This sizes by age on top of it')
+            .setDesc('Obsidian sizes a node by link count alone, which leaves most notes identical. This sizes by age on top of it')
             .addToggle((toggle) => toggle
                 .setValue(settings.nodeSizeByAge)
                 .onChange(async (value) => {
                     settings.nodeSizeByAge = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1351,7 +1373,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Newest at')
-                    .setDesc('What the brightest note is multiplied by. Below the oldest is allowed, which runs it the other way round'),
+                    .setDesc('What the brightest note is multiplied by. Set it below the oldest to run the other way round'),
                 NODE_SIZE_RANGE,
                 settings.nodeSizeLargest,
                 (value) => {
@@ -1364,7 +1386,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         new NumberControl(
             new Setting(containerEl)
                 .setName('Title size')
-                .setDesc('What every name on the graph is multiplied by. Obsidian offers no control over this at all, and its default is tied to the node size, so a small-node graph has titles to match whether or not you wanted that'),
+                .setDesc('What every name on the graph is multiplied by. Obsidian has no control for this'),
             TITLE_SCALE_RANGE,
             settings.titleScale,
             (value) => {
@@ -1372,10 +1394,6 @@ export class PulsarSettingTab extends PluginSettingTab {
                 this.save();
             }
         );
-    }
-
-    private buildLabels(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Labels', 'The age written above a node, in words');
 
         new Setting(containerEl)
             .setName('Show note age')
@@ -1387,55 +1405,63 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.ageLabels).onChange(async (value) => {
                     settings.ageLabels = value as AgeMode;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 });
             });
     }
 
     /**
-     * The one thing this draws that is neither in a graph nor on a tab. It had
-     * been filed under Labels, which is true of what it shows and not of where
-     * it shows it.
+     * What is lit inside the note you are in, rather than around it in the
+     * graph: the dot after each link, fresh writing, and the open note's age in
+     * the status bar. The first and last had a part of the page to themselves,
+     * named for being neither a graph nor a tab.
      */
-    private buildElsewhere(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'The status bar', 'A line at the bottom of the window, for when no graph is in sight');
-
-        new Setting(containerEl)
-            .setName('Show the open note\'s age')
-            .setDesc('Reads the note you have open rather than the graph, so it works with no graph view open')
-            .addToggle((toggle) => toggle
-                .setValue(settings.statusBarAge)
-                .onChange(async (value) => {
-                    settings.statusBarAge = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        heading(containerEl, 'Links in notes', 'The links inside what you are reading or writing');
+    private buildInANote(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'In a note', 'The links in what you are writing, the writing itself, and the note\'s own age');
+        this.picture(containerEl, 'note');
 
         new Setting(containerEl)
             .setName('A dot after each link')
-            .setDesc('At the brightness the linked note has in the graph, in the pin colour if it is pinned. Hovering it says when that note was edited. Only links to notes that exist get one: not links to notes not yet written, web links or embeds')
+            .setDesc('At the linked note\'s brightness in the graph. Hover it for when that note was edited. Only links to notes that exist get one')
             .addToggle((toggle) => toggle
                 .setValue(settings.linkDots)
                 .onChange(async (value) => {
                     settings.linkDots = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
+                })
+            );
+
+        this.buildWriting(containerEl, settings);
+
+        new Setting(containerEl)
+            .setName('Show the open note\'s age')
+            .setDesc('In the status bar, so it works with no graph open')
+            .addToggle((toggle) => toggle
+                .setValue(settings.statusBarAge)
+                .onChange(async (value) => {
+                    settings.statusBarAge = value;
+                    await this.saved();
                 })
             );
     }
 
-    private buildSpotlight(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Spotlight', 'Picking the newest notes out of the graph so they are findable at a glance');
+    /**
+     * The two ways of holding a note bright on purpose. They mean different
+     * things — the newest, and the ones you chose — so each has its own colour,
+     * but they are the same kind of setting and were a part of the page apart.
+     */
+    private buildSpotlightAndPins(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        heading(containerEl, 'Spotlight and pins', 'The note you wrote last, and the notes you chose, each in a colour of its own');
+        this.picture(containerEl, 'highlights');
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
-            .setDesc('Paint the most recently modified note a colour of your own, so the thing you touched last is findable at a glance. It can cover the last few notes, or everything touched within a window, instead')
+            .setDesc('The note you touched last, in a colour of its own and drawn larger. It can cover the last few notes, or everything touched recently, instead')
             .addToggle((toggle) => toggle
                 .setValue(settings.spotlightNewest)
                 .onChange(async (value) => {
                     settings.spotlightNewest = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // The colour and strength below only apply when it is on.
                     this.display();
                 })
@@ -1444,19 +1470,19 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.spotlightNewest) {
             new Setting(containerEl)
                 .setName('Spotlight colour')
-                .setDesc('On a light theme it is drawn darker wherever it would be faint against the page, so a colour that glows on a dark theme still stands out there')
+                .setDesc('On a light theme it is drawn darker, keeping its hue, until it stands out from the page')
                 .addColorPicker((picker) => picker
                     .setValue(settings.spotlightColor)
                     .onChange(async (value) => {
                         settings.spotlightColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Spotlight strength')
-                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
+                    .setDesc("How far the colour overrides the node's own. Below full it mixes with your graph groups' colour"),
                 STRENGTH_RANGE,
                 settings.spotlightStrength,
                 (value) => {
@@ -1467,7 +1493,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName('What it covers')
-                .setDesc('A count always answers, even when the newest thing you touched was months ago. A window answers only while something is warm, and goes dark when you stop — which is the difference between where you have been and where you are')
+                .setDesc('A count always answers, even months later. A window goes dark when you stop, which is the difference between where you have been and where you are')
                 .addDropdown((dropdown) => {
                     for (const by of SPOTLIGHT_BYS) {
                         dropdown.addOption(by, SPOTLIGHT_BY_LABELS[by]);
@@ -1475,7 +1501,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.spotlightBy).onChange(async (value) => {
                         settings.spotlightBy = value as SpotlightBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     });
                 });
@@ -1484,7 +1510,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 new DurationControl(
                     new Setting(containerEl)
                         .setName('Touched within')
-                        .setDesc('Every note worked on this recently is marked, however many that is — none at all, when you have been away longer than this'),
+                        .setDesc('Every note worked on this recently, however many — none, when you have been away longer'),
                     SPOTLIGHT_WINDOW_STOPS,
                     settings.spotlightMinutes * MINUTE_SECONDS,
                     (seconds) => {
@@ -1496,7 +1522,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 new NumberControl(
                     new Setting(containerEl)
                         .setName('How many notes')
-                        .setDesc('The spotlight can cover more than the single newest note. At 5 it marks the last five things you touched, which reads as where you have been rather than where you are'),
+                        .setDesc('At 5 it marks the last five things you touched'),
                     SPOTLIGHT_COUNT_RANGE,
                     settings.spotlightCount,
                     (value) => {
@@ -1509,7 +1535,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Spotlight size')
-                    .setDesc("What a spotlit note's circle is multiplied by. Obsidian sizes a node by link count alone, so the note you wrote last is usually the smallest thing on screen"),
+                    .setDesc("What a spotlit note's circle is multiplied by. The note you wrote last is usually the smallest thing on screen"),
                 SPOTLIGHT_SIZE_RANGE,
                 settings.spotlightSize,
                 (value) => {
@@ -1518,20 +1544,17 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             );
         }
-    }
-
-    private buildPinSection(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Pins', 'Notes held bright whatever their dates say, for the ones you mean to come back to');
 
         this.buildPins(containerEl, settings);
     }
 
     private buildLinks(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Links', 'What the lines between notes carry, beyond joining them up');
+        this.picture(containerEl, 'links');
 
         new Setting(containerEl)
             .setName('Age the links too')
-            .setDesc('Links are drawn in one flat colour whatever their ends have been through. Give them the age of their livelier end, or fade each one along its length from the newer note to the older')
+            .setDesc('Give each link the age of its newer end, or fade it along its length from the newer note to the older')
             .addDropdown((dropdown) => {
                 for (const mode of LINK_MODES) {
                     dropdown.addOption(mode, LINK_MODE_LABELS[mode]);
@@ -1539,18 +1562,18 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.linkRecency).onChange(async (value) => {
                     settings.linkRecency = value as LinkRecency;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 });
             });
 
         new Setting(containerEl)
             .setName('Trace what was written together')
-            .setDesc('Colour the link between two notes that were saved close enough together to have been open in the same sitting. It says nothing about how long ago, which the fade is already for')
+            .setDesc('Colour the link between two notes saved close enough together to have been open in the same sitting')
             .addToggle((toggle) => toggle
                 .setValue(settings.sessionTrails)
                 .onChange(async (value) => {
                     settings.sessionTrails = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1562,19 +1585,19 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName('Trail colour')
-                .setDesc('Kept clear of the spotlight colour by default, so the two mean different things on sight')
+                .setDesc('Kept clear of the spotlight colour, so the two mean different things on sight')
                 .addColorPicker((picker) => picker
                     .setValue(settings.trailColor)
                     .onChange(async (value) => {
                         settings.trailColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Trail strength')
-                    .setDesc('How far a trail goes toward that colour. Below full it is mixed with the colour links are normally drawn in, which keeps it off the eye'),
+                    .setDesc('How far a trail goes toward that colour. Below full it mixes with the colour links are normally drawn in'),
                 STRENGTH_RANGE,
                 settings.trailStrength,
                 (value) => {
@@ -1587,11 +1610,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildClusters(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Clusters', 'Colouring a whole region of the graph by how alive it is, rather than each note on its own');
+        this.picture(containerEl, 'clusters');
 
         new NumberControl(
             new Setting(containerEl)
                 .setName('Group temperature')
-                .setDesc('Pulls each note toward the middle of its group, so a part of the vault reads as alive or as cold at a glance. Unlike the glow below this moves notes both ways. Set it to zero to turn it off'),
+                .setDesc('Pulls each note toward the middle of its group, so a part of the vault reads as alive or cold at a glance. Moves notes both ways. Zero turns it off'),
             WARMTH_RANGE,
             settings.clusterWarmth,
             (value) => {
@@ -1608,7 +1632,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.clusterWarmth > 0) {
             new Setting(containerEl)
                 .setName('Group notes by')
-                .setDesc('Folders suit most vaults. Islands of linked notes suit a vault held together by links rather than by structure, but many vaults are one big island and a sea of unlinked notes')
+                .setDesc('Folders suit most vaults. Islands suit a vault held together by links')
                 .addDropdown((dropdown) => {
                     for (const mode of CLUSTER_MODES) {
                         dropdown.addOption(mode, CLUSTER_LABELS[mode]);
@@ -1616,7 +1640,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.clusterBy).onChange(async (value) => {
                         settings.clusterBy = value as ClusterBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.renderPreview();
                     });
                 });
@@ -1625,7 +1649,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         new NumberControl(
             new Setting(containerEl)
                 .setName('Neighbour glow')
-                .setDesc('How much of a bright note carries to the notes it links to, so an area you are working in reads as a region rather than scattered points. Set it to zero to turn it off'),
+                .setDesc('How much of a bright note carries to the notes it links to, so an area you are working in reads as a region. Zero turns it off'),
             BLEED_RANGE,
             settings.neighbourBleed,
             (value) => {
@@ -1644,7 +1668,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Glow reach')
-                    .setDesc('How many links the glow travels along. Each step carries the same fraction again, so it falls away with distance'),
+                    .setDesc('How many links the glow travels along. Each step carries the same fraction again'),
                 HOPS_RANGE,
                 settings.neighbourHops,
                 (value) => {
@@ -1660,12 +1684,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Hide notes outside a range')
-            .setDesc('Takes them out of the graph entirely rather than dimming them, so what is left re-packs. The note you have open is always kept')
+            .setDesc('Takes them out of the graph rather than dimming them, so what is left re-packs. The open note is always kept')
             .addToggle((toggle) => toggle
                 .setValue(settings.filterEnabled)
                 .onChange(async (value) => {
                     settings.filterEnabled = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1675,19 +1699,19 @@ export class PulsarSettingTab extends PluginSettingTab {
         // on by default could only be switched off by turning the filter on.
         new Setting(containerEl)
             .setName('Say so on the graph')
-            .setDesc('A line across the top of every graph saying how many notes are on it and how far back they go. It matters most with the filter on, whose effect is otherwise invisible: a graph with half its notes gone looks exactly like a graph')
+            .setDesc('A line across the top of every graph saying how many notes are on it and how far back they go. With the filter on, it is the only sign anything is missing')
             .addToggle((toggle) => toggle
                 .setValue(settings.filterCaption)
                 .onChange(async (value) => {
                     settings.filterCaption = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
         if (settings.filterEnabled) {
             const bar = new Setting(containerEl)
                 .setName('Keep')
-                .setDesc('Drag a handle to move one edge, or the lit stretch between them to move the whole range without changing its width. Several ranges are allowed, so you can keep the oldest and the newest and nothing in between');
+                .setDesc('Drag a handle to move one edge, or the lit stretch to move the whole range. Add a second range to keep the oldest and the newest and nothing between');
 
             const holder = containerEl.createDiv();
 
@@ -1710,7 +1734,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setTooltip('Add another range')
                 .onClick(async () => {
                     settings.filterRanges.push({ from: 0, to: 0.2 });
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1721,7 +1745,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setTooltip('Remove the last range')
                     .onClick(async () => {
                         settings.filterRanges.pop();
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     })
                 );
@@ -1731,10 +1755,11 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildLocalGraph(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Local graph', 'The panel showing one note and what links to it. It asks a narrower question than the whole graph, and these answer it differently');
+        this.picture(containerEl, 'local');
 
         new Setting(containerEl)
             .setName('Measure a local graph against')
-            .setDesc('A dozen notes out of thousands are usually all the same age as each other, so measured against the vault the panel is a dozen identical dots. Also decides which note the spotlight picks')
+            .setDesc('Linked notes tend to have been written together, so against the whole vault a panel comes out nearly alike. Also decides which note the spotlight picks')
             .addDropdown((dropdown) => {
                 for (const scope of LOCAL_SCOPES) {
                     dropdown.addOption(scope, LOCAL_SCOPE_LABELS[scope]);
@@ -1742,7 +1767,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.localScope).onChange(async (value) => {
                     settings.localScope = value as LocalScope;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // The spread floor in the Time section applies once this is
                     // on, so it appears and disappears with it.
                     this.display();
@@ -1751,23 +1776,23 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Measure from the note in the middle')
-            .setDesc("Brightness becomes distance either side of the note the panel is about: a note worked on the day before it is as bright as one worked on the day after. Replaces the choice above while it is on")
+            .setDesc("Brightness becomes how close in time each note was written to the one the panel is about, either side. Replaces the choice above while on")
             .addToggle((toggle) => toggle
                 .setValue(settings.localAnchor)
                 .onChange(async (value) => {
                     settings.localAnchor = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
         new Setting(containerEl)
             .setName('Write every age in a local graph')
-            .setDesc('A panel of a dozen nodes has room for a dozen dates, where the whole graph does not. Independent of the labels setting above, which stays in charge of the big graph')
+            .setDesc('A panel is small enough to read every age at once. The big graph keeps to the age setting above')
             .addToggle((toggle) => toggle
                 .setValue(settings.localLabels)
                 .onChange(async (value) => {
                     settings.localLabels = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
     }
@@ -1775,18 +1800,18 @@ export class PulsarSettingTab extends PluginSettingTab {
     private buildTabs(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         new Setting(containerEl)
             .setName('Show a dot beside each tab')
-            .setDesc("A filled circle at that note's brightness in the graph, so its age reads at a glance without opening the graph at all. The newest note takes the spotlight colour when the spotlight is on")
+            .setDesc("A dot at that note's brightness in the graph. Hover it for when the note was edited")
             .addToggle((toggle) => toggle
                 .setValue(settings.tabDot)
                 .onChange(async (value) => {
                     settings.tabDot = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
         new Setting(containerEl)
             .setName('Fade tabs')
-            .setDesc('Dims a tab the longer it goes untouched, so the tab bar reads as attention rather than a pile of things you opened once. The close button keeps its strength, and the tab you are in never fades')
+            .setDesc('Dims a tab the longer it goes untouched, so the bar reads as attention. The tab you are in never fades')
             .addDropdown((dropdown) => {
                 for (const mode of TAB_MODES) {
                     dropdown.addOption(mode, TAB_MODE_LABELS[mode]);
@@ -1794,7 +1819,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.tabFade).onChange(async (value) => {
                     settings.tabFade = value as TabFade;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 });
             });
@@ -1802,7 +1827,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.tabFade !== 'off') {
             new Setting(containerEl)
                 .setName('What fades')
-                .setDesc('Just the icon and title, or the whole tab with its background. Either way, hovering a faded tab brings it back to full strength, which is what keeps its close button reachable')
+                .setDesc('The icon and title, or the whole tab. Hovering a faded tab brings it back')
                 .addDropdown((dropdown) => {
                     for (const scope of TAB_SCOPES) {
                         dropdown.addOption(scope, TAB_SCOPE_LABELS[scope]);
@@ -1810,7 +1835,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.tabFadeScope).onChange(async (value) => {
                         settings.tabFadeScope = value as TabFadeScope;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
         }
@@ -1818,7 +1843,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.tabFade === 'attention') {
             new Setting(containerEl)
                 .setName('How it fades')
-                .setDesc('Gradually reads as how long ago; all at once reads as past the line or not. A gradient over a short span saturates almost immediately, so if everything looks equally faint this is the setting to change — or the one below it')
+                .setDesc('Gradually reads as how long ago; all at once reads as past the line or not')
                 .addDropdown((dropdown) => {
                     for (const curve of TAB_CURVES) {
                         dropdown.addOption(curve, TAB_CURVE_LABELS[curve]);
@@ -1826,14 +1851,14 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.tabFadeCurve).onChange(async (value) => {
                         settings.tabFadeCurve = value as TabFadeCurve;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
             new DurationControl(
                 new Setting(containerEl)
                     .setName('Faded after')
-                    .setDesc('How long a tab is ignored before it is as faint as it gets. Time spent in a note does not count against it'),
+                    .setDesc('How long a tab is ignored before it is as faint as it gets'),
                 TAB_FADE_STOPS,
                 settings.tabFadeAfter * MINUTE_SECONDS,
                 (seconds) => {
@@ -1847,7 +1872,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Faintest a tab gets')
-                    .setDesc('A tab you cannot read is a tab you cannot get back to, so this does not go to zero'),
+                    .setDesc('A tab you cannot read is a tab you cannot get back to'),
                 TAB_FLOOR_RANGE,
                 settings.tabFadeFloor,
                 (value) => {
@@ -1859,12 +1884,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Mark tabs you have left alone')
-            .setDesc('A quiet line down a tab you have not looked at for a while, with a command to close the marked ones. Nothing ever closes on its own, and a pinned tab is never marked')
+            .setDesc('Marks a tab you have not looked at for a while as one you could close. A command closes them; nothing closes on its own')
             .addToggle((toggle) => toggle
                 .setValue(settings.staleTabs)
                 .onChange(async (value) => {
                     settings.staleTabs = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1872,7 +1897,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.staleTabs) {
             new Setting(containerEl)
                 .setName('How they are marked')
-                .setDesc('A line is quiet to the point of being easy to miss; the 💤 is not. The 💤 takes the brightness dot\'s place rather than sitting beside it, since a narrow tab has room for one or the other')
+                .setDesc('A line is easy to miss; the 💤 is not. The 💤 takes the dot\'s place')
                 .addDropdown((dropdown) => {
                     for (const mark of STALE_MARKS) {
                         dropdown.addOption(mark, STALE_MARK_LABELS[mark]);
@@ -1880,14 +1905,14 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.staleTabMark).onChange(async (value) => {
                         settings.staleTabMark = value as StaleMark;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
             new DurationControl(
                 new Setting(containerEl)
                     .setName('Marked after')
-                    .setDesc('How long a tab is ignored before it is marked. Time spent in a note does not count against it'),
+                    .setDesc('How long a tab is ignored before it is marked'),
                 STALE_TAB_STOPS,
                 settings.staleTabAfter * MINUTE_SECONDS,
                 (seconds) => {
@@ -1899,16 +1924,14 @@ export class PulsarSettingTab extends PluginSettingTab {
     }
 
     private buildWriting(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'Fresh writing', 'The one part of Pulsar that works inside a note rather than around it');
-
         new Setting(containerEl)
             .setName('Light up what you just wrote')
-            .setDesc('Fresh text takes a colour as you type it and cools back to normal over the time set below, so a page you have been working through shows where the work went')
+            .setDesc('Fresh text takes a colour as you type it and cools back to normal, so a page shows where the work went')
             .addToggle((toggle) => toggle
                 .setValue(settings.ink)
                 .onChange(async (value) => {
                     settings.ink = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1916,7 +1939,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.ink) {
             new Setting(containerEl)
                 .setName('How it shows')
-                .setDesc('Colour the new writing and leave the page alone, or leave the writing alone and dim everything around it. Dimming never replaces a colour you chose, so it suits working; colouring reads better in a screenshot')
+                .setDesc('Colour the new writing, or dim everything around it. Dimming never replaces a colour you chose')
                 .addDropdown((dropdown) => {
                     for (const mode of INK_MODES) {
                         dropdown.addOption(mode, INK_MODE_LABELS[mode]);
@@ -1924,7 +1947,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.inkMode).onChange(async (value) => {
                         settings.inkMode = value as InkMode;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     });
                 });
@@ -1933,7 +1956,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 new NumberControl(
                     new Setting(containerEl)
                         .setName('How far it dims')
-                        .setDesc('How much of the way toward the background the rest of the page goes. A note with nothing lit in it is never dimmed at all'),
+                        .setDesc('How far toward the background the rest of the page goes. A note with nothing lit is never dimmed'),
                     INK_DIM_RANGE,
                     settings.inkDim,
                     (value) => {
@@ -1946,7 +1969,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new DurationControl(
                 new Setting(containerEl)
                     .setName('Cools over')
-                    .setDesc('How long fresh writing takes to fade all the way back, from a second to four hours. Longer makes a whole session legible; a few seconds only lights what you are typing now'),
+                    .setDesc('How long fresh writing takes to fade back. Longer keeps a whole session legible; a few seconds lights only what you are typing'),
                 COOLING_STOPS,
                 settings.inkMinutes * 60,
                 (seconds) => {
@@ -1957,18 +1980,18 @@ export class PulsarSettingTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName('Colour')
-                .setDesc('What the newest writing is drawn in. It cools toward whatever colour that text would otherwise be, so a heading ends up its own colour rather than your body text colour')
+                .setDesc('What the newest writing is drawn in. It cools toward the colour that text would otherwise be')
                 .addColorPicker((picker) => picker
                     .setValue(settings.inkColor)
                     .onChange(async (value) => {
                         settings.inkColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
             new Setting(containerEl)
                 .setName('Start again')
-                .setDesc('Cools every open note at once, so what is on the page counts as old and the next thing you write stands on its own. Also a command')
+                .setDesc('Cools every open note at once, so the next thing you write stands on its own. Also a command')
                 .addButton((button) => button
                     .setButtonText('Cool it all')
                     .onClick(() => this.plugin.forgetInk())
@@ -1978,10 +2001,12 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     /** *Counts as one sitting*, drawn where `sittingGapPlacement` says. */
     private buildSittingGap(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        this.picture(containerEl, 'sittings');
+
         new DurationControl(
             new Setting(containerEl)
                 .setName('Counts as one sitting')
-                .setDesc('How far apart two saves can be and still count as one sitting. The history counts sittings by it, and trails use it to decide which notes were worked on together'),
+                .setDesc('Saves this close together count as one sitting, in the edit history and for tracing links'),
             SITTING_STOPS,
             settings.sessionGapMinutes * MINUTE_SECONDS,
             (seconds) => {
@@ -1992,16 +2017,17 @@ export class PulsarSettingTab extends PluginSettingTab {
     }
 
     private buildHistory(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
-        heading(containerEl, 'History', "Pulsar's own record of when each note was worked on. It is worth nothing until it has been running a while, which is why it is on");
+        heading(containerEl, 'History', "Pulsar's own record of when each note was worked on");
+        this.picture(containerEl, 'history');
 
         new Setting(containerEl)
             .setName('Keep a record of when notes were worked on')
-            .setDesc("Obsidian keeps one modification time per note, which forgets everything before the last edit. This records each sitting as it happens, in this plugin's own folder")
+            .setDesc("Obsidian keeps only the most recent time. This keeps every sitting, as numbers, in a file of the plugin's own")
             .addToggle((toggle) => toggle
                 .setValue(settings.history)
                 .onChange(async (value) => {
                     settings.history = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // What it has collected, and the cap, only matter when on.
                     this.display();
                 })
@@ -2015,7 +2041,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Sittings kept per note')
-                    .setDesc('The oldest are dropped past this. A note is a sitting at a time rather than a write at a time, so a note worked on weekly reaches this in two years'),
+                    .setDesc('The oldest go first. A note worked on weekly reaches 100 in two years'),
                 HISTORY_CAP_RANGE,
                 settings.historyCap,
                 (value) => {
@@ -2027,7 +2053,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Blend in edit intensity')
-                    .setDesc("How much of a node's brightness comes from how often you return to a note rather than from how recently you touched it. At 0 nothing changes. It reads the history, so it says nothing until that has been running a while"),
+                    .setDesc("How much of a node's brightness comes from how often you return to a note rather than how recently. At 0 nothing changes"),
                 BLEND_RANGE,
                 settings.intensityBlend,
                 (value) => {
@@ -2043,7 +2069,7 @@ export class PulsarSettingTab extends PluginSettingTab {
             // at a time.
             new Setting(containerEl)
                 .setName('Measure intensity')
-                .setDesc('Sitting counts are far more lopsided than dates — most notes have one or two and a handful have dozens — so measuring against the busiest note leaves almost everything at the bottom. Rank is the one a lopsided spread cannot flatten')
+                .setDesc('Most notes have a sitting or two and a few have dozens, so against the busiest note almost everything sits at the bottom. Rank is the one that spreads them')
                 .addDropdown((dropdown) => {
                     for (const scale of INTENSITY_SCALES) {
                         dropdown.addOption(scale, INTENSITY_LABELS[scale]);
@@ -2051,7 +2077,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.intensityScale).onChange(async (value) => {
                         settings.intensityScale = value as IntensityScale;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
@@ -2135,7 +2161,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                         return;
                     }
 
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 });
             });
@@ -2144,7 +2170,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Save these settings')
-            .setDesc('Keeps everything above under a name of your own, so a setup you have tuned to your vault can be come back to')
+            .setDesc('Keeps everything above under a name of your own')
             .addText((text) => text
                 .setPlaceholder('Name')
                 .onChange((value) => {
@@ -2170,7 +2196,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                         settings.saved.push(kept);
                     }
 
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     new Notice(`Saved "${kept.name}".`);
                     this.display();
                 })
@@ -2233,6 +2259,18 @@ export class PulsarSettingTab extends PluginSettingTab {
     hide(): void {
         this.previewEl = null;
         this.statsEl = null;
+        this.pictures?.destroy();
+        this.pictures = null;
+    }
+
+    private picture(containerEl: HTMLElement, kind: PictureKind): void {
+        this.pictures?.add(containerEl, kind);
+    }
+
+    /** Saves, then redraws the pictures once the store has been measured again. */
+    private async saved(): Promise<void> {
+        await this.plugin.saveSettings();
+        this.pictures?.request();
     }
 
     /** Presets travel as plain JSON, through the clipboard rather than a server. */
@@ -2266,7 +2304,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             }
 
-            await this.plugin.saveSettings();
+            await this.saved();
             new Notice(`Added ${arriving.length} preset(s).`);
             this.display();
         } catch {
@@ -2275,9 +2313,12 @@ export class PulsarSettingTab extends PluginSettingTab {
     }
 
     private save(): void {
-        void this.plugin.saveSettings();
+        void this.saved();
         this.renderPreview();
         this.renderStats();
+        // Now as well as once saved: most of what a slider moves is read live,
+        // and the rest catches up when the store has been measured again.
+        this.pictures?.request();
     }
 
     /**
@@ -2291,12 +2332,12 @@ export class PulsarSettingTab extends PluginSettingTab {
     private buildPins(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         new Setting(containerEl)
             .setName('Give pins a colour')
-            .setDesc('A pinned note is held at full brightness, which on its own is indistinguishable from one you edited this morning. The colour is what says why it is bright')
+            .setDesc('A pinned note is held at the brightest, which on its own looks like one you edited this morning. The colour says why it is bright')
             .addToggle((toggle) => toggle
                 .setValue(settings.pinMark)
                 .onChange(async (value) => {
                     settings.pinMark = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -2304,19 +2345,19 @@ export class PulsarSettingTab extends PluginSettingTab {
         if (settings.pinMark) {
             new Setting(containerEl)
                 .setName('Pin colour')
-                .setDesc('Worth keeping clear of your spotlight colour, since the two mean different things. Where a pinned note is also one of the newest, the spotlight wins — it moves on by itself in a note or two and the pin colour comes back')
+                .setDesc('Keep it clear of the spotlight colour. Where a pinned note is also the newest, the spotlight wins until it moves on')
                 .addColorPicker((picker) => picker
                     .setValue(settings.pinColor)
                     .onChange(async (value) => {
                         settings.pinColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
             new NumberControl(
                 new Setting(containerEl)
                     .setName('Pin strength')
-                    .setDesc("How far the colour overrides the node's own. Below full strength it mixes with whatever colour your graph groups gave it"),
+                    .setDesc("How far the colour overrides the node's own"),
                 STRENGTH_RANGE,
                 settings.pinStrength,
                 (value) => {
@@ -2328,11 +2369,14 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         const pinned = this.plugin.pinnedNotes();
 
-        if (pinned.length === 0) {
-            new Setting(containerEl)
-                .setName('Nothing pinned')
-                .setDesc('Right-click a node in the graph, or a note in the file explorer, and choose to pin it. There is a command for the note you have open, and it takes a hotkey');
+        // Always shown. Pinning happens out in the vault, from a menu and a
+        // command, and a feature whose only ways in are a context menu and the
+        // command palette is one nobody finds.
+        new Setting(containerEl)
+            .setName(pinned.length === 0 ? 'Pin a note' : `${pinned.length} ${pinned.length === 1 ? 'note' : 'notes'} pinned`)
+            .setDesc('Right-click a note in the graph or the file explorer and choose to pin it in the graph. The command palette does the same for the open note, and takes a hotkey');
 
+        if (pinned.length === 0) {
             return;
         }
 
