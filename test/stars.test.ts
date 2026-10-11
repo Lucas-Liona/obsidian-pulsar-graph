@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GraphNode, GraphRenderer } from '../src/graph';
-import { BREATH_FRAME_MS, rhythmOf, shimmer, Stars, strengthAt, swell, waveOf, widthAt } from '../src/stars';
+import { BREATH_BUDGET, BREATH_FRAME_MS, BREATH_SLOWEST_MS, rhythmOf, shimmer, Stars, strengthAt, swell, waveOf, widthAt } from '../src/stars';
 
 // The parts of Obsidian's PIXI the halos are built from, shaped the way the
 // live graph has them: a title is a text, a text is a sprite, a sprite is drawn
@@ -139,13 +139,13 @@ class Clock {
 }
 
 /** A renderer whose loop is asleep or awake, counting the stages drawn without it and the times it was woken. */
-function sleepy(renderer: GraphRenderer): { drawn: () => number; woken: () => number } {
+function sleepy(renderer: GraphRenderer): { drawn: () => number; woken: () => number; count: () => void } {
     let drawn = 0;
     let woken = 0;
     renderer.idleFrames = 61;
     renderer.px = { render: () => drawn++ };
     renderer.changed = () => woken++;
-    return { drawn: () => drawn, woken: () => woken };
+    return { drawn: () => drawn, woken: () => woken, count: () => drawn++ };
 }
 
 /** A star is two children: the halo, and the circle drawn again over it. */
@@ -395,6 +395,60 @@ describe('stars', () => {
         expect(loop.drawn()).toBe(Math.floor(1000 / BREATH_FRAME_MS));
         expect(loop.woken()).toBe(0);
         expect(renderer.idleFrames).toBe(61);
+    });
+
+    // Measured: a draw of all 2,887 notes of the filtered bench vault took
+    // 19 ms, and 30 of them a second held 0.68 of a core plus 0.87 on the GPU.
+    it('draws a breath less often when a draw is costly, and no less than 12 a second', () => {
+        const breaths = (cost: number): number => {
+            const { renderer } = graph(['a.md', 'b.md']);
+            const loop = sleepy(renderer);
+            const clock = new Clock();
+            renderer.px = {
+                render: () => {
+                    clock.now += cost;
+                    loop.count();
+                }
+            };
+            const stars = new Stars(renderer, paint, clock, () => clock.now);
+
+            stars.set({ paths: ['a.md', 'b.md'], light: false, pulse: true });
+            stars.sync(0);
+            // Long enough for the estimate of a draw to settle.
+            clock.advance(2000);
+            const before = loop.drawn();
+            clock.advance(1000);
+            return loop.drawn() - before;
+        };
+
+        expect(breaths(2.7)).toBe(Math.floor(1000 / BREATH_FRAME_MS));
+        expect(breaths(19)).toBe(Math.floor(1000 / (19 / BREATH_BUDGET)));
+        expect(breaths(60)).toBe(Math.floor(1000 / BREATH_SLOWEST_MS));
+    });
+
+    it('goes back to 30 breaths a second once draws are cheap again', () => {
+        const { renderer } = graph(['a.md']);
+        const loop = sleepy(renderer);
+        const clock = new Clock();
+        let cost = 19;
+        renderer.px = {
+            render: () => {
+                clock.now += cost;
+                loop.count();
+            }
+        };
+        const stars = new Stars(renderer, paint, clock, () => clock.now);
+
+        stars.set({ paths: ['a.md'], light: false, pulse: true });
+        stars.sync(0);
+        clock.advance(2000);
+        // Zoomed in: far less of the graph to draw.
+        cost = 2.7;
+        clock.advance(2000);
+        const before = loop.drawn();
+        clock.advance(1000);
+
+        expect(loop.drawn() - before).toBe(Math.floor(1000 / BREATH_FRAME_MS));
     });
 
     it('leaves the breath to the graph while it is drawing anyway, and takes it back when it stops', () => {

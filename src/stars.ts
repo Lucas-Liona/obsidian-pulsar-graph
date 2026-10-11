@@ -94,6 +94,24 @@ export function reducedMotion(): boolean {
  */
 export const BREATH_FRAME_MS = 33;
 
+/**
+ * The share of the time a breath's own drawing may take. A draw is the whole
+ * stage, so its cost follows how much of the graph is on screen: 2.7 ms zoomed
+ * in on 119 notes, 19 ms with all 2,887 of a filtered 20,000 in view, where
+ * 30 draws a second held 0.68 of a core in the window and 0.87 on the GPU. A
+ * breath that would spend more than this draws less often instead.
+ */
+export const BREATH_BUDGET = 0.25;
+
+/**
+ * The slowest a breath is drawn however costly a draw is: 12 a second, so the
+ * quickest star still takes over twenty steps to rise and fall.
+ */
+export const BREATH_SLOWEST_MS = 80;
+
+/** How much of each new draw's time moves the running estimate. */
+const DRAW_COST_WEIGHT = 0.25;
+
 /** How often a breath looks again while its graph cannot be seen. */
 const UNSEEN_RETRY_MS = 500;
 
@@ -181,11 +199,14 @@ export class Stars {
     private kit: Kit | null | undefined = undefined;
     /** The next breath drawn while the renderer sleeps, if one is due. */
     private breathing: number | null = null;
+    /** What a breath's draw of the stage has been taking, in ms; 0 until one is timed. */
+    private drawCost = 0;
 
     constructor(
         private readonly renderer: GraphRenderer,
         private readonly paint: (light: boolean) => HTMLCanvasElement | null = paintHalo,
-        private readonly timers: Timers = window
+        private readonly timers: Timers = window,
+        private readonly clock: () => number = () => performance.now()
     ) {}
 
     set(look: StarLook): void {
@@ -280,7 +301,7 @@ export class Stars {
         if (!breathing) {
             this.stopBreathing();
         } else if (this.breathing === null && this.asleep()) {
-            this.breathing = this.timers.setTimeout(() => this.breathe(), BREATH_FRAME_MS);
+            this.breathing = this.timers.setTimeout(() => this.breathe(), this.breathEvery());
         }
 
         return breathing;
@@ -329,10 +350,21 @@ export class Stars {
             return;
         }
 
-        // Which also queues the next one.
-        if (this.sync(performance.now())) {
+        // Which also queues the next one, at a pace set by the draws before.
+        if (this.sync(this.clock())) {
+            const started = this.clock();
             this.renderer.px.render();
+            const took = this.clock() - started;
+            this.drawCost = this.drawCost === 0 ? took : this.drawCost + (took - this.drawCost) * DRAW_COST_WEIGHT;
         }
+    }
+
+    /**
+     * How long until the next breath while the renderer sleeps: 30 a second
+     * while a draw is cheap, fewer once it would take more than its budget.
+     */
+    private breathEvery(): number {
+        return Math.min(BREATH_SLOWEST_MS, Math.max(BREATH_FRAME_MS, this.drawCost / BREATH_BUDGET));
     }
 
     private asleep(): boolean {

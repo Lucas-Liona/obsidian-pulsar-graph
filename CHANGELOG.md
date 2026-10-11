@@ -66,6 +66,13 @@
   node's own scale: three sizes per node, measured per frame, from 2.2–14.5 ms
   to 0.35–0.46 ms at 20,000 nodes.
 
+- **A pulse draws less often when drawing is expensive.** Each breath of the
+  stars redraws the whole graph, so with everything in view a pulse cost far
+  more than zoomed in: one draw of 2,887 notes took 19 ms, and 30 a second
+  held about one and a half cores. It now keeps its drawing to a quarter of
+  the time: 30 a second while a draw is cheap, 13 at 19 ms, and never fewer
+  than 12, so the stars still shimmer.
+
 ### Development
 
 - **Pulsar is tested inside a real Obsidian.** On every pull request, and

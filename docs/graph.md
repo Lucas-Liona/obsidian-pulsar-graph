@@ -40,11 +40,13 @@ is what lets the small ones be seen to move: brightness alone barely changed a
 glow three widths across. It costs something a still graph does not. Obsidian stops
 drawing a graph once nothing has moved for about a second; a pulse draws it
 again up to 30 times a second without waking it, against nothing for stars that
-hold still. Each of those is a whole draw of the graph, so what it costs follows
-how much of the graph is on screen: with 250 stars on 2,887 notes, about a fifth
-of a core between the window and the GPU zoomed in on a few hundred of them, and
-about one and a half cores with all of them in view, where one draw took 19 ms
-against 2.7 ms for 119.
+hold still. Each of those is a whole draw of the graph, so what one costs
+follows how much of the graph is on screen: with 250 stars on 2,887 notes, one
+draw took 2.7 ms zoomed in on 119 of them and 19 ms with all of them in view,
+where 30 a second held about one and a half cores between the window and the
+GPU. So a pulse keeps its drawing to a quarter of the time: 30 a second while a
+draw is cheap, fewer as it gets dearer (13 a second at 19 ms), and never fewer
+than 12.
 While anything else is moving, the breath rides Obsidian's own frames instead. A
 graph in a background tab or a minimized window draws nothing for it. It moves
 even while your system asks for reduced motion (on Windows, with animation
