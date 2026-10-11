@@ -1,0 +1,82 @@
+name: E2E
+
+# Pulsar inside a real Obsidian (test/e2e), on the oldest public release it
+# supports and on the latest. The unit and plugin tests run against a fake
+# Obsidian; this is what notices when an Obsidian update changes the graph
+# internals the plugin depends on.
+#
+# GitHub-hosted runners only. The repository is public, and a self-hosted
+# runner would run whatever a fork's pull request puts in this file.
+#
+# The weekly run is the one that catches a new Obsidian release with nobody
+# pushing anything. GitHub switches off scheduled workflows in a public
+# repository after 60 days without activity; see AGENTS.md for turning it
+# back on.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Obsidian ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The first public release at or above minAppVersion, on the oldest
+          # installer that runs it. See test/e2e/wdio.conf.mts.
+          - name: 1.8.3
+            versions: 1.8.3/earliest
+          - name: latest
+            versions: latest/latest
+    env:
+      OBSIDIAN_VERSIONS: ${{ matrix.versions }}
+      WDIO_MAX_INSTANCES: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+
+      # The versions this run resolves to, as the key for the downloaded
+      # Obsidian. Loading the config fetches the version list into the cache
+      # directory, which is cleared so the restore below starts clean.
+      - name: Resolve Obsidian versions
+        run: |
+          npx tsx test/e2e/wdio.conf.mts | grep 'obsidian-cache-key:' > obsidian-versions-lock.txt
+          cat obsidian-versions-lock.txt
+          rm -rf .obsidian-cache
+
+      - uses: actions/cache@v4
+        with:
+          path: .obsidian-cache
+          key: obsidian-cache-${{ hashFiles('obsidian-versions-lock.txt') }}
+
+      # Obsidian needs a display: a virtual one, and a window manager.
+      - name: Virtual display
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -q -y xvfb herbstluftwm
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          Xvfb :99 -screen 0 1280x1024x24 +extension GLX -noreset &
+          sleep 1
+          DISPLAY=:99 herbstluftwm &
+          sleep 1
+
+      - run: npm run e2e

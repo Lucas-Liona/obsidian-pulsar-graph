@@ -26,3 +26,6 @@ data.json
 # Its backup and any damaged copy kept aside are the same numbers.
 history*.json
 bench.json
+
+# Obsidian versions downloaded for the end-to-end tests.
+.obsidian-cache
