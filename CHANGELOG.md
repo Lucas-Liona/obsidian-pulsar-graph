@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [1.43.0] - 2026-10-11
+
+Stars and black holes mark the newest notes, a new install starts with nearly
+everything switched on, and one *Sharpness* slider takes the place of *Fade
+type*. Pinned writing is removed; pinning a note in the graph is unchanged.
 
 ### Added
 
