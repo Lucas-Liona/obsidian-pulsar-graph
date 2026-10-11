@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **A sitting survives a reload.** Reloading Pulsar while its last write of
+  the edit history was still landing could lose the newest sitting: the new
+  copy read the file before that write finished, then saved over it. It now
+  waits for the write, for up to ten seconds.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly

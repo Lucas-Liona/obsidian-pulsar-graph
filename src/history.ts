@@ -61,6 +61,43 @@ const WRITE_DELAY_MS = 5 * 1000;
 const AWAKE_REFRESH_MS = 5 * 60 * 1000;
 
 /**
+ * The longest a load waits for a write left by the instance before it. A
+ * write that never lands must not keep the history from loading at all.
+ */
+const LANDING_WAIT_MS = 10 * 1000;
+
+/**
+ * Writes still landing, by vault and file, where the next instance can find
+ * them. Unload cannot wait for its last write, and a reload evaluates this
+ * code afresh, so nothing module-level survives into the instance that reads
+ * the file next. The window does, and so does the vault's adapter, which keys
+ * it.
+ */
+const LANDING = Symbol.for('pulsar-graph.history-landing');
+
+function landing(adapter: object): Map<string, Promise<void>> {
+    const holder = window as unknown as Record<symbol, WeakMap<object, Map<string, Promise<void>>> | undefined>;
+    const byVault = holder[LANDING] ??= new WeakMap();
+    let files = byVault.get(adapter);
+
+    if (!files) {
+        files = new Map();
+        byVault.set(adapter, files);
+    }
+
+    return files;
+}
+
+/** Resolves when `pending` does, or after `ms`, whichever is first. */
+async function within(pending: Promise<void>, ms: number): Promise<void> {
+    let timer = 0;
+    await Promise.race([pending, new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+    })]);
+    window.clearTimeout(timer);
+}
+
+/**
  * When each note was worked on, kept because Obsidian keeps only the latest
  * modification time and throws the rest away.
  *
@@ -137,6 +174,15 @@ export class EditHistory {
         this.loaded = true;
 
         let raw: string;
+
+        // A reload's new instance reads while the old one's last write may
+        // still be landing; read before it and that write's sittings are lost
+        // to the next one this instance makes.
+        const pending = landing(this.app.vault.adapter).get(this.path);
+
+        if (pending) {
+            await within(pending, LANDING_WAIT_MS);
+        }
 
         try {
             if (!(await this.app.vault.adapter.exists(this.path))) {
@@ -510,7 +556,14 @@ export class EditHistory {
             }
         });
 
-        await this.writing;
+        const mine = this.writing;
+        const landed = landing(this.app.vault.adapter);
+        landed.set(this.path, mine);
+        await mine;
+
+        if (landed.get(this.path) === mine) {
+            landed.delete(this.path);
+        }
     }
 }
 
