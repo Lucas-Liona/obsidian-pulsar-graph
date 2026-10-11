@@ -1546,6 +1546,52 @@ interface SizedNode extends GraphNode {
     pulsarTitle?: number;
 }
 
+/**
+ * One replacement `getSize` and one `getTextStyle` per prototype, shared by
+ * every node, reading the node's own scale. A closure per node handed
+ * Obsidian's renderer 20,000 different functions to call at one site, every
+ * frame; one function that reads a number off the node is the same answer at
+ * a fraction of the cost, and leaves that call site with a single target.
+ *
+ * Each looks the prototype's own method up as it runs rather than keeping the
+ * one it found first, so another plugin that patches the prototype later is
+ * still called through.
+ */
+const scaledSizes = new WeakMap<object, (this: SizedNode) => number>();
+const scaledStyles = new WeakMap<object, (this: SizedNode) => { fontSize?: number }>();
+
+function scaledSizeFor(proto: SizedNode): (this: SizedNode) => number {
+    let scaled = scaledSizes.get(proto);
+
+    if (!scaled) {
+        scaled = function (this: SizedNode): number {
+            return (proto.getSize?.call(this) ?? 8) * (this.pulsarSize ?? 1);
+        };
+        scaledSizes.set(proto, scaled);
+    }
+
+    return scaled;
+}
+
+function scaledStyleFor(proto: SizedNode): (this: SizedNode) => { fontSize?: number } {
+    let scaled = scaledStyles.get(proto);
+
+    if (!scaled) {
+        scaled = function (this: SizedNode): { fontSize?: number } {
+            const style = proto.getTextStyle?.call(this) ?? {};
+
+            if (typeof style.fontSize === 'number') {
+                style.fontSize *= this.pulsarTitle ?? 1;
+            }
+
+            return style;
+        };
+        scaledStyles.set(proto, scaled);
+    }
+
+    return scaled;
+}
+
 function sizeNode(node: GraphNode, scale: number, titleScale: number): boolean {
     const sized = node as SizedNode;
 
@@ -1555,31 +1601,19 @@ function sizeNode(node: GraphNode, scale: number, titleScale: number): boolean {
 
     const proto = Object.getPrototypeOf(node) as SizedNode;
 
-    // Always re-derive from the prototype rather than from whatever is on the
+    // Always derived from the prototype rather than from whatever is on the
     // node, so repeated passes cannot compound into something far larger than
     // asked for.
     if (scale === 1) {
         delete sized.getSize;
     } else {
-        const base = proto.getSize;
-        sized.getSize = function (this: GraphNode): number {
-            return (base?.call(this) ?? 8) * scale;
-        };
+        sized.getSize = scaledSizeFor(proto);
     }
 
     if (titleScale === 1) {
         delete sized.getTextStyle;
     } else {
-        const baseStyle = proto.getTextStyle;
-        sized.getTextStyle = function (this: GraphNode): { fontSize?: number } {
-            const style = baseStyle?.call(this) ?? {};
-
-            if (typeof style.fontSize === 'number') {
-                style.fontSize *= titleScale;
-            }
-
-            return style;
-        };
+        sized.getTextStyle = scaledStyleFor(proto);
     }
 
     sized.pulsarSize = scale;
