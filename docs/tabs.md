@@ -73,7 +73,7 @@ A new install has the dot on, fades tabs by how long since you looked at them
 There's also a status bar item — **Edited 4 minutes ago** for whatever note you
 have open. It reads the note, not the graph, so it works with no graph view in
 sight. On by default, since it says what the whole plugin is about in four
-words. Switch it off under **Elsewhere**.
+words. Switch it off under **Highlights › In a note**.
 
 The spotlight paints the most recently modified note a colour of your own, so
 the thing you touched last is findable at a glance. It can cover the last few

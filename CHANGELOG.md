@@ -50,6 +50,20 @@
   - Security problems are reported privately, as `SECURITY.md` describes.
   - `CONTRIBUTING.md` points newcomers at AGENTS.md.
 
+### Changed
+
+- **The settings are in seven parts instead of eight, and say less.** The
+  fade's two ends and its curve move from the graph into *Time*, under
+  *Shape*, since the dots after links and beside tabs read them too; they are
+  called *Dimmest* and *Brightest* there, as they already were in the graph's
+  panel. *Size* and *Labels* become one group. *Highlights* holds the
+  spotlight and pins together, then everything lit inside the note you are
+  in: the dot after each link, fresh writing and the status bar's age, which
+  had a part of their own called *Elsewhere*. How to pin a note is always
+  shown, not only when nothing is pinned. Almost every description is
+  shorter. No setting is renamed in `data.json`, moved between files or given
+  a new default.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly

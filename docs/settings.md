@@ -3,15 +3,14 @@
 The reference table. Each setting is explained in the page for the surface it
 belongs to; this is the list of them.
 
-The page is in eight parts, and each one folds shut and stays that way:
+The page is in seven parts, and each one folds shut and stays that way:
 
 | | |
 |---|---|
-| **Time** | What counts as old. Every other part reads the number it produces, so it comes first and has no off switch — it is the model rather than a feature. |
-| **The graph** | Everything drawn in the graph view itself: the fade, node size, the ages above nodes, what the links carry, regions, the local graph, the age filter and the replay. |
-| **Highlights** | The three ways of picking something out on purpose — the spotlight, pins, and fresh writing — against a background that dims by itself. |
+| **Time** | What counts as old, and the shape of the fade: how bright the newest and the oldest note are and the curve between them. Every other part reads the number it produces — the dots after links and beside tabs as much as the graph — so it comes first and has no off switch. It is the model rather than a feature. |
+| **The graph** | Everything drawn in the graph view itself: stars, node size and the ages above nodes, what the links carry, regions, the local graph, the age filter and the replay. |
+| **Highlights** | Picking things out on purpose, against a background that dims by itself: the spotlight and pins in the graph, and in the note you are in, the dot after each link, fresh writing and the status bar's age. |
 | **Tabs** | The tab bar read as attention: the brightness dot, fading, and marking the ones you have left alone. |
-| **Elsewhere** | What this draws that is neither a graph nor a tab: the status bar, and a dot after each link in a note. |
 | **Setup** | The edit history, and saved sets of everything above. |
 | **Measurements** | What the settings are doing to your actual notes. |
 | **Clear and reset** | What cannot be taken back: forgetting the history, resetting the settings and unpinning every note. Each asks for a second click. |
@@ -31,8 +30,8 @@ looking at a graph rather than from a dialog in front of it:
 | **Text** | Title size, Ages |
 | **Age filter** | Measure from this note (local graph only), Hide notes outside a range, the range bar |
 
-They are the same settings, not copies: moving one moves the other. Dimmest and
-Brightest are the minimum and maximum opacity, Sharpness is Sharpness (moving it
+They are the same settings, not copies: moving one moves the other. Dimmest,
+Brightest and Sharpness have the same names in both places (moving Sharpness
 in the panel also leaves bands), Glow is
 Neighbour glow, Size by age is Size nodes by age, Stars is Draw the newest notes
 as stars, Spotlight is Spotlight the
@@ -103,7 +102,15 @@ default changed keep their value.
 | Half-life | 1 hour – 365 days, in round steps | 14 days | By half-life | How long a note takes to fade halfway |
 | Measure age against | Whole history, Recent window, Whatever the graph is showing | Whole history | any scale but half-life | What sets the oldest and newest ends |
 | Never spread across less than | 15 minutes – 7 days, in round steps | 6 hours | anything that re-spreads | The narrowest span a re-spread range may cover |
-| Window | 6 hours – 365 days, in round steps | 30 days | Recent window | How far back the range reaches. Older notes sit at the minimum |
+| Window | 6 hours – 365 days, in round steps | 30 days | Recent window | How far back the range reaches. Older notes sit at the dimmest |
+| Dimmest | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
+| Brightest | 0.0 – 12.0 | 1.5 | all | How bright the newest note gets |
+| Sharpness | × 0.25 – × 6, in steps | × 1 | Bands off | How quickly brightness drops away from the newest note. × 1 is a straight line, higher keeps only the newest bright, lower keeps more lit. A value saved outside the steps (up to 10) is kept until the slider moves |
+| Bands | on / off | off | all | Brightness snapped to a few levels, so the graph reads as layers of age |
+| Number of bands | 1 – 20 | 5 | Bands on | How many levels |
+
+Dimmest and Brightest were called Minimum opacity and Maximum opacity, under
+the graph, in 1.43.0 and before. They are the same two settings.
 
 ## The graph
 
@@ -113,11 +120,6 @@ default changed keep their value.
 | Draw the newest notes as stars | on / off | off | all | A soft halo around the newest notes: a glow on a dark theme, black on a light one |
 | How many | 1 – 250 | 10 | Stars on | How many of the newest notes get one |
 | Pulse | on / off | off | Stars on | Each one brightens and dims at its own pace. Draws a still graph up to 30 times a second while it is on screen, whether or not the system asks for reduced motion |
-| Minimum opacity | 0.0 – 1.0 | 0.1 | all | How faint the oldest note gets |
-| Maximum opacity | 0.0 – 12.0 | 1.5 | all | How bright the newest note gets |
-| Sharpness | × 0.25 – × 6, in steps | × 1 | Bands off | How quickly brightness drops away from the newest note. × 1 is a straight line, higher keeps only the newest bright, lower keeps more lit. A value saved outside the steps (up to 10) is kept until the slider moves |
-| Bands | on / off | off | all | Brightness snapped to a few levels, so the graph reads as layers of age |
-| Number of bands | 1 – 20 | 5 | Bands on | How many levels |
 | Size nodes by age | on / off | on | all | Scales each node by age, on top of Obsidian's own size |
 | Oldest at | 0.2 – 3.0 | 0.7 | Sizing on | What the dimmest note's size is multiplied by |
 | Newest at | 0.2 – 3.0 | 1.8 | Sizing on | What the brightest note's size is multiplied by. Below Oldest at reverses it |
@@ -140,7 +142,7 @@ default changed keep their value.
 | Light the timelapse as it plays | on / off | on | all | Measures each note from the moment the graph's own timelapse has reached |
 | Stays lit for | 1 – 365 days, in round steps | 60 days | Replay on | How much vault time a note takes to fade behind the wave |
 
-Maximum opacity goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
+Brightest goes above 1.0 on purpose. Obsidian multiplies a node's opacity by
 its own fade factor, so pushing past 1.0 keeps your recent notes at full strength
 while everything older still falls away. Past 1.0 a node isn't drawn any more
 solid: on a dark theme its colour is lightened instead, so a grey node goes
@@ -171,13 +173,18 @@ with it.
 | Give pins a colour | on / off | on | all | Paints pinned notes, so a pin reads as a pin rather than as fresh |
 | Pin colour | any | purple `#c084fc` | Pin colour on | |
 | Pin strength | 0.0 – 1.0 | 0.85 | Pin colour on | How far the colour overrides the node's own |
-| Pinned notes | a list, each with **Unpin** | none | all | Pinning itself is a right-click on a graph node or a note in the file explorer, or a command |
+| Pin a note | how to, always shown; then the list, each with **Unpin** | none | all | Pinning itself is a right-click on a graph node or a note in the file explorer, or a command |
+| A dot after each link | on / off | on | all | A dot after each link in a note, at the linked note's brightness |
 | Light up what you just wrote | on / off | on | all | Fresh text takes a colour and cools back to normal. The status bar counts what is still lit |
 | How it shows | Colour what is new, Dim everything else | Colour what is new | Fresh writing on | Colour the new text, or dim the rest of the page |
 | How far it dims | 0.1 – 0.9 | 0.45 | Dim everything else | How far toward the background the rest of the page goes |
 | Cools over | 1 second – 4 hours, in round steps | 5 minutes | Fresh writing on | How long fresh writing takes to fade back. The slider is marked where seconds give way to minutes and minutes to hours |
 | Colour | any | orange `#ff7a45` | Fresh writing on | What the newest writing is drawn in |
 | Start again | button: **Cool it all** | | Fresh writing on | Cools every open note at once. Also a command |
+| Show the open note's age | on / off | on | all | The open note's age in the status bar, with no graph needed |
+
+Highlights is in two halves: **Spotlight and pins**, for the graph, and **In a
+note**, for the note you are in.
 
 ## Tabs
 
@@ -193,13 +200,6 @@ with it.
 | Mark tabs you have left alone | on / off | on | all | Marks tabs not looked at for a while. A command closes them |
 | How they are marked | A line down the edge, A 💤 where the dot goes | A 💤 where the dot goes | Marking on | |
 | Marked after | 5 minutes – 2 days, in round steps | 4 hours | Marking on | How long a tab is ignored before it is marked |
-
-## Elsewhere
-
-| Setting | Range | Default | Applies to | What it does |
-| --- | --- | --- | --- | --- |
-| Show the open note's age | on / off | on | all | The open note's age in the status bar, with no graph needed |
-| A dot after each link | on / off | on | all | A dot after each link in a note, at the linked note's brightness |
 
 ## Setup
 
