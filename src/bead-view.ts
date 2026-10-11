@@ -175,8 +175,7 @@ export class BeadView extends ItemView {
             return;
         }
 
-        this.drawSummary(root, beads);
-        this.drawRail(root, beads);
+        drawHistory(root, beads, Date.now(), this.source.opacityAt);
     }
 
     private sayNothing(root: HTMLElement, title: string, about: string): void {
@@ -184,67 +183,75 @@ export class BeadView extends ItemView {
         empty.createDiv({ cls: 'pulsar-graph-history-empty-title', text: title });
         empty.createDiv({ text: about });
     }
+}
 
-    private drawSummary(root: HTMLElement, beads: readonly Bead[]): void {
-        const now = Date.now();
-        const first = beads[0];
-        const grown = beads.reduce((total, bead) => total + (bead.sizeEnd - bead.sizeStart), 0);
+/**
+ * A note's sittings as the history view draws them: how many and since when,
+ * then the rail. Apart from the view so the settings can draw an example note
+ * exactly the way the view draws a real one.
+ */
+export function drawHistory(root: HTMLElement, beads: readonly Bead[], now: number, opacityAt: (at: number) => number): void {
+    drawSummary(root, beads, now);
+    drawRail(root, beads, now, opacityAt);
+}
 
-        const parts = [
-            `${beads.length} ${beads.length === 1 ? 'sitting' : 'sittings'}`,
-            `first ${formatAge(first.start, now)}`
-        ];
+function drawSummary(root: HTMLElement, beads: readonly Bead[], now: number): void {
+    const first = beads[0];
+    const grown = beads.reduce((total, bead) => total + (bead.sizeEnd - bead.sizeStart), 0);
 
-        // Only worth saying when some sitting was watched happen. An imported
-        // one carries no sizes, so a vault of those would read as 0 bytes.
-        if (grown !== 0) {
-            parts.push(`${grown > 0 ? '+' : '−'}${formatBytes(Math.abs(grown))}`);
-        }
+    const parts = [
+        `${beads.length} ${beads.length === 1 ? 'sitting' : 'sittings'}`,
+        `first ${formatAge(first.start, now)}`
+    ];
 
-        root.createDiv({ cls: 'pulsar-graph-history-summary', text: parts.join(' · ') });
+    // Only worth saying when some sitting was watched happen. An imported
+    // one carries no sizes, so a vault of those would read as 0 bytes.
+    if (grown !== 0) {
+        parts.push(`${grown > 0 ? '+' : '−'}${formatBytes(Math.abs(grown))}`);
     }
 
-    /**
-     * The rail, newest at the top, each bead where its sitting falls.
-     *
-     * **One scale for every note**, logarithmic back from now. Each note used
-     * to be scaled to its own history, which kept a busy morning from
-     * collapsing into a pixel but made a rail covering twenty minutes look
-     * exactly like one covering a year. On a log axis this morning still
-     * spreads out, since the first hour is 93 px and the first day 206, while
-     * a year is 420 px in every note, so two notes can be compared at a glance.
-     * The trade is at the old end: a month of daily sittings a year ago spans
-     * about 3 px.
-     *
-     * The rail runs from now to the first labelled age at or past the oldest
-     * sitting, so a short history stays short and the scale stays the same.
-     *
-     * Colour still comes from the vault-wide curve, so a bead's brightness is
-     * the brightness the graph is drawing that note at.
-     */
-    private drawRail(root: HTMLElement, beads: readonly Bead[]): void {
-        const now = Date.now();
-        const layout = layoutRail(beads, now);
-        const rail = root.createDiv({ cls: 'pulsar-graph-history-rail' });
-        rail.style.height = `${layout.length + RAIL_INSET * 2}px`;
-        rail.style.setProperty('--pulsar-rail-inset', `${RAIL_INSET}px`);
+    root.createDiv({ cls: 'pulsar-graph-history-summary', text: parts.join(' · ') });
+}
 
-        for (const tick of layout.ticks) {
-            const label = rail.createDiv({ cls: 'pulsar-graph-history-tick', text: tick.label });
-            label.style.top = `${RAIL_INSET + tick.at}px`;
-        }
+/**
+ * The rail, newest at the top, each bead where its sitting falls.
+ *
+ * **One scale for every note**, logarithmic back from now. Each note used
+ * to be scaled to its own history, which kept a busy morning from
+ * collapsing into a pixel but made a rail covering twenty minutes look
+ * exactly like one covering a year. On a log axis this morning still
+ * spreads out, since the first hour is 93 px and the first day 206, while
+ * a year is 420 px in every note, so two notes can be compared at a glance.
+ * The trade is at the old end: a month of daily sittings a year ago spans
+ * about 3 px.
+ *
+ * The rail runs from now to the first labelled age at or past the oldest
+ * sitting, so a short history stays short and the scale stays the same.
+ *
+ * Colour still comes from the vault-wide curve, so a bead's brightness is
+ * the brightness the graph is drawing that note at.
+ */
+function drawRail(root: HTMLElement, beads: readonly Bead[], now: number, opacityAt: (at: number) => number): void {
+    const layout = layoutRail(beads, now);
+    const rail = root.createDiv({ cls: 'pulsar-graph-history-rail' });
+    rail.style.height = `${layout.length + RAIL_INSET * 2}px`;
+    rail.style.setProperty('--pulsar-rail-inset', `${RAIL_INSET}px`);
 
-        for (const [index, bead] of beads.entries()) {
-            const size = beadSize(bead);
+    for (const tick of layout.ticks) {
+        const label = rail.createDiv({ cls: 'pulsar-graph-history-tick', text: tick.label });
+        label.style.top = `${RAIL_INSET + tick.at}px`;
+    }
 
-            const dot = rail.createDiv({ cls: 'pulsar-graph-history-bead' });
-            dot.style.top = `${RAIL_INSET + layout.beads[index]}px`;
-            dot.style.width = `${size}px`;
-            dot.style.height = `${size}px`;
-            const strength = BEAD_FAINTEST + clamp01(this.source.opacityAt(bead.end)) * (1 - BEAD_FAINTEST);
-            dot.style.opacity = strength.toFixed(3);
-            dot.setAttr('aria-label', describe(bead, now));
-        }
+    for (const [index, bead] of beads.entries()) {
+        const size = beadSize(bead);
+
+        const dot = rail.createDiv({ cls: 'pulsar-graph-history-bead' });
+        dot.style.top = `${RAIL_INSET + layout.beads[index]}px`;
+        dot.style.width = `${size}px`;
+        dot.style.height = `${size}px`;
+        const strength = BEAD_FAINTEST + clamp01(opacityAt(bead.end)) * (1 - BEAD_FAINTEST);
+        dot.style.opacity = strength.toFixed(3);
+        dot.setAttr('aria-label', describe(bead, now));
     }
 }
 

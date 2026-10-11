@@ -7,11 +7,11 @@ import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
 import { FilterCaption, panelGroups, PulsarPanel } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, legibleOnLight, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, legibleInkColour, legibleOnLight, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, parseHexColor, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
-import { coolInk, forgetInk, inkExtension, inkLit, setInkColours, setInkListener, setInkOptions } from './ink';
+import { coolInk, forgetInk, inkColoursFor, inkExtension, inkLit, setInkColours, setInkListener, setInkOptions } from './ink';
 import { LinkDotSource, LinkLook, linkDotsExtension, ReadingDots, refreshLinkDots } from './link-dots';
 import { addPinMenuItem, Pins } from './pins';
 import { OpacityStore, Sample } from './opacity-store';
@@ -22,6 +22,7 @@ import { Attention, TabFading } from './tabs';
 import { describeVault, VaultStats } from './stats';
 import { Stars } from './stars';
 import { DEFAULT_SETTINGS, PulsarGraphSettings, PulsarSettingTab, parseSettings } from './settings';
+import { PictureSource } from './settings-pictures';
 
 /** Everything this plugin owns for one open graph view. */
 interface AttachedGraph {
@@ -96,6 +97,8 @@ export default class PulsarGraphPlugin extends Plugin {
     settings: PulsarGraphSettings = DEFAULT_SETTINGS;
 
     private readonly store = new OpacityStore(() => this.settings);
+    /** The vault's times in order, for the settings pictures, and the store revision they were sorted at. */
+    private sortedTimes: { revision: number; times: number[]; drawn: number[] } | null = null;
     private readonly attached = new Map<GraphRenderer, AttachedGraph>();
     /** Graphs hooked while Obsidian built them and not attached yet. */
     private readonly early = new Map<GraphRenderer, { data: DataHook | null; cut: { dropped: number } }>();
@@ -428,7 +431,11 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // A theme switch changes how a node past full strength is drawn:
         // lightened on a dark background, deepened on a light one.
-        running.registerEvent(this.app.workspace.on('css-change', () => this.syncRenderers()));
+        running.registerEvent(this.app.workspace.on('css-change', () => {
+            // A switch between light and dark changes what fresh writing is drawn in.
+            this.syncInkColours();
+            this.syncRenderers();
+        }));
 
         // Graph views come and go, and each brings its own renderer to hook.
         running.registerEvent(this.app.workspace.on('layout-change', () => {
@@ -822,10 +829,7 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private syncInk(): void {
-        setInkColours({
-            '--pulsar-ink': this.settings.inkColor,
-            '--pulsar-ink-dim': `${Math.round((1 - this.settings.inkDim) * 100)}%`
-        }, this.editors());
+        this.syncInkColours();
 
         setInkOptions({
             enabled: this.settings.ink,
@@ -1471,6 +1475,9 @@ export default class PulsarGraphPlugin extends Plugin {
         item.addClass('mod-clickable', 'pulsar-graph-status-ink');
         setIcon(item.createSpan({ cls: 'pulsar-graph-status-ink-icon' }), 'paint-bucket');
         item.createSpan({ cls: 'pulsar-graph-status-ink-count' });
+        // Its colour is set on it, since the editors are the only other
+        // place it is: on the body it restyled the whole window (#125).
+        item.style.setProperty('--pulsar-ink', this.inkColour());
         item.hide();
 
         // This note only, because the number is about this note. Cooling every
@@ -1530,6 +1537,56 @@ export default class PulsarGraphPlugin extends Plugin {
             this.settings.history ? this.history.coverage() : null,
             bands
         );
+    }
+
+    /**
+     * What the settings tab's pictures read: this vault's ages, the curve they
+     * are on, and which of them the spotlight covers. Times only, never a
+     * note's name or anything in it.
+     */
+    pictureSource(): PictureSource {
+        return {
+            settings: () => this.settings,
+            times: () => this.noteTimes().times,
+            drawn: () => this.noteTimes().drawn,
+            opacityAt: (mtime) => this.store.opacityAt(mtime),
+            spotlitTimes: () => {
+                const lit = new Set<number>();
+
+                for (const path of this.spotlitFrom(this.store.paths())) {
+                    const mtime = this.store.mtimeFor(path);
+
+                    if (mtime !== undefined) {
+                        lit.add(mtime);
+                    }
+                }
+
+                return lit;
+            },
+            lightTheme: () => this.lightTheme()
+        };
+    }
+
+    /**
+     * Every note's modification time, oldest first, and what each is drawn at,
+     * worked out again only when something has changed.
+     */
+    private noteTimes(): { times: readonly number[]; drawn: readonly number[] } {
+        this.store.refresh();
+        const revision = this.store.revision();
+
+        if (this.sortedTimes?.revision !== revision) {
+            const notes: [number, number][] = [];
+
+            for (const [path, mtime] of this.store.entries()) {
+                notes.push([mtime, this.store.opacityFor(path) ?? this.store.opacityAt(mtime)]);
+            }
+
+            notes.sort((a, b) => a[0] - b[0]);
+            this.sortedTimes = { revision, times: notes.map(([mtime]) => mtime), drawn: notes.map(([, drawn]) => drawn) };
+        }
+
+        return this.sortedTimes;
     }
 
     /** Walks the current curve across this vault's ages, for the settings preview. */
@@ -1881,6 +1938,25 @@ export default class PulsarGraphPlugin extends Plugin {
         return span <= 0 ? 1 : (value - this.settings.minOpacity) / span;
     }
 
+    /** Fresh writing's colours, on every editor it is in and on its status bar item. */
+    private syncInkColours(): void {
+        const ink = this.inkColour();
+
+        setInkColours(inkColoursFor(ink, this.settings.inkDim), this.editors());
+
+        this.inkItemEl?.style.setProperty('--pulsar-ink', ink);
+    }
+
+    /**
+     * Fresh writing's colour as it is drawn: as chosen on a dark theme, and on
+     * a light one darkened until it reads as text. The default orange, #ff7a45,
+     * stands 2.59:1 off white, under the 4.5:1 that body text needs; this
+     * draws it #bc5a33, 4.52:1, and leaves the saved colour alone.
+     */
+    private inkColour(): string {
+        return legibleInkColour(this.settings.inkColor, this.lightTheme());
+    }
+
     /**
      * The spotlight's colour as it is drawn: as chosen on a dark theme, and on
      * a light one darkened until it stands out from the page, since the
@@ -2036,11 +2112,6 @@ const NO_STARS: readonly string[] = [];
 /** What a note's dot says when hovered, in a tab or after a link. */
 function editedAgo(mtime: number): string {
     return `Edited ${formatAge(mtime, Date.now())}`;
-}
-
-/** Turns a '#rrggbb' setting into the packed number the renderer tints with. */
-function parseHexColor(value: string): number {
-    return Number.parseInt(value.slice(1), 16) || 0xffffff;
 }
 
 /**

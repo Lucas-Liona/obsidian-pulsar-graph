@@ -834,3 +834,86 @@
 	min-width: 0;
 	text-align: left;
 }
+
+/*
+ * A picture at the top of a part of the settings, of what its settings change.
+ * Framed like a pane of the app, on the page's own background, so a graph
+ * drawn in it reads the way the graph view does.
+ */
+.pulsar-graph-picture {
+	margin: var(--size-4-2) 0 var(--size-4-3);
+}
+
+.pulsar-graph-picture-frame {
+	position: relative;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+}
+
+.pulsar-graph-picture-frame canvas {
+	display: block;
+	width: 100%;
+}
+
+.pulsar-graph-picture-caption {
+	margin-top: var(--size-2-2);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: var(--line-height-tight);
+}
+
+.pulsar-graph-picture-caption strong {
+	color: var(--text-normal);
+	font-weight: var(--font-semibold);
+}
+
+/* A control that only moves the example, never a setting. */
+.pulsar-graph-picture-try {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2) var(--size-4-2);
+	margin-top: var(--size-2-2);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* A paragraph as the editor draws one. */
+.pulsar-graph-picture-page {
+	padding: var(--size-4-3) var(--size-4-4);
+	font-family: var(--font-text);
+	font-size: var(--font-text-size);
+	line-height: var(--line-height-normal);
+	color: var(--text-normal);
+}
+
+.pulsar-graph-picture-link {
+	color: var(--link-color);
+	text-decoration: underline;
+	text-decoration-color: var(--link-unresolved-decoration-color, currentColor);
+	text-underline-offset: 3px;
+}
+
+/* Three of Obsidian's own tab headers, drawn by its stylesheet and ours. */
+.pulsar-graph-picture-tabbar {
+	padding-top: var(--size-4-2);
+	background-color: var(--tab-container-background, var(--background-secondary));
+}
+
+.pulsar-graph-picture-tabbar .workspace-tab-header-container-inner {
+	display: flex;
+	gap: 2px;
+	padding: 0 var(--size-4-2);
+}
+
+.pulsar-graph-picture-tabbar .workspace-tab-header {
+	flex: 0 1 200px;
+	min-width: 0;
+}
+
+/* The history view, as drawn in its sidebar. */
+.pulsar-graph-picture-history {
+	max-width: 320px;
+}

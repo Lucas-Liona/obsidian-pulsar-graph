@@ -2,7 +2,69 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A picture at the top of most groups in the settings**, of what those
+  settings change, redrawn as they move: the fade's curve over your own notes,
+  five of your notes at their size and brightness, a traced link, the glow and
+  group temperature on a small graph, a local graph, the timelapse, the
+  spotlight and a pin, a paragraph with link dots and fresh writing, the tab
+  bar, and a note's history. Each is drawn by the plugin's own code from your
+  vault's ages, on a light theme as well as a dark one. A full redraw takes
+  about 3.5 ms in the demo vault; one move of a slider went from 6.3 to 10.6 ms
+  until the page is laid out. They draw nothing while Settings is closed, and a
+  moving one (Pulse, cooling writing, the replay) redraws at most 30 times a
+  second and only while it is in view. See [Every setting](docs/settings.md).
+
+### Changed
+
+- **The settings are in seven parts instead of eight, and say less.** The
+  fade's two ends and its curve move from the graph into *Time*, under
+  *Shape*, since the dots after links and beside tabs read them too; they are
+  called *Dimmest* and *Brightest* there, as they already were in the graph's
+  panel. *Size* and *Labels* become one group. *Highlights* holds the
+  spotlight and pins together, then everything lit inside the note you are
+  in: the dot after each link, fresh writing and the status bar's age, which
+  had a part of their own called *Elsewhere*. How to pin a note is always
+  shown, not only when nothing is pinned. Almost every description is
+  shorter. No setting is renamed in `data.json`, moved between files or given
+  a new default.
+
+### Fixed
+
+- **A sitting survives a reload.** Reloading Pulsar while its last write of
+  the edit history was still landing could lose the newest sitting: the new
+  copy read the file before that write finished, then saved over it. It now
+  waits for the write, for up to ten seconds.
+
+- **A damaged or hand-edited file can no longer stop Pulsar loading.** Saved
+  presets nested inside saved presets in `data.json` ran Pulsar out of stack
+  as it started. A preset never carries presets of its own, so any it is found
+  with are no longer read.
+
+- **The edit history keeps only what it could have written.** A number in
+  `history.json` too large for JavaScript reads back as infinity, and a
+  sitting there, or a last look there, would have been kept and stretched
+  every axis drawn against it. Sittings now have to be real stretches of
+  time with sizes of zero or more, and anything else in the file is skipped.
+
+- **Fresh writing reads on a light theme.** Its colour is drawn darker there,
+  until it stands 4.5:1 off the page the way body text has to; the default
+  orange stood 2.59:1, so the freshest words were the hardest to read. It
+  switches with the theme, and the colour you picked is kept as it is for a
+  dark one.
+
+- **The fresh-writing count in the status bar is in the fresh-writing colour
+  again.** It lost it when the colour moved off the page body (#125).
+
 ### Performance
+
+- **Sizing nodes by age costs a large graph far less each frame.** Every
+  scaled node had a size function of its own, and Obsidian asks every node
+  for its size several times a frame, so a 20,000-note graph handed it
+  20,000 different functions to call. They now share one, which reads each
+  node's own scale: three sizes per node, measured per frame, from 2.2–14.5 ms
+  to 0.35–0.46 ms at 20,000 nodes.
 
 - **A pulse draws less often when drawing is expensive.** Each breath of the
   stars redraws the whole graph, so with everything in view a pulse cost far
@@ -10,6 +72,34 @@
   held about one and a half cores. It now keeps its drawing to a quarter of
   the time: 30 a second while a draw is cheap, 13 at 19 ms, and never fewer
   than 12, so the stars still shimmer.
+
+### Development
+
+- **Pulsar is tested inside a real Obsidian.** On every pull request, and
+  weekly, the built plugin is loaded into Obsidian 1.8.3 and into the latest
+  release. The checks: it loads with no errors, grades the global and local
+  graphs, leaves Obsidian's own graph hooks exactly as it found them after
+  reloads, and writes nothing when its settings tab is opened and closed. The
+  weekly run is what notices an Obsidian update that breaks the graph
+  internals the plugin depends on.
+
+- **The tooling is up to date and its audit is clean.**
+  - vitest moves to 4.1 and esbuild to 0.28. Overrides replace the vulnerable
+    packages the test tools pull in, listed in AGENTS.md.
+  - None of this is in `main.js`, but the newer esbuild names things
+    differently when minifying, so the next release's `main.js` differs from
+    1.43.0's byte for byte.
+  - CI runs on Node 22.
+  - Every action is pinned to a commit.
+  - Dependabot proposes updates monthly, at most two pull requests at a time.
+
+- **Where to go with what.**
+  - Ideas and questions go to
+    [Discussions](https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions).
+  - Bugs use an issue form that asks for the Obsidian and installer versions,
+    the theme, the vault's size and other graph plugins.
+  - Security problems are reported privately, as `SECURITY.md` describes.
+  - `CONTRIBUTING.md` points newcomers at AGENTS.md.
 
 ## [1.43.0] - 2026-10-11
 

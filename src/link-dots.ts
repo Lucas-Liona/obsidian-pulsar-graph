@@ -91,6 +91,17 @@ function notePart(linktext: string): string {
 }
 
 /** Draws one dot. Shared by both views, so they cannot drift apart. */
+/**
+ * Draws a link's dot: a span of the dot's class, at the note's strength, in its
+ * colour if it has one, saying when it was edited on hover. Also how the
+ * settings draw the dots in their example note.
+ */
+export function makeLinkDot(look: LinkLook): HTMLElement {
+    const dot = createSpan({ cls: DOT_CLASS });
+    paintDot(dot, look);
+    return dot;
+}
+
 function paintDot(dot: HTMLElement, look: LinkLook): void {
     dot.style.opacity = Math.min(1, Math.max(0, look.strength)).toFixed(3);
 

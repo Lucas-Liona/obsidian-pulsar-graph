@@ -16,6 +16,14 @@ export interface Bead {
     sizeEnd: number;
 }
 
+/**
+ * Whether a write this long after a sitting's last one carries the sitting on.
+ * The gap is inclusive: two saves exactly the gap apart are one sitting.
+ */
+export function sameSitting(lastEnd: number, mtime: number, gapMs: number): boolean {
+    return mtime - lastEnd <= gapMs;
+}
+
 /** How a bead is written down. Positional, which is ~40% smaller than keys. */
 type StoredBead = [number, number, number, number];
 
@@ -59,6 +67,43 @@ const WRITE_DELAY_MS = 5 * 1000;
  * matches the cadence core File Recovery already writes at.
  */
 const AWAKE_REFRESH_MS = 5 * 60 * 1000;
+
+/**
+ * The longest a load waits for a write left by the instance before it. A
+ * write that never lands must not keep the history from loading at all.
+ */
+const LANDING_WAIT_MS = 10 * 1000;
+
+/**
+ * Writes still landing, by vault and file, where the next instance can find
+ * them. Unload cannot wait for its last write, and a reload evaluates this
+ * code afresh, so nothing module-level survives into the instance that reads
+ * the file next. The window does, and so does the vault's adapter, which keys
+ * it.
+ */
+const LANDING = Symbol.for('pulsar-graph.history-landing');
+
+function landing(adapter: object): Map<string, Promise<void>> {
+    const holder = window as unknown as Record<symbol, WeakMap<object, Map<string, Promise<void>>> | undefined>;
+    const byVault = holder[LANDING] ??= new WeakMap();
+    let files = byVault.get(adapter);
+
+    if (!files) {
+        files = new Map();
+        byVault.set(adapter, files);
+    }
+
+    return files;
+}
+
+/** Resolves when `pending` does, or after `ms`, whichever is first. */
+async function within(pending: Promise<void>, ms: number): Promise<void> {
+    let timer = 0;
+    await Promise.race([pending, new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+    })]);
+    window.clearTimeout(timer);
+}
 
 /**
  * When each note was worked on, kept because Obsidian keeps only the latest
@@ -138,6 +183,15 @@ export class EditHistory {
 
         let raw: string;
 
+        // A reload's new instance reads while the old one's last write may
+        // still be landing; read before it and that write's sittings are lost
+        // to the next one this instance makes.
+        const pending = landing(this.app.vault.adapter).get(this.path);
+
+        if (pending) {
+            await within(pending, LANDING_WAIT_MS);
+        }
+
         try {
             if (!(await this.app.vault.adapter.exists(this.path))) {
                 this.recovered();
@@ -168,7 +222,7 @@ export class EditHistory {
         readBeads(stored.notes, this.notes);
         readTimes(stored.opened, this.opened);
 
-        this.awake = typeof stored.awake === 'number' ? stored.awake : 0;
+        this.awake = isTime(stored.awake) ? stored.awake : 0;
         this.closedFor = this.awake > 0 ? Math.max(0, Date.now() - this.awake) : 0;
     }
 
@@ -259,7 +313,7 @@ export class EditHistory {
                 return;
             }
 
-            if (mtime - last.end <= gapMs) {
+            if (sameSitting(last.end, mtime, gapMs)) {
                 last.end = Math.max(last.end, mtime);
                 last.sizeEnd = size;
                 this.touch();
@@ -510,7 +564,14 @@ export class EditHistory {
             }
         });
 
-        await this.writing;
+        const mine = this.writing;
+        const landed = landing(this.app.vault.adapter);
+        landed.set(this.path, mine);
+        await mine;
+
+        if (landed.get(this.path) === mine) {
+            landed.delete(this.path);
+        }
     }
 }
 
@@ -545,12 +606,19 @@ function readBeads(source: unknown, into: Map<string, Bead[]>): void {
         const beads: Bead[] = [];
 
         for (const entry of list) {
-            if (!Array.isArray(entry) || entry.length < 4 || entry.some((value) => typeof value !== 'number')) {
+            if (!Array.isArray(entry) || entry.length < 4) {
                 continue;
             }
 
-            const [start, end, sizeStart, sizeEnd] = entry as StoredBead;
-            beads.push({ start, end, sizeStart, sizeEnd });
+            const [start, end, sizeStart, sizeEnd] = entry as unknown[];
+
+            // Only what a write could have put there: a stretch of time with
+            // two sizes. JSON reads a number past a double's range as
+            // Infinity, and a bead there would stretch every axis drawn
+            // against the oldest one to nothing.
+            if (isTime(start) && isTime(end) && start <= end && isSize(sizeStart) && isSize(sizeEnd)) {
+                beads.push({ start, end, sizeStart, sizeEnd });
+            }
         }
 
         if (beads.length > 0) {
@@ -566,10 +634,20 @@ function readTimes(source: unknown, into: Map<string, number>): void {
     }
 
     for (const [path, value] of Object.entries(source as Record<string, unknown>)) {
-        if (typeof value === 'number') {
+        if (isTime(value)) {
             into.set(path, value);
         }
     }
+}
+
+/** A moment a write could have recorded: a finite number of milliseconds. */
+function isTime(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A file size a write could have recorded. */
+function isSize(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
 function writeBeads(notes: Map<string, Bead[]>): Record<string, StoredBead[]> {

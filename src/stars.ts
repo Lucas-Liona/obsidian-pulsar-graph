@@ -549,7 +549,7 @@ function uniforms(text: string, count: number): number[] {
  * the middle and long at the edge, so it reads as light around a point rather
  * than as a bigger disc.
  */
-function paintHalo(light: boolean): HTMLCanvasElement | null {
+export function paintHalo(light: boolean): HTMLCanvasElement | null {
     const canvas = createEl('canvas');
     canvas.width = canvas.height = TEXTURE_SIZE;
 

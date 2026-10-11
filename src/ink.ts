@@ -40,6 +40,18 @@ export interface InkColours {
     '--pulsar-ink-dim': string;
 }
 
+/**
+ * The two custom properties the stylesheet colours fresh writing with: the
+ * colour itself, and how much of the rest of the page is kept when the mode
+ * dims everything around the writing instead.
+ */
+export function inkColoursFor(colour: string, dim: number): InkColours {
+    return { '--pulsar-ink': colour, '--pulsar-ink-dim': `${Math.round((1 - dim) * 100)}%` };
+}
+
+/** How many shades fresh writing passes through on its way back to ordinary text. */
+export const INK_SHADES = STEPS;
+
 let colours: InkColours | null = null;
 
 /** Moves every mark one shade colder. */

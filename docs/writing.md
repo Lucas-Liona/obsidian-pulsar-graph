@@ -24,6 +24,13 @@ replaces a colour you chose, so it suits actually working, where the tint suits 
 screenshot. A note with nothing lit in it is never dimmed at all, so opening a
 vault does not grey it.
 
+On a light theme the colour is drawn darker than the one you picked, until it
+stands 4.5:1 off the page, the contrast body text needs: a colour that glows on
+a dark background is usually too pale to read on a white one. The default
+orange, `#ff7a45`, stands 2.59:1 off white and is drawn `#bc5a33` there. The
+colour you picked is used as it is on a dark theme, and switching themes
+switches between the two.
+
 The status bar carries a paint bucket and how many characters of the note you
 are in still look lit, leaving out the last shade, which already reads as
 ordinary text. Clicking it cools that note. It is only there while something is

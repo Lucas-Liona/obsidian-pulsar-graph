@@ -475,7 +475,14 @@ export function newPaint(): PaintState {
  * every neighbour was a string looked up in a map. A graph handed no list of
  * links is still pooled the old way.
  */
-export function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
+/**
+ * What pooling and grouping read of a graph: its nodes and the links between
+ * them, and nothing about drawing. The settings tab's pictures pool a handful
+ * of notes through the same functions with no renderer at all.
+ */
+export type LinkedGraph = Pick<GraphRenderer, 'nodeLookup' | 'links'>;
+
+export function poolNeighbours(renderer: LinkedGraph, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
     const links = renderer.links;
     if (!links) {
         return poolByPath(renderer, own, bleed, hops);
@@ -547,7 +554,7 @@ export function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>
 }
 
 /** The same, through each node's own adjacency, for a renderer with no list of links. */
-export function poolByPath(renderer: GraphRenderer, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
+export function poolByPath(renderer: LinkedGraph, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
     let current = own;
 
     for (let hop = 0; hop < hops; hop++) {
@@ -588,7 +595,7 @@ export function poolByPath(renderer: GraphRenderer, own: Map<string, number>, bl
  * point of it, and it is why it is a separate setting rather than more of the
  * same.
  */
-function warmByGroup(renderer: GraphRenderer, own: Map<string, number>, warmth: number, by: 'folder' | 'component'): Map<string, number> {
+export function warmByGroup(renderer: LinkedGraph, own: Map<string, number>, warmth: number, by: 'folder' | 'component'): Map<string, number> {
     const groups = by === 'folder' ? groupByFolder(own) : groupByComponent(renderer, own);
     const middles = new Map<string, number>();
 
@@ -645,7 +652,7 @@ function groupByFolder(own: Map<string, number>): Map<string, string[]> {
 }
 
 /** Islands of linked notes, for vaults organized by link rather than by folder. */
-function groupByComponent(renderer: GraphRenderer, own: Map<string, number>): Map<string, string[]> {
+function groupByComponent(renderer: LinkedGraph, own: Map<string, number>): Map<string, string[]> {
     const groups = new Map<string, string[]>();
     const seen = new Set<string>();
 
@@ -1004,6 +1011,27 @@ export function deepenRgb(rgb: number, strength: number): number {
  */
 export const LIGHT_CONTRAST = 3;
 
+/** The same for text: WCAG's floor for body text, against a light page. */
+export const LIGHT_TEXT_CONTRAST = 4.5;
+
+/** Turns a '#rrggbb' setting into the packed number the renderer tints with. */
+export function parseHexColor(value: string): number {
+    return Number.parseInt(value.slice(1), 16) || 0xffffff;
+}
+
+/** A packed colour back into the '#rrggbb' a stylesheet takes. */
+export function formatHexColor(rgb: number): string {
+    return `#${(rgb & 0xffffff).toString(16).padStart(6, '0')}`;
+}
+
+/**
+ * Fresh writing's colour as it is drawn: as chosen on a dark theme, and on a
+ * light one darkened until it reads as text. The saved colour is left alone.
+ */
+export function legibleInkColour(colour: string, light: boolean): string {
+    return light ? formatHexColor(legibleOnLight(parseHexColor(colour), LIGHT_TEXT_CONTRAST)) : colour;
+}
+
 /**
  * A colour picked to stand out on a dark theme, made to stand out on a light
  * one too.
@@ -1012,12 +1040,12 @@ export const LIGHT_CONTRAST = 3;
  * vanishes on a light one: the spotlight's green #4dff91 stands 1.31:1 off
  * white, against 6.69:1 for Moonstone's node grey #5c5c5c, so the note being
  * picked out was the faintest thing on the graph. On a light theme such a
- * colour is darkened until it stands `LIGHT_CONTRAST` off white, every channel
- * by the same factor so the hue holds. A colour already that dark is left
- * exactly as it is.
+ * colour is darkened until it stands `ratio` off white, every channel by the
+ * same factor so the hue holds. A colour already that dark is left exactly as
+ * it is.
  */
-export function legibleOnLight(rgb: number): number {
-    if (contrastWithWhite(rgb) >= LIGHT_CONTRAST) {
+export function legibleOnLight(rgb: number, ratio = LIGHT_CONTRAST): number {
+    if (contrastWithWhite(rgb) >= ratio) {
         return rgb;
     }
 
@@ -1029,7 +1057,7 @@ export function legibleOnLight(rgb: number): number {
     for (let step = 0; step < 20; step++) {
         const middle = (passes + fails) / 2;
 
-        if (contrastWithWhite(scaleRgb(rgb, middle)) >= LIGHT_CONTRAST) {
+        if (contrastWithWhite(scaleRgb(rgb, middle)) >= ratio) {
             passes = middle;
         } else {
             fails = middle;
@@ -1495,10 +1523,7 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
     let changed = false;
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
-        const strength = options.byAge ? options.strengthOf(path) : undefined;
-        let scale = strength === undefined
-            ? 1
-            : options.smallest + clamp01(strength) * (options.largest - options.smallest);
+        let scale = sizeScale(options.byAge ? options.strengthOf(path) : undefined, options);
 
         // Multiplied rather than substituted. The spotlight is a flag on top of
         // whatever sizing is in force, so overriding it would mean switching
@@ -1517,6 +1542,15 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
     return changed;
 }
 
+/**
+ * What a node's circle is multiplied by for its age: the dimmest at
+ * `smallest`, the brightest at `largest`, in a straight line between. A node
+ * with no age, or sizing switched off, keeps Obsidian's own size.
+ */
+export function sizeScale(strength: number | undefined, options: Pick<SizeOptions, 'smallest' | 'largest'>): number {
+    return strength === undefined ? 1 : options.smallest + clamp01(strength) * (options.largest - options.smallest);
+}
+
 /** Hands every node its own size and title back, for unload. */
 export function clearSizes(renderer: GraphRenderer): void {
     for (const node of Object.values(renderer.nodeLookup)) {
@@ -1533,6 +1567,52 @@ interface SizedNode extends GraphNode {
     pulsarTitle?: number;
 }
 
+/**
+ * One replacement `getSize` and one `getTextStyle` per prototype, shared by
+ * every node, reading the node's own scale. A closure per node handed
+ * Obsidian's renderer 20,000 different functions to call at one site, every
+ * frame; one function that reads a number off the node is the same answer at
+ * a fraction of the cost, and leaves that call site with a single target.
+ *
+ * Each looks the prototype's own method up as it runs rather than keeping the
+ * one it found first, so another plugin that patches the prototype later is
+ * still called through.
+ */
+const scaledSizes = new WeakMap<object, (this: SizedNode) => number>();
+const scaledStyles = new WeakMap<object, (this: SizedNode) => { fontSize?: number }>();
+
+function scaledSizeFor(proto: SizedNode): (this: SizedNode) => number {
+    let scaled = scaledSizes.get(proto);
+
+    if (!scaled) {
+        scaled = function (this: SizedNode): number {
+            return (proto.getSize?.call(this) ?? 8) * (this.pulsarSize ?? 1);
+        };
+        scaledSizes.set(proto, scaled);
+    }
+
+    return scaled;
+}
+
+function scaledStyleFor(proto: SizedNode): (this: SizedNode) => { fontSize?: number } {
+    let scaled = scaledStyles.get(proto);
+
+    if (!scaled) {
+        scaled = function (this: SizedNode): { fontSize?: number } {
+            const style = proto.getTextStyle?.call(this) ?? {};
+
+            if (typeof style.fontSize === 'number') {
+                style.fontSize *= this.pulsarTitle ?? 1;
+            }
+
+            return style;
+        };
+        scaledStyles.set(proto, scaled);
+    }
+
+    return scaled;
+}
+
 function sizeNode(node: GraphNode, scale: number, titleScale: number): boolean {
     const sized = node as SizedNode;
 
@@ -1542,31 +1622,19 @@ function sizeNode(node: GraphNode, scale: number, titleScale: number): boolean {
 
     const proto = Object.getPrototypeOf(node) as SizedNode;
 
-    // Always re-derive from the prototype rather than from whatever is on the
+    // Always derived from the prototype rather than from whatever is on the
     // node, so repeated passes cannot compound into something far larger than
     // asked for.
     if (scale === 1) {
         delete sized.getSize;
     } else {
-        const base = proto.getSize;
-        sized.getSize = function (this: GraphNode): number {
-            return (base?.call(this) ?? 8) * scale;
-        };
+        sized.getSize = scaledSizeFor(proto);
     }
 
     if (titleScale === 1) {
         delete sized.getTextStyle;
     } else {
-        const baseStyle = proto.getTextStyle;
-        sized.getTextStyle = function (this: GraphNode): { fontSize?: number } {
-            const style = baseStyle?.call(this) ?? {};
-
-            if (typeof style.fontSize === 'number') {
-                style.fontSize *= titleScale;
-            }
-
-            return style;
-        };
+        sized.getTextStyle = scaledStyleFor(proto);
     }
 
     sized.pulsarSize = scale;
