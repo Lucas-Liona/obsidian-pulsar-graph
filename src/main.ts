@@ -7,7 +7,7 @@ import { AgeLabels, AgeMode, AgeText } from './age-label';
 import { filterGraphData, isWholeRange, OpacityRange, WHOLE_RANGE } from './filter';
 import { FilterCaption, panelGroups, PulsarPanel } from './graph-controls';
 import { LinkShading } from './links';
-import { applySizes, clearSizes, applyOpacity, legibleOnLight, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
+import { applySizes, clearSizes, applyOpacity, legibleOnLight, LIGHT_TEXT_CONTRAST, clearPaint, newPaint, controlsFor, DataHook, forgetPaintedColors, FrameHook, GraphKind, GraphRenderer, holdPaintTint, hookGraphCreation, hookRendererData, hookRendererFrame, OpenGraph, openGraphs, pathsIn, previewFilter, clearPreviewFilter, rebuildGraphData, repaint, PaintState, settleReleases, syncLabelFonts, Unhook } from './graph';
 import { readSnapshots } from './file-recovery';
 import { Coverage, EditHistory } from './history';
 import { hookNodeHover } from './hover';
@@ -428,7 +428,11 @@ export default class PulsarGraphPlugin extends Plugin {
 
         // A theme switch changes how a node past full strength is drawn:
         // lightened on a dark background, deepened on a light one.
-        running.registerEvent(this.app.workspace.on('css-change', () => this.syncRenderers()));
+        running.registerEvent(this.app.workspace.on('css-change', () => {
+            // A switch between light and dark changes what fresh writing is drawn in.
+            this.syncInkColours();
+            this.syncRenderers();
+        }));
 
         // Graph views come and go, and each brings its own renderer to hook.
         running.registerEvent(this.app.workspace.on('layout-change', () => {
@@ -822,10 +826,7 @@ export default class PulsarGraphPlugin extends Plugin {
     }
 
     private syncInk(): void {
-        setInkColours({
-            '--pulsar-ink': this.settings.inkColor,
-            '--pulsar-ink-dim': `${Math.round((1 - this.settings.inkDim) * 100)}%`
-        }, this.editors());
+        this.syncInkColours();
 
         setInkOptions({
             enabled: this.settings.ink,
@@ -1471,6 +1472,9 @@ export default class PulsarGraphPlugin extends Plugin {
         item.addClass('mod-clickable', 'pulsar-graph-status-ink');
         setIcon(item.createSpan({ cls: 'pulsar-graph-status-ink-icon' }), 'paint-bucket');
         item.createSpan({ cls: 'pulsar-graph-status-ink-count' });
+        // Its colour is set on it, since the editors are the only other
+        // place it is: on the body it restyled the whole window (#125).
+        item.style.setProperty('--pulsar-ink', this.inkColour());
         item.hide();
 
         // This note only, because the number is about this note. Cooling every
@@ -1881,6 +1885,32 @@ export default class PulsarGraphPlugin extends Plugin {
         return span <= 0 ? 1 : (value - this.settings.minOpacity) / span;
     }
 
+    /** Fresh writing's colours, on every editor it is in and on its status bar item. */
+    private syncInkColours(): void {
+        const ink = this.inkColour();
+
+        setInkColours({
+            '--pulsar-ink': ink,
+            '--pulsar-ink-dim': `${Math.round((1 - this.settings.inkDim) * 100)}%`
+        }, this.editors());
+
+        this.inkItemEl?.style.setProperty('--pulsar-ink', ink);
+    }
+
+    /**
+     * Fresh writing's colour as it is drawn: as chosen on a dark theme, and on
+     * a light one darkened until it reads as text. The default orange, #ff7a45,
+     * stands 2.59:1 off white, under the 4.5:1 that body text needs; this
+     * draws it #bc5a33, 4.52:1, and leaves the saved colour alone.
+     */
+    private inkColour(): string {
+        if (!this.lightTheme()) {
+            return this.settings.inkColor;
+        }
+
+        return formatHexColor(legibleOnLight(parseHexColor(this.settings.inkColor), LIGHT_TEXT_CONTRAST));
+    }
+
     /**
      * The spotlight's colour as it is drawn: as chosen on a dark theme, and on
      * a light one darkened until it stands out from the page, since the
@@ -2041,6 +2071,11 @@ function editedAgo(mtime: number): string {
 /** Turns a '#rrggbb' setting into the packed number the renderer tints with. */
 function parseHexColor(value: string): number {
     return Number.parseInt(value.slice(1), 16) || 0xffffff;
+}
+
+/** A packed colour back into the '#rrggbb' a stylesheet takes. */
+function formatHexColor(rgb: number): string {
+    return `#${(rgb & 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
 /**

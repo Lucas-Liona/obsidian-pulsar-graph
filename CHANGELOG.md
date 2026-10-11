@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **Fresh writing reads on a light theme.** Its colour is drawn darker there,
+  until it stands 4.5:1 off the page the way body text has to; the default
+  orange stood 2.59:1, so the freshest words were the hardest to read. It
+  switches with the theme, and the colour you picked is kept as it is for a
+  dark one.
+
+- **The fresh-writing count in the status bar is in the fresh-writing colour
+  again.** It lost it when the colour moved off the page body (#125).
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly

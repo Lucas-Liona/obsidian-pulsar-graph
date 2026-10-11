@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { contrastWithWhite, legibleOnLight, LIGHT_CONTRAST } from '../src/graph';
+import { contrastWithWhite, legibleOnLight, LIGHT_CONTRAST, LIGHT_TEXT_CONTRAST } from '../src/graph';
 
 const rgb = fc.integer({ min: 0, max: 0xffffff });
 const channels = (value: number): number[] => [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
@@ -44,5 +44,20 @@ describe('a colour of ours on a light theme', () => {
     it('turns the default green into one that reads on white', () => {
         expect(contrastWithWhite(0x4dff91)).toBeCloseTo(1.31, 2);
         expect(legibleOnLight(0x4dff91)).toBe(0x33a960);
+    });
+});
+
+describe('fresh writing on a light theme', () => {
+    it('always reads as text, and only ever darker than picked', () => {
+        fc.assert(fc.property(rgb, (colour) => {
+            const drawn = legibleOnLight(colour, LIGHT_TEXT_CONTRAST);
+            expect(contrastWithWhite(drawn)).toBeGreaterThanOrEqual(LIGHT_TEXT_CONTRAST);
+            channels(drawn).forEach((channel, i) => expect(channel).toBeLessThanOrEqual(channels(colour)[i]));
+        }));
+    });
+
+    it('turns the default orange into one that reads on white', () => {
+        expect(contrastWithWhite(0xff7a45)).toBeCloseTo(2.59, 2);
+        expect(legibleOnLight(0xff7a45, LIGHT_TEXT_CONTRAST)).toBe(0xbc5a33);
     });
 });
