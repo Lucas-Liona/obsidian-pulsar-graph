@@ -1011,6 +1011,27 @@ export function deepenRgb(rgb: number, strength: number): number {
  */
 export const LIGHT_CONTRAST = 3;
 
+/** The same for text: WCAG's floor for body text, against a light page. */
+export const LIGHT_TEXT_CONTRAST = 4.5;
+
+/** Turns a '#rrggbb' setting into the packed number the renderer tints with. */
+export function parseHexColor(value: string): number {
+    return Number.parseInt(value.slice(1), 16) || 0xffffff;
+}
+
+/** A packed colour back into the '#rrggbb' a stylesheet takes. */
+export function formatHexColor(rgb: number): string {
+    return `#${(rgb & 0xffffff).toString(16).padStart(6, '0')}`;
+}
+
+/**
+ * Fresh writing's colour as it is drawn: as chosen on a dark theme, and on a
+ * light one darkened until it reads as text. The saved colour is left alone.
+ */
+export function legibleInkColour(colour: string, light: boolean): string {
+    return light ? formatHexColor(legibleOnLight(parseHexColor(colour), LIGHT_TEXT_CONTRAST)) : colour;
+}
+
 /**
  * A colour picked to stand out on a dark theme, made to stand out on a light
  * one too.
@@ -1019,12 +1040,12 @@ export const LIGHT_CONTRAST = 3;
  * vanishes on a light one: the spotlight's green #4dff91 stands 1.31:1 off
  * white, against 6.69:1 for Moonstone's node grey #5c5c5c, so the note being
  * picked out was the faintest thing on the graph. On a light theme such a
- * colour is darkened until it stands `LIGHT_CONTRAST` off white, every channel
- * by the same factor so the hue holds. A colour already that dark is left
- * exactly as it is.
+ * colour is darkened until it stands `ratio` off white, every channel by the
+ * same factor so the hue holds. A colour already that dark is left exactly as
+ * it is.
  */
-export function legibleOnLight(rgb: number): number {
-    if (contrastWithWhite(rgb) >= LIGHT_CONTRAST) {
+export function legibleOnLight(rgb: number, ratio = LIGHT_CONTRAST): number {
+    if (contrastWithWhite(rgb) >= ratio) {
         return rgb;
     }
 
@@ -1036,7 +1057,7 @@ export function legibleOnLight(rgb: number): number {
     for (let step = 0; step < 20; step++) {
         const middle = (passes + fails) / 2;
 
-        if (contrastWithWhite(scaleRgb(rgb, middle)) >= LIGHT_CONTRAST) {
+        if (contrastWithWhite(scaleRgb(rgb, middle)) >= ratio) {
             passes = middle;
         } else {
             fails = middle;

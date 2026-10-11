@@ -204,8 +204,9 @@ shrink to, with a seed that replays it.
   with every default-on feature, against the core fade alone, on the
   20,000-note bench vault and a real vault, no worse than two standard
   deviations on any metric in `docs/performance.md`. A default colour has to
-  read on a light theme as well as a dark one; the spotlight's white and the
-  fresh-writing colours do not yet, and are open. Changing a default never
+  read on a light theme as well as a dark one. The spotlight and fresh writing
+  are drawn darker there than their saved colours (`legibleOnLight`), to 3:1
+  off white for the spotlight and 4.5:1 for text. Changing a default never
   changes a saved setting: every key is saved once anything is, so a new
   default reaches new installs, *Reset all settings*, and anyone who never
   changed a thing.

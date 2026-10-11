@@ -2,7 +2,7 @@ import { setIcon } from 'obsidian';
 import { drawHistory } from './bead-view';
 import { formatAge } from './age';
 import { formatDuration } from './duration';
-import { blendRgb, deepenRgb, LinkedGraph, legibleOnLight, poolNeighbours, sizeScale, warmByGroup } from './graph';
+import { blendRgb, deepenRgb, LinkedGraph, legibleInkColour, legibleOnLight, poolNeighbours, sizeScale, warmByGroup } from './graph';
 import { Bead, sameSitting } from './history';
 import { INK_SHADES, inkColoursFor, shadeMs } from './ink';
 import { makeLinkDot } from './link-dots';
@@ -1236,14 +1236,14 @@ function notePicture(holder: HTMLElement, request: () => void): Picture {
             const newest = times.at(-1) ?? now;
             const oldest = times.at(0) ?? now;
             const shades = [...NOTE_FRESH].map((_character, index) => (settings.ink ? shadeOf(index, scene) : INK_SHADES));
-            const shown = [settings.ink, settings.inkMode, settings.inkColor, settings.inkDim, settings.inkMinutes, settings.linkDots, shades, [newest, oldest].map((mtime) => [scene.source.opacityAt(mtime).toFixed(3), formatAge(mtime, now)])];
+            const shown = [scene.palette.light, settings.ink, settings.inkMode, settings.inkColor, settings.inkDim, settings.inkMinutes, settings.linkDots, shades, [newest, oldest].map((mtime) => [scene.source.opacityAt(mtime).toFixed(3), formatAge(mtime, now)])];
 
             if (unchanged(page, JSON.stringify(shown))) {
                 return;
             }
 
             page.empty();
-            page.setCssProps({ ...inkColoursFor(settings.inkColor, settings.inkDim), '--pulsar-ink-ease': `${Math.round(Math.min(1500, shadeMs(settings.inkMinutes) / speed(settings)))}ms` });
+            page.setCssProps({ ...inkColoursFor(legibleInkColour(settings.inkColor, scene.palette.light), settings.inkDim), '--pulsar-ink-ease': `${Math.round(Math.min(1500, shadeMs(settings.inkMinutes) / speed(settings)))}ms` });
 
             const lit = settings.ink && shadeOf(0, scene) >= 0 && shadeOf(0, scene) < INK_SHADES;
             const cold = settings.ink && settings.inkMode === 'dim' && lit ? 'pulsar-ink-cold' : '';
