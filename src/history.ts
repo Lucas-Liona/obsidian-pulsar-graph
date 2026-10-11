@@ -16,6 +16,14 @@ export interface Bead {
     sizeEnd: number;
 }
 
+/**
+ * Whether a write this long after a sitting's last one carries the sitting on.
+ * The gap is inclusive: two saves exactly the gap apart are one sitting.
+ */
+export function sameSitting(lastEnd: number, mtime: number, gapMs: number): boolean {
+    return mtime - lastEnd <= gapMs;
+}
+
 /** How a bead is written down. Positional, which is ~40% smaller than keys. */
 type StoredBead = [number, number, number, number];
 
@@ -305,7 +313,7 @@ export class EditHistory {
                 return;
             }
 
-            if (mtime - last.end <= gapMs) {
+            if (sameSitting(last.end, mtime, gapMs)) {
                 last.end = Math.max(last.end, mtime);
                 last.sizeEnd = size;
                 this.touch();

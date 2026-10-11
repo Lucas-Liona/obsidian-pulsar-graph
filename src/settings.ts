@@ -11,6 +11,7 @@ import { StaleMark, TabFade, TabFadeCurve, TabFadeScope } from './tabs';
 import { banded, curveAt, FADE_TYPES, FadeType, formatSharpness, SHARPNESS_STOPS, sharpnessOf } from './fade';
 import PulsarGraphPlugin from './main';
 import { SettingsPage } from './settings-layout';
+import { PictureKind, Pictures } from './settings-pictures';
 import { confirmTwice } from './confirm';
 import { COOLING_STOPS, DurationStops, durationMarks, formatDuration, HALF_LIFE_STOPS, nearestStop, REPLAY_TRAIL_STOPS, SITTING_STOPS, SPOTLIGHT_WINDOW_STOPS, SPREAD_FLOOR_STOPS, STALE_TAB_STOPS, TAB_FADE_STOPS, WINDOW_STOPS } from './duration';
 import { reducedMotion } from './stars';
@@ -851,9 +852,15 @@ function clamp(value: number, lowest: number, highest: number): number {
 export class PulsarSettingTab extends PluginSettingTab {
     private previewEl: HTMLElement | null = null;
     private statsEl: HTMLElement | null = null;
+    /** The pictures on this build of the tab, replaced with it. */
+    pictures: Pictures | null = null;
 
     constructor(app: App, private readonly plugin: PulsarGraphPlugin) {
         super(app, plugin);
+
+        // The pictures keep the theme's colours rather than reading them on
+        // every redraw, so a change of theme has to tell them.
+        plugin.registerEvent(app.workspace.on('css-change', () => this.pictures?.restyle()));
     }
 
     display(): void {
@@ -867,6 +874,8 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         containerEl.empty();
         containerEl.addClass('pulsar-graph-settings');
+        this.pictures?.destroy();
+        this.pictures = null;
 
         new Setting(containerEl)
             .setName('Pulsar')
@@ -875,7 +884,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.enabled)
                 .onChange(async (value) => {
                     settings.enabled = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -893,6 +902,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
         this.previewEl = containerEl.createDiv({ cls: 'pulsar-graph-preview' });
         this.renderPreview();
+        this.pictures = new Pictures(this.plugin.pictureSource(), containerEl);
 
         const page = new SettingsPage(containerEl, new Set(settings.collapsed), (collapsed) => {
             settings.collapsed = collapsed;
@@ -908,6 +918,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         });
 
         if (time) {
+            this.picture(time, 'curve');
             this.buildTime(time, settings);
             this.buildShape(time, settings);
         }
@@ -961,6 +972,7 @@ export class PulsarSettingTab extends PluginSettingTab {
         });
 
         if (tabs) {
+            this.picture(tabs, 'tabs');
             this.buildTabs(tabs, settings);
         }
 
@@ -1078,7 +1090,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.ageScale).onChange(async (value) => {
                     settings.ageScale = value as AgeScale;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // A half-life replaces the range settings below rather than
                     // adding to them.
                     this.display();
@@ -1108,7 +1120,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.normalizeBy).onChange(async (value) => {
                         settings.normalizeBy = value as NormalizeBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         // The window length below only applies in window mode.
                         this.display();
                     });
@@ -1146,6 +1158,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildStars(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Stars and black holes', 'A halo around the newest notes, for when the top of the fade is all one white');
+        this.picture(containerEl, 'stars');
 
         new Setting(containerEl)
             .setName('Draw the newest notes as stars')
@@ -1154,7 +1167,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.stars)
                 .onChange(async (value) => {
                     settings.stars = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // How many, and the pulse, only apply when it is on.
                     this.display();
                 })
@@ -1185,7 +1198,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.starPulse)
                 .onChange(async (value) => {
                     settings.starPulse = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
     }
@@ -1265,7 +1278,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.fadeType === 'step')
                 .onChange(async (value) => {
                     Object.assign(settings, value ? banded(settings) : curveAt(sharpnessOf(settings)));
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // Sharpness and the number of bands each apply to one of the two.
                     this.display();
                 })
@@ -1296,6 +1309,7 @@ export class PulsarSettingTab extends PluginSettingTab {
      */
     private buildReplay(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Animate', "Obsidian's own timelapse, played by the Animate button under Display in the graph's panel, lit as it plays");
+        this.picture(containerEl, 'replay');
 
         new Setting(containerEl)
             .setName('Light the timelapse as it plays')
@@ -1304,7 +1318,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.replay)
                 .onChange(async (value) => {
                     settings.replay = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1329,6 +1343,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildSizeAndLabels(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Size and labels', 'How big each node and its name are drawn, and the age written above it');
+        this.picture(containerEl, 'size');
 
         new Setting(containerEl)
             .setName('Size nodes by age')
@@ -1337,7 +1352,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.nodeSizeByAge)
                 .onChange(async (value) => {
                     settings.nodeSizeByAge = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1390,7 +1405,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.ageLabels).onChange(async (value) => {
                     settings.ageLabels = value as AgeMode;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 });
             });
     }
@@ -1403,6 +1418,7 @@ export class PulsarSettingTab extends PluginSettingTab {
      */
     private buildInANote(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'In a note', 'The links in what you are writing, the writing itself, and the note\'s own age');
+        this.picture(containerEl, 'note');
 
         new Setting(containerEl)
             .setName('A dot after each link')
@@ -1411,7 +1427,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.linkDots)
                 .onChange(async (value) => {
                     settings.linkDots = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
@@ -1424,7 +1440,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.statusBarAge)
                 .onChange(async (value) => {
                     settings.statusBarAge = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
     }
@@ -1436,6 +1452,7 @@ export class PulsarSettingTab extends PluginSettingTab {
      */
     private buildSpotlightAndPins(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Spotlight and pins', 'The note you wrote last, and the notes you chose, each in a colour of its own');
+        this.picture(containerEl, 'highlights');
 
         new Setting(containerEl)
             .setName('Spotlight the newest note')
@@ -1444,7 +1461,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.spotlightNewest)
                 .onChange(async (value) => {
                     settings.spotlightNewest = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // The colour and strength below only apply when it is on.
                     this.display();
                 })
@@ -1458,7 +1475,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setValue(settings.spotlightColor)
                     .onChange(async (value) => {
                         settings.spotlightColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
@@ -1484,7 +1501,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.spotlightBy).onChange(async (value) => {
                         settings.spotlightBy = value as SpotlightBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     });
                 });
@@ -1533,6 +1550,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildLinks(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Links', 'What the lines between notes carry, beyond joining them up');
+        this.picture(containerEl, 'links');
 
         new Setting(containerEl)
             .setName('Age the links too')
@@ -1544,7 +1562,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.linkRecency).onChange(async (value) => {
                     settings.linkRecency = value as LinkRecency;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 });
             });
 
@@ -1555,7 +1573,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.sessionTrails)
                 .onChange(async (value) => {
                     settings.sessionTrails = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1572,7 +1590,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setValue(settings.trailColor)
                     .onChange(async (value) => {
                         settings.trailColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
@@ -1592,6 +1610,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildClusters(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Clusters', 'Colouring a whole region of the graph by how alive it is, rather than each note on its own');
+        this.picture(containerEl, 'clusters');
 
         new NumberControl(
             new Setting(containerEl)
@@ -1621,7 +1640,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.clusterBy).onChange(async (value) => {
                         settings.clusterBy = value as ClusterBy;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.renderPreview();
                     });
                 });
@@ -1670,7 +1689,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.filterEnabled)
                 .onChange(async (value) => {
                     settings.filterEnabled = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1685,7 +1704,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.filterCaption)
                 .onChange(async (value) => {
                     settings.filterCaption = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
@@ -1715,7 +1734,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setTooltip('Add another range')
                 .onClick(async () => {
                     settings.filterRanges.push({ from: 0, to: 0.2 });
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1726,7 +1745,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setTooltip('Remove the last range')
                     .onClick(async () => {
                         settings.filterRanges.pop();
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     })
                 );
@@ -1736,6 +1755,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildLocalGraph(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'Local graph', 'The panel showing one note and what links to it. It asks a narrower question than the whole graph, and these answer it differently');
+        this.picture(containerEl, 'local');
 
         new Setting(containerEl)
             .setName('Measure a local graph against')
@@ -1747,7 +1767,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.localScope).onChange(async (value) => {
                     settings.localScope = value as LocalScope;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // The spread floor in the Time section applies once this is
                     // on, so it appears and disappears with it.
                     this.display();
@@ -1761,7 +1781,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.localAnchor)
                 .onChange(async (value) => {
                     settings.localAnchor = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
@@ -1772,7 +1792,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.localLabels)
                 .onChange(async (value) => {
                     settings.localLabels = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
     }
@@ -1785,7 +1805,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.tabDot)
                 .onChange(async (value) => {
                     settings.tabDot = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                 })
             );
 
@@ -1799,7 +1819,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                 dropdown.setValue(settings.tabFade).onChange(async (value) => {
                     settings.tabFade = value as TabFade;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 });
             });
@@ -1815,7 +1835,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.tabFadeScope).onChange(async (value) => {
                         settings.tabFadeScope = value as TabFadeScope;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
         }
@@ -1831,7 +1851,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.tabFadeCurve).onChange(async (value) => {
                         settings.tabFadeCurve = value as TabFadeCurve;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
@@ -1869,7 +1889,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.staleTabs)
                 .onChange(async (value) => {
                     settings.staleTabs = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1885,7 +1905,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.staleTabMark).onChange(async (value) => {
                         settings.staleTabMark = value as StaleMark;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
@@ -1911,7 +1931,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.ink)
                 .onChange(async (value) => {
                     settings.ink = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -1927,7 +1947,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.inkMode).onChange(async (value) => {
                         settings.inkMode = value as InkMode;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                         this.display();
                     });
                 });
@@ -1965,7 +1985,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setValue(settings.inkColor)
                     .onChange(async (value) => {
                         settings.inkColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 
@@ -1981,6 +2001,8 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     /** *Counts as one sitting*, drawn where `sittingGapPlacement` says. */
     private buildSittingGap(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
+        this.picture(containerEl, 'sittings');
+
         new DurationControl(
             new Setting(containerEl)
                 .setName('Counts as one sitting')
@@ -1996,6 +2018,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
     private buildHistory(containerEl: HTMLElement, settings: PulsarGraphSettings): void {
         heading(containerEl, 'History', "Pulsar's own record of when each note was worked on");
+        this.picture(containerEl, 'history');
 
         new Setting(containerEl)
             .setName('Keep a record of when notes were worked on')
@@ -2004,7 +2027,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.history)
                 .onChange(async (value) => {
                     settings.history = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     // What it has collected, and the cap, only matter when on.
                     this.display();
                 })
@@ -2054,7 +2077,7 @@ export class PulsarSettingTab extends PluginSettingTab {
 
                     dropdown.setValue(settings.intensityScale).onChange(async (value) => {
                         settings.intensityScale = value as IntensityScale;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     });
                 });
 
@@ -2138,7 +2161,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                         return;
                     }
 
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 });
             });
@@ -2173,7 +2196,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                         settings.saved.push(kept);
                     }
 
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     new Notice(`Saved "${kept.name}".`);
                     this.display();
                 })
@@ -2236,6 +2259,18 @@ export class PulsarSettingTab extends PluginSettingTab {
     hide(): void {
         this.previewEl = null;
         this.statsEl = null;
+        this.pictures?.destroy();
+        this.pictures = null;
+    }
+
+    private picture(containerEl: HTMLElement, kind: PictureKind): void {
+        this.pictures?.add(containerEl, kind);
+    }
+
+    /** Saves, then redraws the pictures once the store has been measured again. */
+    private async saved(): Promise<void> {
+        await this.plugin.saveSettings();
+        this.pictures?.request();
     }
 
     /** Presets travel as plain JSON, through the clipboard rather than a server. */
@@ -2269,7 +2304,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 }
             }
 
-            await this.plugin.saveSettings();
+            await this.saved();
             new Notice(`Added ${arriving.length} preset(s).`);
             this.display();
         } catch {
@@ -2278,9 +2313,12 @@ export class PulsarSettingTab extends PluginSettingTab {
     }
 
     private save(): void {
-        void this.plugin.saveSettings();
+        void this.saved();
         this.renderPreview();
         this.renderStats();
+        // Now as well as once saved: most of what a slider moves is read live,
+        // and the rest catches up when the store has been measured again.
+        this.pictures?.request();
     }
 
     /**
@@ -2299,7 +2337,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                 .setValue(settings.pinMark)
                 .onChange(async (value) => {
                     settings.pinMark = value;
-                    await this.plugin.saveSettings();
+                    await this.saved();
                     this.display();
                 })
             );
@@ -2312,7 +2350,7 @@ export class PulsarSettingTab extends PluginSettingTab {
                     .setValue(settings.pinColor)
                     .onChange(async (value) => {
                         settings.pinColor = value;
-                        await this.plugin.saveSettings();
+                        await this.saved();
                     })
                 );
 

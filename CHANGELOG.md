@@ -50,6 +50,20 @@
   - Security problems are reported privately, as `SECURITY.md` describes.
   - `CONTRIBUTING.md` points newcomers at AGENTS.md.
 
+### Added
+
+- **A picture at the top of most groups in the settings**, of what those
+  settings change, redrawn as they move: the fade's curve over your own notes,
+  five of your notes at their size and brightness, a traced link, the glow and
+  group temperature on a small graph, a local graph, the timelapse, the
+  spotlight and a pin, a paragraph with link dots and fresh writing, the tab
+  bar, and a note's history. Each is drawn by the plugin's own code from your
+  vault's ages, on a light theme as well as a dark one. A full redraw takes
+  about 3.5 ms in the demo vault; one move of a slider went from 6.3 to 10.6 ms
+  until the page is laid out. They draw nothing while Settings is closed, and a
+  moving one (Pulse, cooling writing, the replay) redraws at most 30 times a
+  second and only while it is in view. See [Every setting](docs/settings.md).
+
 ### Changed
 
 - **The settings are in seven parts instead of eight, and say less.** The

@@ -21,6 +21,7 @@ TypeScript in `src/`, bundled to `main.js` by esbuild and loaded by Obsidian.
 | `main.ts` | Plugin lifecycle, events and commands, attaching to graphs, and the glue between parts: the panel's quick controls, captions, filter exemptions, both status bar items |
 | `settings.ts` | The settings type, defaults, parsing and the settings tab |
 | `settings-layout.ts` | The collapsible containers the settings tab is built from |
+| `settings-pictures.ts` | The picture at the top of each part of the settings tab, drawn with the plugin's own functions over the vault's ages |
 | `confirm.ts` | The second click anything irreversible waits for |
 | `presets.ts` | The built-in presets, and what a saved or pasted one carries |
 | `fade.ts` | The three curves, as pure functions of a 0–1 recency |
