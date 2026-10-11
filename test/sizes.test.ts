@@ -16,8 +16,8 @@ class Node {
 }
 
 function graph(...nodes: Node[]): GraphRenderer {
-    const nodeLookup = Object.fromEntries(nodes.map((node) => [node.id, node as unknown as GraphNode]));
-    return { nodeLookup, changed: () => undefined } as unknown as GraphRenderer;
+    const nodeLookup: Record<string, GraphNode> = Object.fromEntries(nodes.map((node) => [node.id, node]));
+    return { nodeLookup, changed: () => undefined };
 }
 
 const BY_AGE = { spotlit: new Set<string>(), spotlightSize: 2, smallest: 0.5, largest: 2, byAge: true, titleScale: 1 };
@@ -38,9 +38,12 @@ describe('sizing nodes by age', () => {
         const nodes = [new Node('a.md', 0), new Node('b.md', 3), new Node('c.md', 9)];
         applySizes(graph(...nodes), { ...BY_AGE, titleScale: 1.5, strengthOf: (path) => (path === 'a.md' ? 0 : 0.5) });
 
-        expect(new Set(nodes.map((node) => node.getSize)).size).toBe(1);
-        expect(new Set(nodes.map((node) => node.getTextStyle)).size).toBe(1);
-        expect(nodes[0].getSize).not.toBe(Node.prototype.getSize);
+        // Which function each node answers with, read off the node itself.
+        const own = (node: Node, name: 'getSize' | 'getTextStyle'): unknown => Object.getOwnPropertyDescriptor(node, name)?.value;
+
+        expect(new Set(nodes.map((node) => own(node, 'getSize'))).size).toBe(1);
+        expect(new Set(nodes.map((node) => own(node, 'getTextStyle'))).size).toBe(1);
+        expect(own(nodes[0], 'getSize')).toBeInstanceOf(Function);
     });
 
     it('scales titles on top, and never compounds when applied again', () => {
@@ -73,9 +76,8 @@ describe('sizing nodes by age', () => {
         const node = new Patched('a.md', 0);
         applySizes(graph(node), { ...BY_AGE, strengthOf: (): number => 1 });
 
-        const original = Patched.prototype.getSize;
         Patched.prototype.getSize = function (this: Node): number {
-            return original.call(this) + 10;
+            return Node.prototype.getSize.call(this) + 10;
         };
 
         expect(node.getSize()).toBe((8 + 10) * 2);
