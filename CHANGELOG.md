@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Development
+
+- **Pulsar is tested inside a real Obsidian.** On every pull request, and
+  weekly, the built plugin is loaded into Obsidian 1.8.3 and into the latest
+  release. The checks: it loads with no errors, grades the global and local
+  graphs, leaves Obsidian's own graph hooks exactly as it found them after
+  reloads, and writes nothing when its settings tab is opened and closed. The
+  weekly run is what notices an Obsidian update that breaks the graph
+  internals the plugin depends on.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly
