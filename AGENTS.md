@@ -154,6 +154,26 @@ it with `package.json`'s tabs, and it had been committed with two spaces. It is
 committed in npm's own format now, so an install that changes nothing leaves it
 alone.
 
+Every dependency is a dev dependency; `main.js` bundles none of them. `npm
+audit` is clean, and `overrides` in `package.json` keeps it that way, each one
+replacing a vulnerable package that something else pulls in:
+
+| Override | Pulled in by | Because |
+|---|---|---|
+| `@puppeteer/browsers` 3 | `@wdio/utils` | 2.x needs `extract-zip`, which has no fixed version, and `proxy-agent`, which brings a vulnerable `basic-ftp`. 3.x drops both and still exports everything `@wdio/utils` imports. It asks for Node 22.12 or later, as `obsidian-launcher`'s `@electron/get` already does; the e2e suite also passes on Node 20 |
+| `chokidar` 4, under `mocha` | `mocha` 10 | 3.x pulls in `braces`, which has no fixed version |
+| `moment` 2.31 | `obsidian`'s typings | Older versions have a path traversal |
+| `serialize-javascript` 7.1 | `mocha` 10 | Older versions have a code execution and a denial of service |
+
+Drop an override once the package that pulls it in has moved on.
+
+CI runs on Node 22. Every action in `.github/workflows` is pinned to a commit
+SHA, with its version in a comment. Dependabot proposes updates monthly, at
+most two pull requests at a time: npm minor and patch updates grouped, majors
+on their own, and the actions grouped. It leaves the `obsidian` typings alone:
+they are pinned to the version the build uses, so a build of the source
+reproduces a release, and moving them goes with `minAppVersion`.
+
 The `*.property.test.ts` files are property tests with `fast-check`, pinned to
 an exact version: each states what has to hold for every input — a newer note
 never drawn fainter, a filter that only ever takes nodes away, history that reads

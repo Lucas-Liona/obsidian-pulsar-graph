@@ -1,0 +1,80 @@
+name: Bug report
+description: Something Pulsar does wrong, or doesn't do.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. A screenshot helps, but check that nothing in it is private.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the graph view
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: obsidian
+    attributes:
+      label: Obsidian version and installer version
+      description: Both are under Settings → General → About, for example "1.14.4 (installer 1.14.4)".
+    validations:
+      required: true
+  - type: input
+    id: pulsar
+    attributes:
+      label: Pulsar version
+      description: Under Settings → Community plugins.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Android
+        - iOS or iPadOS
+    validations:
+      required: true
+  - type: input
+    id: theme
+    attributes:
+      label: Theme
+      description: Light or dark, and its name if it isn't Obsidian's default.
+      placeholder: Dark, Minimal
+  - type: dropdown
+    id: size
+    attributes:
+      label: Roughly how many notes are in the vault?
+      options:
+        - "Under 100"
+        - "100 to 1,000"
+        - "1,000 to 10,000"
+        - "More than 10,000"
+  - type: checkboxes
+    id: graph-plugins
+    attributes:
+      label: Other plugins that change the graph
+      description: They reach into the same graph, so they matter.
+      options:
+        - label: Extended Graph
+        - label: 3D Graph
+        - label: Another (named below)
+  - type: textarea
+    id: console
+    attributes:
+      label: Errors in the developer console
+      description: Ctrl+Shift+I (Cmd+Option+I on a Mac), then the Console tab. Paste anything red that mentions pulsar.
+      render: text
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
