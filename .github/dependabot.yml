@@ -12,6 +12,7 @@ updates:
       # Minor and patch updates together; a major version gets a pull
       # request of its own.
       dev-dependencies:
+        patterns: ["*"]
         update-types: [minor, patch]
     ignore:
       # Pinned on purpose: the typings are the version the build was written

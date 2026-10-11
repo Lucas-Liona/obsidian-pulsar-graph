@@ -36,7 +36,12 @@ body:
     id: os
     attributes:
       label: Operating system
-      options: [Windows, macOS, Linux, Android, iOS / iPadOS]
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Android
+        - iOS or iPadOS
     validations:
       required: true
   - type: input
@@ -49,7 +54,11 @@ body:
     id: size
     attributes:
       label: Roughly how many notes are in the vault?
-      options: [Under 100, 100 to 1,000, 1,000 to 10,000, More than 10,000]
+      options:
+        - "Under 100"
+        - "100 to 1,000"
+        - "1,000 to 10,000"
+        - "More than 10,000"
   - type: checkboxes
     id: graph-plugins
     attributes:
