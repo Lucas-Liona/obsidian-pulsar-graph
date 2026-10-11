@@ -55,7 +55,6 @@
 		"webdriverio": "^9.32.0"
 	},
 	"overrides": {
-		"basic-ftp": "^6.2.3",
 		"mocha": {
 			"chokidar": "^4.0.3"
 		},

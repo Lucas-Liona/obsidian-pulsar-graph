@@ -160,8 +160,7 @@ replacing a vulnerable package that something else pulls in:
 
 | Override | Pulled in by | Because |
 |---|---|---|
-| `@puppeteer/browsers` 3 | `@wdio/utils` | 2.x needs `extract-zip`, which has no fixed version. 3.x drops it, and still exports everything `@wdio/utils` imports. It asks for Node 22.12 or later; the e2e suite also passes on Node 20 |
-| `basic-ftp` 6 | `proxy-agent` | Older versions have a CPU denial of service |
+| `@puppeteer/browsers` 3 | `@wdio/utils` | 2.x needs `extract-zip`, which has no fixed version, and `proxy-agent`, which brings a vulnerable `basic-ftp`. 3.x drops both and still exports everything `@wdio/utils` imports. It asks for Node 22.12 or later, as `obsidian-launcher`'s `@electron/get` already does; the e2e suite also passes on Node 20 |
 | `chokidar` 4, under `mocha` | `mocha` 10 | 3.x pulls in `braces`, which has no fixed version |
 | `moment` 2.31 | `obsidian`'s typings | Older versions have a path traversal |
 | `serialize-javascript` 7.1 | `mocha` 10 | Older versions have a code execution and a denial of service |
