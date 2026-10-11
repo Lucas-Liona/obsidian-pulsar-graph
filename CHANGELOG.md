@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **A damaged or hand-edited file can no longer stop Pulsar loading.** Saved
+  presets nested inside saved presets in `data.json` ran Pulsar out of stack
+  as it started. A preset never carries presets of its own, so any it is found
+  with are no longer read.
+
+- **The edit history keeps only what it could have written.** A number in
+  `history.json` too large for JavaScript reads back as infinity, and a
+  sitting there, or a last look there, would have been kept and stretched
+  every axis drawn against it. Sittings now have to be real stretches of
+  time with sizes of zero or more, and anything else in the file is skipped.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly

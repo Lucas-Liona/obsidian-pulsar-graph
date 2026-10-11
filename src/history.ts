@@ -168,7 +168,7 @@ export class EditHistory {
         readBeads(stored.notes, this.notes);
         readTimes(stored.opened, this.opened);
 
-        this.awake = typeof stored.awake === 'number' ? stored.awake : 0;
+        this.awake = isTime(stored.awake) ? stored.awake : 0;
         this.closedFor = this.awake > 0 ? Math.max(0, Date.now() - this.awake) : 0;
     }
 
@@ -545,12 +545,19 @@ function readBeads(source: unknown, into: Map<string, Bead[]>): void {
         const beads: Bead[] = [];
 
         for (const entry of list) {
-            if (!Array.isArray(entry) || entry.length < 4 || entry.some((value) => typeof value !== 'number')) {
+            if (!Array.isArray(entry) || entry.length < 4) {
                 continue;
             }
 
-            const [start, end, sizeStart, sizeEnd] = entry as StoredBead;
-            beads.push({ start, end, sizeStart, sizeEnd });
+            const [start, end, sizeStart, sizeEnd] = entry as unknown[];
+
+            // Only what a write could have put there: a stretch of time with
+            // two sizes. JSON reads a number past a double's range as
+            // Infinity, and a bead there would stretch every axis drawn
+            // against the oldest one to nothing.
+            if (isTime(start) && isTime(end) && start <= end && isSize(sizeStart) && isSize(sizeEnd)) {
+                beads.push({ start, end, sizeStart, sizeEnd });
+            }
         }
 
         if (beads.length > 0) {
@@ -566,10 +573,20 @@ function readTimes(source: unknown, into: Map<string, number>): void {
     }
 
     for (const [path, value] of Object.entries(source as Record<string, unknown>)) {
-        if (typeof value === 'number') {
+        if (isTime(value)) {
             into.set(path, value);
         }
     }
+}
+
+/** A moment a write could have recorded: a finite number of milliseconds. */
+function isTime(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A file size a write could have recorded. */
+function isSize(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
 function writeBeads(notes: Map<string, Bead[]>): Record<string, StoredBead[]> {
