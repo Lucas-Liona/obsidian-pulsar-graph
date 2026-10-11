@@ -475,7 +475,14 @@ export function newPaint(): PaintState {
  * every neighbour was a string looked up in a map. A graph handed no list of
  * links is still pooled the old way.
  */
-export function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
+/**
+ * What pooling and grouping read of a graph: its nodes and the links between
+ * them, and nothing about drawing. The settings tab's pictures pool a handful
+ * of notes through the same functions with no renderer at all.
+ */
+export type LinkedGraph = Pick<GraphRenderer, 'nodeLookup' | 'links'>;
+
+export function poolNeighbours(renderer: LinkedGraph, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
     const links = renderer.links;
     if (!links) {
         return poolByPath(renderer, own, bleed, hops);
@@ -547,7 +554,7 @@ export function poolNeighbours(renderer: GraphRenderer, own: Map<string, number>
 }
 
 /** The same, through each node's own adjacency, for a renderer with no list of links. */
-export function poolByPath(renderer: GraphRenderer, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
+export function poolByPath(renderer: LinkedGraph, own: Map<string, number>, bleed: number, hops: number): Map<string, number> {
     let current = own;
 
     for (let hop = 0; hop < hops; hop++) {
@@ -588,7 +595,7 @@ export function poolByPath(renderer: GraphRenderer, own: Map<string, number>, bl
  * point of it, and it is why it is a separate setting rather than more of the
  * same.
  */
-function warmByGroup(renderer: GraphRenderer, own: Map<string, number>, warmth: number, by: 'folder' | 'component'): Map<string, number> {
+export function warmByGroup(renderer: LinkedGraph, own: Map<string, number>, warmth: number, by: 'folder' | 'component'): Map<string, number> {
     const groups = by === 'folder' ? groupByFolder(own) : groupByComponent(renderer, own);
     const middles = new Map<string, number>();
 
@@ -645,7 +652,7 @@ function groupByFolder(own: Map<string, number>): Map<string, string[]> {
 }
 
 /** Islands of linked notes, for vaults organized by link rather than by folder. */
-function groupByComponent(renderer: GraphRenderer, own: Map<string, number>): Map<string, string[]> {
+function groupByComponent(renderer: LinkedGraph, own: Map<string, number>): Map<string, string[]> {
     const groups = new Map<string, string[]>();
     const seen = new Set<string>();
 
@@ -1495,10 +1502,7 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
     let changed = false;
 
     for (const [path, node] of Object.entries(renderer.nodeLookup)) {
-        const strength = options.byAge ? options.strengthOf(path) : undefined;
-        let scale = strength === undefined
-            ? 1
-            : options.smallest + clamp01(strength) * (options.largest - options.smallest);
+        let scale = sizeScale(options.byAge ? options.strengthOf(path) : undefined, options);
 
         // Multiplied rather than substituted. The spotlight is a flag on top of
         // whatever sizing is in force, so overriding it would mean switching
@@ -1515,6 +1519,15 @@ export function applySizes(renderer: GraphRenderer, options: SizeOptions): boole
     }
 
     return changed;
+}
+
+/**
+ * What a node's circle is multiplied by for its age: the dimmest at
+ * `smallest`, the brightest at `largest`, in a straight line between. A node
+ * with no age, or sizing switched off, keeps Obsidian's own size.
+ */
+export function sizeScale(strength: number | undefined, options: Pick<SizeOptions, 'smallest' | 'largest'>): number {
+    return strength === undefined ? 1 : options.smallest + clamp01(strength) * (options.largest - options.smallest);
 }
 
 /** Hands every node its own size and title back, for unload. */

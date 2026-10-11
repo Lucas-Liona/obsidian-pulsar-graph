@@ -19,4 +19,13 @@ export default defineConfig([
 			"obsidianmd/settings-tab/prefer-setting-definitions": "off",
 		},
 	},
+	{
+		// The end-to-end tests run in Node and drive a desktop Obsidian, never
+		// a phone, and TypeScript already checks every name they use.
+		files: ["test/e2e/**"],
+		rules: {
+			"obsidianmd/no-nodejs-modules": "off",
+			"no-undef": "off",
+		},
+	},
 ]);

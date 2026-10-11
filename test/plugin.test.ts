@@ -317,12 +317,12 @@ describe('the edit history', () => {
         await unloadPlugin(plugin);
     });
 
-    // The same race across a reload rather than a switch, and not fixed by
-    // waiting in begin(): the instance reading the file is a new one, and the
-    // write still landing belongs to the instance just unloaded, which nothing
-    // in the new one can wait for. Plausible rather than seen: Obsidian loads
-    // the new instance's code and data.json before this read.
-    it.fails('keeps a sitting across a reload while the last write is still landing', async () => {
+    // The same race across a reload rather than a switch. Waiting in begin()
+    // cannot fix it, since the write still landing belongs to the instance
+    // just unloaded; the new one finds it through the window, which outlives
+    // both. Plausible rather than seen: Obsidian loads the new instance's code
+    // and data.json before this read.
+    it('keeps a sitting across a reload while the last write is still landing', async () => {
         const { world, plugin } = await writing();
         const release = world.adapter.hold(/history/);
 
@@ -334,6 +334,27 @@ describe('the edit history', () => {
         await wait(10_000);
 
         expect({ inMemory: reloaded.historyCoverage().beads, onDisk: storedHistory(world).sittings }).toEqual({ inMemory: 2, onDisk: { 'a.md': 2 } });
+        await unloadPlugin(reloaded);
+    });
+
+    // The wait for that write is bounded: a disk that never finishes must not
+    // keep the history from loading at all.
+    it('loads the history after a while when the last write never lands', async () => {
+        const { world, plugin } = await writing();
+        world.adapter.hold(/history/);
+
+        plugin.unload();
+        let loaded = false;
+        const reloading = loadPlugin(world).then((reloaded) => {
+            loaded = true;
+            return reloaded;
+        });
+        await wait(5_000);
+        const early = loaded;
+        await wait(5_000);
+        const reloaded = await reloading;
+
+        expect({ early, beads: reloaded.historyCoverage().beads }).toEqual({ early: false, beads: 1 });
         await unloadPlugin(reloaded);
     });
 

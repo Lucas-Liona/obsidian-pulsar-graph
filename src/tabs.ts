@@ -361,22 +361,11 @@ export class TabFading {
     }
 
     private strengthFor(path: string, options: TabFadeOptions): number {
-        if (options.mode === 'modified') {
-            const strength = options.graphStrength(path);
-            return strength === undefined ? 1 : clamp(strength, options.floor, 1);
-        }
-
-        const minutes = this.attention.minutesSince(path);
-        if (minutes === undefined) {
-            return 1;
-        }
-
-        if (options.curve === 'at') {
-            return minutes >= options.after ? options.floor : 1;
-        }
-
-        const spent = options.after <= 0 ? 1 : Math.min(1, minutes / options.after);
-        return clamp(1 - spent * (1 - options.floor), options.floor, 1);
+        return fadeStrength(
+            options,
+            options.mode === 'modified' ? undefined : this.attention.minutesSince(path),
+            options.mode === 'modified' ? options.graphStrength(path) : undefined
+        );
     }
 
     private paint(header: HTMLElement, strength: number, scope: TabFadeScope): void {
@@ -398,6 +387,47 @@ export class TabFading {
         this.faded.delete(header);
     }
 }
+
+/**
+ * How strongly a tab is drawn, 1 for not at all faded.
+ *
+ * By edit time it follows the note's brightness in the graph, held to the
+ * floor. By attention it follows the minutes since the tab was last looked at:
+ * across the whole of `after`, or all at once at the end of it.
+ */
+export function fadeStrength(
+    options: Pick<TabFadeOptions, 'mode' | 'curve' | 'after' | 'floor'>,
+    minutesIgnored: number | undefined,
+    graphStrength: number | undefined
+): number {
+    if (options.mode === 'modified') {
+        return graphStrength === undefined ? 1 : clamp(graphStrength, options.floor, 1);
+    }
+
+    if (minutesIgnored === undefined) {
+        return 1;
+    }
+
+    if (options.curve === 'at') {
+        return minutesIgnored >= options.after ? options.floor : 1;
+    }
+
+    const spent = options.after <= 0 ? 1 : Math.min(1, minutesIgnored / options.after);
+    return clamp(1 - spent * (1 - options.floor), options.floor, 1);
+}
+
+/**
+ * The classes and the property a tab is marked with, for drawing a tab the way
+ * the stylesheet draws a real one.
+ */
+export const TAB_MARKS = {
+    dot: DOT_CLASS,
+    stale: STALE_CLASS,
+    zzz: ZZZ_CLASS,
+    faded: FADED_CLASS,
+    whole: WHOLE_CLASS,
+    fade: FADE_VAR
+} as const;
 
 function pathOf(leaf: WorkspaceLeaf): string | undefined {
     const file = (leaf as LeafWithTab).view.file;
