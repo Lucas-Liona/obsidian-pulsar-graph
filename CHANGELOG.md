@@ -12,6 +12,24 @@
   weekly run is what notices an Obsidian update that breaks the graph
   internals the plugin depends on.
 
+- **The tooling is up to date and its audit is clean.**
+  - vitest moves to 4.1 and esbuild to 0.28. Overrides replace the vulnerable
+    packages the test tools pull in, listed in AGENTS.md.
+  - None of this is in `main.js`, but the newer esbuild names things
+    differently when minifying, so the next release's `main.js` differs from
+    1.43.0's byte for byte.
+  - CI runs on Node 22.
+  - Every action is pinned to a commit.
+  - Dependabot proposes updates monthly, at most two pull requests at a time.
+
+- **Where to go with what.**
+  - Ideas and questions go to
+    [Discussions](https://github.com/Lucas-Liona/obsidian-pulsar-graph/discussions).
+  - Bugs use an issue form that asks for the Obsidian and installer versions,
+    the theme, the vault's size and other graph plugins.
+  - Security problems are reported privately, as `SECURITY.md` describes.
+  - `CONTRIBUTING.md` points newcomers at AGENTS.md.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly
