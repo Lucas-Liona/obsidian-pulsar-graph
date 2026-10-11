@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Performance
+
+- **A pulse draws less often when drawing is expensive.** Each breath of the
+  stars redraws the whole graph, so with everything in view a pulse cost far
+  more than zoomed in: one draw of 2,887 notes took 19 ms, and 30 a second
+  held about one and a half cores. It now keeps its drawing to a quarter of
+  the time: 30 a second while a draw is cheap, 13 at 19 ms, and never fewer
+  than 12, so the stars still shimmer.
+
 ## [1.43.0] - 2026-10-11
 
 Stars and black holes mark the newest notes, a new install starts with nearly
